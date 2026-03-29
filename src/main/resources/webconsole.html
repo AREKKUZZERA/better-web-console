@@ -3,848 +3,842 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Better-WebConsole — Minecraft Server</title>
+<title>Better-WebConsole</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@700;800&display=swap');
+:root{
+  --bg:#080b0e;--bg2:#0d1117;--bg3:#131920;--bg4:#1a2330;
+  --border:#1e2d3d;--border2:#243344;
+  --accent:#00e5a0;--accent2:#00b87a;--accent-dim:#003d2a;
+  --danger:#ff4455;--warn:#ffb020;--info:#40aaff;--purple:#a855f7;
+  --text:#c8d8e8;--text-dim:#5a7590;--text-muted:#2a3d50;
+  --font:'JetBrains Mono',monospace;--ui:'Syne',sans-serif;
+  --r:6px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;overflow:hidden}
 
-  :root {
-    --bg:        #0a0c0f;
-    --bg2:       #0f1215;
-    --bg3:       #151a1f;
-    --border:    #1e2830;
-    --accent:    #00e5a0;
-    --accent2:   #00b87a;
-    --accent-dim:#004d35;
-    --danger:    #ff4d6a;
-    --warn:      #ffb930;
-    --info:      #4db8ff;
-    --text:      #c8d8e4;
-    --text-dim:  #5a7080;
-    --text-muted:#2e3f4d;
-    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-    --font-ui:   'Syne', sans-serif;
-    --radius:    6px;
-  }
+/* ── Login ── */
+#login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:200;transition:opacity .3s,transform .3s}
+#login-screen.hide{opacity:0;transform:translateY(-14px);pointer-events:none}
+.lcard{width:360px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:38px 34px;position:relative;overflow:hidden}
+.lcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+.llogo{font-family:var(--ui);font-size:20px;font-weight:800;color:var(--accent)}
+.llogo small{display:block;font-family:var(--font);font-size:11px;color:var(--text-dim);font-weight:400;margin-top:2px}
+.lcard h2{font-family:var(--ui);font-size:16px;color:var(--text);margin:22px 0 18px}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:10px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+.field input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--font);font-size:13px;padding:9px 11px;outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--accent)}
+.field input::placeholder{color:var(--text-muted)}
+.btn-login{width:100%;margin-top:4px;padding:10px;background:var(--accent);color:#000;border:none;border-radius:var(--r);font-family:var(--ui);font-size:14px;font-weight:700;cursor:pointer;transition:background .2s}
+.btn-login:hover{background:#00ffb4}
+.btn-login:disabled{background:var(--accent-dim);color:var(--text-dim);cursor:not-allowed}
+#login-error{margin-top:10px;font-size:12px;color:var(--danger);text-align:center;min-height:15px}
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── App shell ── */
+#app{display:flex;flex-direction:column;height:100vh;opacity:0;transition:opacity .3s}
+#app.show{opacity:1}
 
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size: 13px;
-    overflow: hidden;
-  }
+/* ── Header ── */
+header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;user-select:none}
+.hlogo{font-family:var(--ui);font-size:14px;font-weight:800;color:var(--accent);letter-spacing:-.2px}
+.hsep{width:1px;height:18px;background:var(--border)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--text-muted);transition:background .3s;flex-shrink:0}
+.status-dot.connected{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.status-dot.disconnected{background:var(--danger)}
+.status-dot.connecting{background:var(--warn);animation:blink .8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+#status-text{font-size:11px;color:var(--text-dim)}
+.huser{font-size:11px;color:var(--text-dim);margin-left:2px}
+.huser strong{color:var(--accent)}
+.spacer{flex:1}
+.hbtn{background:none;border:1px solid var(--border);border-radius:var(--r);color:var(--text-dim);font-family:var(--font);font-size:11px;padding:4px 10px;cursor:pointer;transition:border-color .2s,color .2s;white-space:nowrap}
+.hbtn:hover{border-color:var(--accent);color:var(--accent)}
+.hbtn.danger:hover{border-color:var(--danger);color:var(--danger)}
 
-  /* ── Login Screen ── */
-  #login-screen {
-    position: fixed; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--bg);
-    z-index: 100;
-    transition: opacity .3s, transform .3s;
-  }
-  #login-screen.hide {
-    opacity: 0; transform: translateY(-12px); pointer-events: none;
-  }
+/* ── Tabs ── */
+#tabs{display:flex;align-items:center;gap:2px;padding:0 10px;height:36px;background:var(--bg3);border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{padding:5px 14px;font-size:12px;font-weight:600;color:var(--text-dim);cursor:pointer;border-radius:var(--r) var(--r) 0 0;border:1px solid transparent;border-bottom:none;transition:all .15s;user-select:none}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);background:var(--bg2);border-color:var(--border)}
 
-  .login-card {
-    width: 380px;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 40px 36px;
-    position: relative;
-    overflow: hidden;
-  }
-  .login-card::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  }
+/* ── Content panels ── */
+.panel{display:none;flex:1;min-height:0;flex-direction:column}
+.panel.active{display:flex}
 
-  .login-logo {
-    font-family: var(--font-ui);
-    font-size: 22px;
-    font-weight: 800;
-    color: var(--accent);
-    letter-spacing: -0.5px;
-    margin-bottom: 4px;
-  }
-  .login-logo span { color: var(--text-dim); font-weight: 600; font-size: 13px; display: block; margin-top: 2px; font-family: var(--font-mono); }
+/* ── Console panel ── */
+#stats-bar{display:flex;align-items:center;height:28px;background:var(--bg3);border-bottom:1px solid var(--border);flex-shrink:0;overflow:hidden}
+.stat{display:flex;align-items:center;gap:5px;padding:0 12px;border-right:1px solid var(--border);font-size:11px;color:var(--text-dim);height:100%;white-space:nowrap}
+.stat .v{color:var(--text);font-weight:600}
+.stat.tps-good .v{color:var(--accent)}
+.stat.tps-ok .v{color:var(--warn)}
+.stat.tps-bad .v{color:var(--danger)}
 
-  .login-card h2 {
-    font-family: var(--font-ui);
-    font-size: 17px;
-    font-weight: 700;
-    color: var(--text);
-    margin: 24px 0 20px;
-  }
+#console-wrap{flex:1;overflow:hidden;position:relative}
+#console-output{height:100%;overflow-y:scroll;padding:10px 14px 4px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+#console-output::-webkit-scrollbar{width:5px}
+#console-output::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
-  .field {
-    margin-bottom: 14px;
-  }
-  .field label {
-    display: block;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    margin-bottom: 6px;
-  }
-  .field input {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size: 13px;
-    padding: 10px 12px;
-    outline: none;
-    transition: border-color .2s;
-  }
-  .field input:focus { border-color: var(--accent); }
-  .field input::placeholder { color: var(--text-muted); }
+.log-line{line-height:1.65;white-space:pre-wrap;word-break:break-all;font-size:12.5px;color:var(--text)}
+.log-line.WARN,.log-line.WARNING{color:var(--warn)}
+.log-line.SEVERE,.log-line.ERROR{color:var(--danger)}
+.log-line.DEBUG,.log-line.FINE,.log-line.FINER,.log-line.FINEST{color:var(--text-dim)}
+.log-line .hl{background:rgba(255,176,32,.25);color:#ffcc55;border-radius:2px;padding:0 1px}
+.log-ts{color:var(--text-muted)}
 
-  .btn-login {
-    width: 100%;
-    margin-top: 6px;
-    padding: 11px;
-    background: var(--accent);
-    color: #000;
-    border: none;
-    border-radius: var(--radius);
-    font-family: var(--font-ui);
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    letter-spacing: .03em;
-    transition: background .2s, transform .1s;
-  }
-  .btn-login:hover  { background: #00ffb4; }
-  .btn-login:active { transform: scale(.98); }
-  .btn-login:disabled { background: var(--accent-dim); color: var(--text-dim); cursor: not-allowed; }
+#scroll-anchor{display:none;position:absolute;bottom:12px;right:16px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:3px 12px;font-size:11px;color:var(--text-dim);cursor:pointer;z-index:5}
+#scroll-anchor.show{display:flex;align-items:center;gap:4px}
+#scroll-anchor:hover{border-color:var(--accent);color:var(--accent)}
 
-  #login-error {
-    margin-top: 12px;
-    font-size: 12px;
-    color: var(--danger);
-    min-height: 16px;
-    text-align: center;
-  }
+/* Search bar */
+#search-bar{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--bg3);border-bottom:1px solid var(--border);flex-shrink:0}
+.slbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;flex-shrink:0}
+#search-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--font);font-size:12px;padding:4px 9px;outline:none;transition:border-color .2s}
+#search-input:focus{border-color:var(--accent)}
+#search-input::placeholder{color:var(--text-muted)}
+#search-count{font-size:11px;color:var(--text-dim);white-space:nowrap}
+.ftog{background:none;border:1px solid var(--border);border-radius:4px;font-size:10px;font-family:var(--font);font-weight:600;padding:3px 8px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;transition:all .15s}
+.ftog.WARN{color:var(--warn)}.ftog.SEVERE{color:var(--danger)}.ftog.DEBUG{color:var(--text-dim)}
+.ftog.active{border-color:currentColor;background:color-mix(in srgb,currentColor 12%,transparent)}
 
-  /* ── App Layout ── */
-  #app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    opacity: 0;
-    transition: opacity .3s;
-  }
-  #app.show { opacity: 1; }
+/* Input bar */
+#input-bar{display:flex;align-items:center;padding:8px 12px;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0;gap:6px;position:relative}
+.prompt{color:var(--accent);font-size:14px;font-weight:700;flex-shrink:0}
+#cmd-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font);font-size:13px;caret-color:var(--accent)}
+#cmd-input::placeholder{color:var(--text-muted)}
+#cmd-input:disabled{opacity:.35}
+.btn-send{background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--r);color:var(--accent);font-family:var(--font);font-size:12px;font-weight:600;padding:5px 13px;cursor:pointer;transition:background .15s;flex-shrink:0}
+.btn-send:hover{background:var(--accent);color:#000}
+.btn-send:disabled{opacity:.3;cursor:not-allowed}
 
-  /* ── Header ── */
-  header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 0 18px;
-    height: 48px;
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    user-select: none;
-  }
+/* Autocomplete dropdown */
+#autocomplete{position:absolute;bottom:calc(100% + 4px);left:28px;right:80px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);max-height:180px;overflow-y:auto;z-index:50;display:none;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.ac-item{padding:5px 10px;font-size:12px;color:var(--text-dim);cursor:pointer;transition:background .1s}
+.ac-item:hover,.ac-item.sel{background:var(--bg4);color:var(--accent)}
+.ac-hint{padding:4px 10px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border)}
 
-  .header-logo {
-    font-family: var(--font-ui);
-    font-size: 15px;
-    font-weight: 800;
-    color: var(--accent);
-    letter-spacing: -.3px;
-  }
+/* ── Dashboard panel ── */
+#panel-dash{padding:14px;gap:12px;overflow-y:auto}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.green::before{background:var(--accent)}.kpi.warn::before{background:var(--warn)}.kpi.red::before{background:var(--danger)}.kpi.blue::before{background:var(--info)}.kpi.purple::before{background:var(--purple)}
+.kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:6px}
+.kpi-value{font-size:28px;font-weight:700;font-family:var(--ui);color:var(--text);line-height:1}
+.kpi-sub{font-size:11px;color:var(--text-dim);margin-top:4px}
+.dash-charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-top:2px}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px}
+.chart-card h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:10px}
+.chart-wrap{height:110px;position:relative}
 
-  .header-sep { width: 1px; height: 20px; background: var(--border); }
+/* ── Players panel ── */
+#panel-players{overflow-y:auto;padding:12px}
+.player-table{width:100%;border-collapse:collapse}
+.player-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);padding:6px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg)}
+.player-table td{padding:7px 10px;border-bottom:1px solid var(--border2);font-size:12.5px;vertical-align:middle}
+.player-table tr:hover td{background:var(--bg3)}
+.player-op{display:inline-block;font-size:9px;background:rgba(255,176,32,.15);color:var(--warn);border:1px solid rgba(255,176,32,.3);border-radius:3px;padding:1px 5px;margin-left:5px}
+.ping-good{color:var(--accent)}.ping-ok{color:var(--warn)}.ping-bad{color:var(--danger)}
+.action-btn{background:none;border:1px solid var(--border);border-radius:4px;font-family:var(--font);font-size:11px;color:var(--text-dim);padding:2px 8px;cursor:pointer;transition:all .15s}
+.action-btn:hover.kick{border-color:var(--warn);color:var(--warn)}
+.action-btn:hover.ban{border-color:var(--danger);color:var(--danger)}
+.action-btn.kick:hover{border-color:var(--warn);color:var(--warn)}
+.action-btn.ban:hover{border-color:var(--danger);color:var(--danger)}
+.no-players{text-align:center;color:var(--text-muted);padding:40px 0;font-size:13px}
 
-  .status-badge {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 11px;
-    color: var(--text-dim);
-  }
-  .status-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--text-muted);
-    transition: background .3s;
-    flex-shrink: 0;
-  }
-  .status-dot.connected    { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
-  .status-dot.disconnected { background: var(--danger); }
-  .status-dot.connecting   { background: var(--warn); animation: pulse .8s infinite; }
+/* ── Aliases panel ── */
+#panel-aliases{overflow-y:auto;padding:12px}
+.alias-list{display:flex;flex-direction:column;gap:8px}
+.alias-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color .2s}
+.alias-card:hover{border-color:var(--accent)}
+.alias-name{font-weight:700;color:var(--accent);font-size:13px;flex-shrink:0}
+.alias-sep{color:var(--text-muted);flex-shrink:0}
+.alias-cmd{color:var(--text-dim);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.alias-run{background:var(--accent-dim);border:1px solid var(--accent);border-radius:4px;font-family:var(--font);font-size:11px;color:var(--accent);padding:3px 9px;cursor:pointer;flex-shrink:0;transition:all .15s}
+.alias-run:hover{background:var(--accent);color:#000}
+.alias-hint{font-size:11px;color:var(--text-muted);margin-bottom:8px}
 
-  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+/* ── Modal ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:300;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-bg.show{opacity:1;pointer-events:all}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:24px;width:380px;position:relative}
+.modal h3{font-family:var(--ui);font-size:16px;color:var(--text);margin-bottom:16px}
+.modal-field{margin-bottom:12px}
+.modal-field label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin-bottom:4px}
+.modal-field input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--font);font-size:13px;padding:8px 10px;outline:none;transition:border-color .2s}
+.modal-field input:focus{border-color:var(--accent)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.mbtn{border:1px solid var(--border);border-radius:var(--r);font-family:var(--font);font-size:12px;padding:6px 14px;cursor:pointer;transition:all .15s}
+.mbtn.cancel{background:none;color:var(--text-dim)}.mbtn.cancel:hover{border-color:var(--text-dim);color:var(--text)}
+.mbtn.confirm{background:var(--danger);border-color:var(--danger);color:#fff}.mbtn.confirm:hover{background:#ff2233}
+.mbtn.confirm.kick-mode{background:var(--warn);border-color:var(--warn);color:#000}.mbtn.confirm.kick-mode:hover{background:#ffc840}
 
-  .header-user {
-    font-size: 11px;
-    color: var(--text-dim);
-    margin-left: 4px;
-  }
-  .header-user strong { color: var(--accent); }
+/* ── Toast ── */
+#toast{position:fixed;top:56px;right:16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 14px;font-size:12px;color:var(--text);pointer-events:none;opacity:0;transform:translateX(8px);transition:all .2s;z-index:400;max-width:260px}
+#toast.show{opacity:1;transform:none}
+#toast.error{border-color:var(--danger);color:var(--danger)}
+#toast.success{border-color:var(--accent);color:var(--accent)}
+#toast.warn{border-color:var(--warn);color:var(--warn)}
 
-  .spacer { flex: 1; }
-
-  .btn-icon {
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-dim);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    padding: 5px 10px;
-    cursor: pointer;
-    transition: border-color .2s, color .2s;
-    white-space: nowrap;
-  }
-  .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
-
-  .btn-danger:hover { border-color: var(--danger); color: var(--danger); }
-
-  /* ── Stats bar ── */
-  #stats-bar {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    height: 30px;
-    background: var(--bg3);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    overflow: hidden;
-  }
-  .stat {
-    display: flex; align-items: center; gap: 6px;
-    padding: 0 14px;
-    border-right: 1px solid var(--border);
-    font-size: 11px;
-    color: var(--text-dim);
-    height: 100%;
-    white-space: nowrap;
-  }
-  .stat .val { color: var(--text); font-weight: 600; }
-  .stat .lbl { color: var(--text-muted); }
-
-  /* ── Console ── */
-  #console-wrap {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-  }
-
-  #console-output {
-    height: 100%;
-    overflow-y: scroll;
-    padding: 12px 16px 6px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-  }
-  #console-output::-webkit-scrollbar { width: 6px; }
-  #console-output::-webkit-scrollbar-track { background: transparent; }
-  #console-output::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-  .log-line {
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-break: break-all;
-    font-size: 12.5px;
-    color: var(--text);
-    animation: fadein .15s ease;
-  }
-  @keyframes fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
-
-  .log-line.INFO    { color: var(--text); }
-  .log-line.WARN    { color: var(--warn); }
-  .log-line.WARNING { color: var(--warn); }
-  .log-line.SEVERE  { color: var(--danger); }
-  .log-line.ERROR   { color: var(--danger); }
-  .log-line.FINE,
-  .log-line.FINER,
-  .log-line.FINEST  { color: var(--text-dim); }
-
-  .log-ts { color: var(--text-muted); }
-  .log-level-INFO    { color: var(--text-dim); }
-  .log-level-WARN,
-  .log-level-WARNING { color: var(--warn); }
-  .log-level-SEVERE,
-  .log-level-ERROR   { color: var(--danger); }
-
-  /* auto-scroll indicator */
-  #scroll-btn {
-    position: absolute;
-    bottom: 14px; right: 20px;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    color: var(--text-dim);
-    font-size: 11px;
-    padding: 4px 12px;
-    cursor: pointer;
-    display: none;
-    gap: 5px;
-    align-items: center;
-    transition: all .2s;
-    z-index: 10;
-  }
-  #scroll-btn.visible { display: flex; }
-  #scroll-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  /* ── Command Input ── */
-  #input-bar {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    padding: 10px 14px;
-    background: var(--bg2);
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-
-  .input-prompt {
-    color: var(--accent);
-    font-size: 14px;
-    font-weight: 600;
-    padding: 0 10px 0 2px;
-    user-select: none;
-    flex-shrink: 0;
-  }
-
-  #cmd-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size: 13px;
-    caret-color: var(--accent);
-  }
-  #cmd-input::placeholder { color: var(--text-muted); }
-  #cmd-input:disabled { opacity: .4; }
-
-  .btn-send {
-    background: var(--accent-dim);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius);
-    color: var(--accent);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    font-weight: 600;
-    padding: 6px 14px;
-    cursor: pointer;
-    transition: background .2s;
-    margin-left: 8px;
-    flex-shrink: 0;
-  }
-  .btn-send:hover   { background: var(--accent); color: #000; }
-  .btn-send:disabled { opacity: .3; cursor: not-allowed; }
-
-  /* ── Filter bar ── */
-  #filter-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 14px;
-    background: var(--bg3);
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-
-  .filter-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; }
-
-  #filter-input {
-    flex: 1;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    padding: 4px 10px;
-    outline: none;
-    transition: border-color .2s;
-  }
-  #filter-input:focus { border-color: var(--accent); }
-  #filter-input::placeholder { color: var(--text-muted); }
-
-  .filter-btns { display: flex; gap: 4px; }
-  .filter-tog {
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    font-size: 10px;
-    font-family: var(--font-mono);
-    font-weight: 600;
-    padding: 3px 8px;
-    cursor: pointer;
-    transition: all .15s;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-  }
-  .filter-tog.INFO    { color: var(--text-dim); }
-  .filter-tog.WARN    { color: var(--warn); }
-  .filter-tog.SEVERE  { color: var(--danger); }
-  .filter-tog.active  { border-color: currentColor; background: color-mix(in srgb, currentColor 12%, transparent); }
-
-  /* ── Toast ── */
-  #toast {
-    position: fixed;
-    top: 60px; right: 20px;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 10px 16px;
-    font-size: 12px;
-    color: var(--text);
-    pointer-events: none;
-    opacity: 0;
-    transform: translateX(10px);
-    transition: all .25s;
-    z-index: 200;
-    max-width: 280px;
-  }
-  #toast.show { opacity: 1; transform: none; }
-  #toast.error { border-color: var(--danger); color: var(--danger); }
-  #toast.success { border-color: var(--accent); color: var(--accent); }
-  #toast.warn   { border-color: var(--warn); color: var(--warn); }
-
-  /* ── Scrollbar glow on focus ── */
-  #cmd-input:focus ~ * {}
-
-  /* ── Mobile adjustments ── */
-  @media (max-width: 600px) {
-    .stat .lbl { display: none; }
-    .header-user { display: none; }
-    #filter-bar { display: none; }
-  }
+/* ── Notification bell ── */
+#notif-btn{position:relative}
+.notif-badge{position:absolute;top:-3px;right:-3px;width:8px;height:8px;background:var(--danger);border-radius:50%;display:none}
+.notif-badge.show{display:block}
 </style>
 </head>
 <body>
 
-<!-- ── Login ─────────────────────────────────────────── -->
+<!-- Login -->
 <div id="login-screen">
-  <div class="login-card">
-    <div class="login-logo">⬡ Better-WebConsole<span>Minecraft Server Manager</span></div>
-    <h2>Sign in to continue</h2>
-    <div class="field">
-      <label>Username</label>
-      <input type="text" id="login-user" autocomplete="username" placeholder="admin" spellcheck="false">
-    </div>
-    <div class="field">
-      <label>Password</label>
-      <input type="password" id="login-pass" autocomplete="current-password" placeholder="••••••••">
-    </div>
+  <div class="lcard">
+    <div class="llogo">⬡ Better-WebConsole <small>Minecraft Server v2</small></div>
+    <h2>Sign in</h2>
+    <div class="field"><label>Username</label><input id="lu" type="text" autocomplete="username" placeholder="admin" spellcheck="false"></div>
+    <div class="field"><label>Password</label><input id="lp" type="password" autocomplete="current-password" placeholder="••••••••"></div>
     <button class="btn-login" id="btn-login">Sign In</button>
     <div id="login-error"></div>
   </div>
 </div>
 
-<!-- ── App ───────────────────────────────────────────── -->
+<!-- App -->
 <div id="app">
   <header>
-    <div class="header-logo">⬡ Better-WebConsole</div>
-    <div class="header-sep"></div>
-    <div class="status-badge">
-      <div class="status-dot connecting" id="status-dot"></div>
-      <span id="status-text">Connecting…</span>
-    </div>
-    <div class="header-sep"></div>
-    <div class="header-user">Logged in as <strong id="user-label"></strong></div>
+    <div class="hlogo">⬡ BWC</div>
+    <div class="hsep"></div>
+    <div class="status-dot connecting" id="sdot"></div>
+    <span id="status-text">Connecting…</span>
+    <div class="hsep"></div>
+    <div class="huser">as <strong id="ulabel"></strong></div>
     <div class="spacer"></div>
-    <button class="btn-icon" id="btn-clear" title="Clear console">Clear</button>
-    <button class="btn-icon" id="btn-copy" title="Copy all logs">Copy</button>
-    <button class="btn-icon btn-danger" id="btn-logout" title="Logout">Logout</button>
+    <button class="hbtn" id="notif-btn" title="Notifications">🔔 <span class="notif-badge" id="nbadge"></span></button>
+    <button class="hbtn" id="btn-export">Export Log</button>
+    <button class="hbtn" id="btn-clear">Clear</button>
+    <button class="hbtn danger" id="btn-logout">Logout</button>
   </header>
 
-  <div id="stats-bar">
-    <div class="stat"><span class="lbl">TPS</span><span class="val" id="stat-tps">—</span></div>
-    <div class="stat"><span class="lbl">Players</span><span class="val" id="stat-players">—</span></div>
-    <div class="stat"><span class="lbl">Lines</span><span class="val" id="stat-lines">0</span></div>
-    <div class="stat"><span class="lbl">Session</span><span class="val" id="stat-session">—</span></div>
+  <!-- Tabs -->
+  <div id="tabs">
+    <div class="tab active" data-panel="console">Console</div>
+    <div class="tab" data-panel="dash">Dashboard</div>
+    <div class="tab" data-panel="players">Players <span id="player-count-tab">(0)</span></div>
+    <div class="tab" data-panel="aliases">Aliases</div>
   </div>
 
-  <div id="console-wrap">
-    <div id="console-output"></div>
-    <button id="scroll-btn">↓ Scroll to bottom</button>
-  </div>
-
-  <div id="filter-bar">
-    <span class="filter-lbl">Filter</span>
-    <input type="text" id="filter-input" placeholder="Type to filter logs…" spellcheck="false">
-    <div class="filter-btns">
-      <button class="filter-tog INFO active"   data-level="INFO">Info</button>
-      <button class="filter-tog WARN active"   data-level="WARN">Warn</button>
-      <button class="filter-tog SEVERE active" data-level="SEVERE">Error</button>
+  <!-- Console Panel -->
+  <div class="panel active" id="panel-console">
+    <div id="stats-bar">
+      <div class="stat" id="stat-tps"><span>TPS</span><span class="v" id="sv-tps">—</span></div>
+      <div class="stat"><span>RAM</span><span class="v" id="sv-ram">—</span></div>
+      <div class="stat"><span>Players</span><span class="v" id="sv-players">—</span></div>
+      <div class="stat"><span>Lines</span><span class="v" id="sv-lines">0</span></div>
+      <div class="stat"><span>Session</span><span class="v" id="sv-session">—</span></div>
+    </div>
+    <div id="console-wrap">
+      <div id="console-output"></div>
+      <button id="scroll-anchor">↓ Bottom</button>
+    </div>
+    <div id="search-bar">
+      <span class="slbl">Search</span>
+      <input id="search-input" type="text" placeholder="Search logs… (Ctrl+F)" spellcheck="false">
+      <span id="search-count"></span>
+      <button class="ftog WARN active" data-lv="WARN">Warn</button>
+      <button class="ftog SEVERE active" data-lv="SEVERE">Error</button>
+      <button class="ftog DEBUG" data-lv="DEBUG">Debug</button>
+    </div>
+    <div id="input-bar">
+      <span class="prompt">❯</span>
+      <input id="cmd-input" type="text" placeholder="Type command or !alias… (Tab to complete)" autocomplete="off" spellcheck="false" disabled>
+      <div id="autocomplete"></div>
+      <button class="btn-send" id="btn-send" disabled>Run</button>
     </div>
   </div>
 
-  <div id="input-bar">
-    <span class="input-prompt">❯</span>
-    <input type="text" id="cmd-input" placeholder="Enter command…" autocomplete="off" spellcheck="false" disabled>
-    <button class="btn-send" id="btn-send" disabled>Run</button>
+  <!-- Dashboard Panel -->
+  <div class="panel" id="panel-dash">
+    <div class="dash-grid" id="kpi-grid">
+      <div class="kpi green"><div class="kpi-label">TPS (1 min)</div><div class="kpi-value" id="kpi-tps">—</div><div class="kpi-sub" id="kpi-tps-sub">Server tick rate</div></div>
+      <div class="kpi blue"><div class="kpi-label">RAM Used</div><div class="kpi-value" id="kpi-ram">—</div><div class="kpi-sub" id="kpi-ram-sub">Heap memory</div></div>
+      <div class="kpi purple"><div class="kpi-label">Players Online</div><div class="kpi-value" id="kpi-players">—</div><div class="kpi-sub" id="kpi-players-sub">of — max</div></div>
+      <div class="kpi warn"><div class="kpi-label">Worlds</div><div class="kpi-value" id="kpi-worlds">—</div><div class="kpi-sub" id="kpi-worlds-sub">Loaded chunks: —</div></div>
+    </div>
+    <div class="dash-charts">
+      <div class="chart-card"><h3>TPS History (5 min)</h3><div class="chart-wrap"><canvas id="chart-tps"></canvas></div></div>
+      <div class="chart-card"><h3>RAM History (5 min)</h3><div class="chart-wrap"><canvas id="chart-ram"></canvas></div></div>
+      <div class="chart-card"><h3>Players History (5 min)</h3><div class="chart-wrap"><canvas id="chart-players"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- Players Panel -->
+  <div class="panel" id="panel-players">
+    <div id="player-list-wrap">
+      <p class="no-players" id="no-players-msg">No players online.</p>
+      <table class="player-table" id="player-table" style="display:none">
+        <thead><tr><th>Name</th><th>World</th><th>Ping</th><th>Actions</th></tr></thead>
+        <tbody id="player-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Aliases Panel -->
+  <div class="panel" id="panel-aliases">
+    <p class="alias-hint">Click an alias to insert it into the console, or press Run to execute immediately.</p>
+    <div class="alias-list" id="alias-list"></div>
+  </div>
+</div>
+
+<!-- Action Modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3 id="modal-title">Action</h3>
+    <div class="modal-field"><label>Player</label><input id="modal-player" type="text" readonly></div>
+    <div class="modal-field"><label>Reason</label><input id="modal-reason" type="text" placeholder="Enter reason…"></div>
+    <div class="modal-actions">
+      <button class="mbtn cancel" id="modal-cancel">Cancel</button>
+      <button class="mbtn confirm" id="modal-confirm">Confirm</button>
+    </div>
   </div>
 </div>
 
 <div id="toast"></div>
 
 <script>
-(function() {
-  'use strict';
+(function(){
+'use strict';
 
-  // ── State ─────────────────────────────────────────────────────────────────
-  let ws = null;
-  let autoScroll = true;
-  let lineCount  = 0;
-  let cmdHistory = JSON.parse(localStorage.getItem('wc_history') || '[]');
-  let histIdx    = -1;
-  let currentDraft = '';
-  let sessionUser  = '';
-  let sessionStart = Date.now();
-  let filterText   = '';
-  let activeFilters = new Set(['INFO','WARN','WARNING','SEVERE','ERROR','FINE','FINER','FINEST']);
-  const MAX_LINES  = 2000;
+// ── State ─────────────────────────────────────────────────────────────────
+let ws=null, autoScroll=true, lineCount=0;
+let cmdHistory=JSON.parse(localStorage.getItem('bwc_hist')||'[]'), histIdx=-1, draft='';
+let sessionUser='', sessionStart=Date.now();
+let filterText='', activeFilters=new Set(['INFO','WARN','WARNING','SEVERE','ERROR']);
+let searchQuery='', searchMatches=[], searchIdx=0;
+let notifEnabled=false, notifCount=0;
+let modalAction=null;
+let acItems=[], acIdx=-1, acReqId=0;
+let tpsChart=null, ramChart=null, playersChart=null;
+const MAX_LINES=3000;
 
-  // ── DOM ───────────────────────────────────────────────────────────────────
-  const $  = id => document.getElementById(id);
-  const loginScreen = $('login-screen');
-  const app         = $('app');
-  const loginUser   = $('login-user');
-  const loginPass   = $('login-pass');
-  const loginError  = $('login-error');
-  const btnLogin    = $('btn-login');
-  const statusDot   = $('status-dot');
-  const statusText  = $('status-text');
-  const output      = $('console-output');
-  const cmdInput    = $('cmd-input');
-  const btnSend     = $('btn-send');
-  const btnClear    = $('btn-clear');
-  const btnCopy     = $('btn-copy');
-  const btnLogout   = $('btn-logout');
-  const scrollBtn   = $('scroll-btn');
-  const filterInput = $('filter-input');
-  const userLabel   = $('user-label');
-  const statLines   = $('stat-lines');
-  const statSession = $('stat-session');
-  const statTps     = $('stat-tps');
-  const statPlayers = $('stat-players');
-  const toast       = $('toast');
+// ── DOM ───────────────────────────────────────────────────────────────────
+const $=id=>document.getElementById(id);
+const loginScreen=$('login-screen'), app=$('app');
+const lu=$('lu'), lp=$('lp'), loginErr=$('login-error'), btnLogin=$('btn-login');
+const sdot=$('sdot'), statusText=$('status-text');
+const output=$('console-output'), cmdInput=$('cmd-input'), btnSend=$('btn-send');
+const scrollAnchor=$('scroll-anchor'), searchInput=$('search-input'), searchCount=$('search-count');
+const acDropdown=$('autocomplete');
+const ulabel=$('ulabel'), svLines=$('sv-lines'), svSession=$('sv-session');
+const svTps=$('sv-tps'), svRam=$('sv-ram'), svPlayers=$('sv-players'), statTpsEl=$('stat-tps');
+const modal=$('modal'), modalTitle=$('modal-title'), modalPlayer=$('modal-player');
+const modalReason=$('modal-reason'), modalCancel=$('modal-cancel'), modalConfirm=$('modal-confirm');
+const toast=$('toast'), nbadge=$('nbadge');
 
-  // ── Toast ─────────────────────────────────────────────────────────────────
-  let toastTimer;
-  function showToast(msg, type = '') {
-    clearTimeout(toastTimer);
-    toast.textContent = msg;
-    toast.className = 'show ' + type;
-    toastTimer = setTimeout(() => toast.className = '', 3000);
-  }
+// ── Toast ─────────────────────────────────────────────────────────────────
+let toastT;
+function showToast(msg,type=''){
+  clearTimeout(toastT);
+  toast.textContent=msg; toast.className='show '+(type||'');
+  toastT=setTimeout(()=>toast.className='',3000);
+}
 
-  // ── Session timer ─────────────────────────────────────────────────────────
-  setInterval(() => {
-    if (!sessionUser) return;
-    const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
-    const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
-    const s = (elapsed % 60).toString().padStart(2, '0');
-    statSession.textContent = m + ':' + s;
-  }, 1000);
-
-  // ── Level detection ───────────────────────────────────────────────────────
-  function detectLevel(line) {
-    const m = line.match(/\[[\d:]+\s+(\w+)\]/);
-    return m ? m[1].toUpperCase() : 'INFO';
-  }
-
-  // ── Log line rendering ────────────────────────────────────────────────────
-  function appendLine(rawLine) {
-    lineCount++;
-    statLines.textContent = lineCount;
-
-    const level = detectLevel(rawLine);
-    const div = document.createElement('div');
-    div.className = 'log-line ' + level;
-    div.dataset.level = level;
-    div.dataset.raw   = rawLine;
-
-    // Colorise timestamp/level tokens
-    div.innerHTML = rawLine
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/(\[\d{2}:\d{2}:\d{2})/g, '<span class="log-ts">$1</span>')
-      .replace(/\b(INFO|FINE|FINER|FINEST)\b/,
-               '<span class="log-level-INFO">$1</span>')
-      .replace(/\b(WARN|WARNING)\b/g,
-               '<span class="log-level-WARN">$1</span>')
-      .replace(/\b(SEVERE|ERROR)\b/g,
-               '<span class="log-level-SEVERE">$1</span>');
-
-    applyLineVisibility(div);
-    output.appendChild(div);
-    trimOldLines();
-
-    if (autoScroll) output.scrollTop = output.scrollHeight;
-  }
-
-  function applyLineVisibility(div) {
-    const level = div.dataset.level;
-    const raw   = div.dataset.raw || div.textContent;
-    const levelOk = activeFilters.has(level);
-    const textOk  = !filterText || raw.toLowerCase().includes(filterText);
-    div.style.display = (levelOk && textOk) ? '' : 'none';
-  }
-
-  function reapplyFilter() {
-    output.querySelectorAll('.log-line').forEach(applyLineVisibility);
-  }
-
-  function trimOldLines() {
-    while (output.children.length > MAX_LINES) {
-      output.removeChild(output.firstChild);
-    }
-  }
-
-  // ── Scroll tracking ───────────────────────────────────────────────────────
-  output.addEventListener('scroll', () => {
-    const atBottom = output.scrollHeight - output.scrollTop - output.clientHeight < 40;
-    autoScroll = atBottom;
-    scrollBtn.classList.toggle('visible', !atBottom);
+// ── Tab switching ─────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    $('panel-'+tab.dataset.panel).classList.add('active');
+    if(tab.dataset.panel==='aliases') loadAliases();
   });
-  scrollBtn.addEventListener('click', () => {
-    output.scrollTop = output.scrollHeight;
-    autoScroll = true;
-    scrollBtn.classList.remove('visible');
-  });
+});
 
-  // ── Status ────────────────────────────────────────────────────────────────
-  function setStatus(state) {
-    statusDot.className = 'status-dot ' + state;
-    const labels = { connected:'Connected', disconnected:'Disconnected', connecting:'Connecting…' };
-    statusText.textContent = labels[state] || state;
-    const ok = state === 'connected';
-    cmdInput.disabled  = !ok;
-    btnSend.disabled   = !ok;
+// ── Status ────────────────────────────────────────────────────────────────
+function setStatus(state){
+  sdot.className='status-dot '+state;
+  statusText.textContent={connected:'Connected',disconnected:'Disconnected',connecting:'Connecting…'}[state]||state;
+  const ok=state==='connected';
+  cmdInput.disabled=!ok; btnSend.disabled=!ok;
+}
+
+// ── Session timer ─────────────────────────────────────────────────────────
+setInterval(()=>{
+  if(!sessionUser) return;
+  const s=Math.floor((Date.now()-sessionStart)/1000);
+  svSession.textContent=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+},1000);
+
+// ── Log line rendering ────────────────────────────────────────────────────
+function levelOf(line){
+  const m=line.match(/\[[\d:]+\s+(\w+)\]/);
+  return m?m[1].toUpperCase():'INFO';
+}
+
+function appendLine(raw){
+  lineCount++;
+  svLines.textContent=lineCount;
+
+  // Notification for errors
+  const lv=levelOf(raw);
+  if((lv==='SEVERE'||lv==='ERROR')&&notifEnabled){
+    notifCount++;
+    nbadge.classList.add('show');
+    if(document.hidden) new Notification('BWC Error',{body:raw.substring(0,80),icon:''}).catch(()=>{});
+    playSound();
   }
 
-  // ── WebSocket ─────────────────────────────────────────────────────────────
-  function connectWs() {
-    setStatus('connecting');
-    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    ws = new WebSocket(proto + '//' + location.host + '/ws');
+  const div=document.createElement('div');
+  div.className='log-line '+lv;
+  div.dataset.raw=raw;
 
-    ws.onopen = () => {
-      setStatus('connected');
-      showToast('Console connected', 'success');
-    };
-
-    ws.onmessage = e => {
-      try {
-        const msg = JSON.parse(e.data);
-        if (msg.type === 'log') {
-          appendLine(msg.line);
-          parseStats(msg.line);
-        } else if (msg.type === 'control') {
-          handleControl(msg.event);
-        }
-      } catch(_) {}
-    };
-
-    ws.onclose = () => {
-      setStatus('disconnected');
-      showToast('Connection lost — reconnecting…', 'error');
-      setTimeout(connectWs, 3000);
-    };
-
-    ws.onerror = () => {
-      ws.close();
-    };
+  let html=raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // Colorise timestamp
+  html=html.replace(/(\[\d{2}:\d{2}:\d{2})/,'<span class="log-ts">$1</span>');
+  // Highlight search
+  if(searchQuery){
+    const re=new RegExp(escRe(searchQuery),'gi');
+    html=html.replace(re,m=>'<span class="hl">'+m+'</span>');
   }
+  div.innerHTML=html;
 
-  function handleControl(event) {
-    if (event === 'SESSION_EXPIRED') {
-      showToast('Session expired. Please log in again.', 'error');
-      setTimeout(doLogout, 1500);
-    } else if (event === 'RATE_LIMITED') {
-      showToast('Command rate limit reached. Slow down.', 'warn');
-    } else if (event === 'BLOCKED') {
-      showToast('Command blocked by server policy.', 'warn');
+  applyVis(div);
+  output.appendChild(div);
+  while(output.children.length>MAX_LINES) output.removeChild(output.firstChild);
+  if(autoScroll) output.scrollTop=output.scrollHeight;
+}
+
+function applyVis(div){
+  const lv=div.dataset.raw?levelOf(div.dataset.raw):'INFO';
+  const ok=activeFilters.has(lv)||!['WARN','WARNING','SEVERE','ERROR','DEBUG','FINE','FINER','FINEST'].includes(lv);
+  const textOk=!filterText||div.dataset.raw.toLowerCase().includes(filterText);
+  div.style.display=(ok&&textOk)?'':'none';
+}
+
+function reapply(){output.querySelectorAll('.log-line').forEach(applyVis);}
+
+// ── Search ────────────────────────────────────────────────────────────────
+function doSearch(){
+  searchQuery=searchInput.value.trim();
+  // Re-render all lines with new highlights
+  output.querySelectorAll('.log-line').forEach(div=>{
+    let html=div.dataset.raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    html=html.replace(/(\[\d{2}:\d{2}:\d{2})/,'<span class="log-ts">$1</span>');
+    if(searchQuery){
+      const re=new RegExp(escRe(searchQuery),'gi');
+      html=html.replace(re,m=>'<span class="hl">'+m+'</span>');
     }
+    div.innerHTML=html;
+  });
+  // Count matches
+  searchMatches=Array.from(output.querySelectorAll('.hl'));
+  searchCount.textContent=searchMatches.length?`${searchMatches.length} match${searchMatches.length>1?'es':''}` :'';
+  if(searchMatches.length>0){
+    searchIdx=0;
+    searchMatches[0].scrollIntoView({block:'center'});
+  }
+}
+
+searchInput.addEventListener('input',doSearch);
+searchInput.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&searchMatches.length>0){
+    searchIdx=(searchIdx+1)%searchMatches.length;
+    searchMatches[searchIdx].scrollIntoView({block:'center'});
+  }
+});
+
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='f'){
+    e.preventDefault();
+    searchInput.focus(); searchInput.select();
+  }
+});
+
+// ── Filter toggles ────────────────────────────────────────────────────────
+document.querySelectorAll('.ftog').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const lv=btn.dataset.lv;
+    const rel={WARN:['WARN','WARNING'],SEVERE:['SEVERE','ERROR'],DEBUG:['DEBUG','FINE','FINER','FINEST']}[lv]||[lv];
+    const on=btn.classList.toggle('active');
+    rel.forEach(l=>on?activeFilters.add(l):activeFilters.delete(l));
+    reapply();
+  });
+});
+
+// ── Scroll tracking ───────────────────────────────────────────────────────
+output.addEventListener('scroll',()=>{
+  autoScroll=output.scrollHeight-output.scrollTop-output.clientHeight<50;
+  scrollAnchor.classList.toggle('show',!autoScroll);
+});
+scrollAnchor.addEventListener('click',()=>{output.scrollTop=output.scrollHeight;autoScroll=true;scrollAnchor.classList.remove('show');});
+
+// ── WebSocket ─────────────────────────────────────────────────────────────
+function connectWs(){
+  setStatus('connecting');
+  const proto=location.protocol==='https:'?'wss:':'ws:';
+  ws=new WebSocket(proto+'//'+location.host+'/ws');
+  ws.onopen=()=>{setStatus('connected');showToast('Console connected','success');};
+  ws.onmessage=e=>{
+    try{
+      const msg=JSON.parse(e.data);
+      if(msg.type==='log')     appendLine(msg.line);
+      else if(msg.type==='stats')   handleStats(msg);
+      else if(msg.type==='completions') handleCompletions(msg);
+      else if(msg.type==='control') handleControl(msg.event);
+    }catch(_){}
+  };
+  ws.onclose=()=>{setStatus('disconnected');showToast('Connection lost – reconnecting…','error');setTimeout(connectWs,3000);};
+  ws.onerror=()=>ws.close();
+}
+
+function handleControl(event){
+  if(event==='SESSION_EXPIRED'){showToast('Session expired','error');setTimeout(doLogout,1500);}
+  else if(event==='RATE_LIMITED') showToast('Rate limited – slow down','warn');
+  else if(event==='BLOCKED')      showToast('Command blocked','warn');
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────
+function handleStats(data){
+  const tps=data.tps||0;
+  const ramUsed=data.ramUsed||0, ramMax=data.ramMax||0;
+  const players=data.players||0, maxPlayers=data.maxPlayers||0;
+
+  // Stats bar
+  svTps.textContent=tps.toFixed(1);
+  statTpsEl.className='stat '+(tps>=18?'tps-good':tps>=15?'tps-ok':'tps-bad');
+  svRam.textContent=ramUsed+'MB';
+  svPlayers.textContent=players;
+
+  // KPIs
+  $('kpi-tps').textContent=tps.toFixed(1);
+  $('kpi-tps-sub').textContent=tps>=18?'Excellent':tps>=15?'Degraded':'Critical';
+  $('kpi-tps').parentElement.className='kpi '+(tps>=18?'green':tps>=15?'warn':'red');
+
+  $('kpi-ram').textContent=ramUsed+'MB';
+  $('kpi-ram-sub').textContent='of '+ramMax+'MB';
+
+  $('kpi-players').textContent=players;
+  $('kpi-players-sub').textContent='of '+maxPlayers+' max';
+  $('player-count-tab').textContent='('+players+')';
+
+  if(data.worlds){
+    $('kpi-worlds').textContent=data.worlds.length;
+    const chunks=data.worlds.reduce((a,w)=>a+(w.chunks||0),0);
+    $('kpi-worlds-sub').textContent='Chunks loaded: '+chunks;
   }
 
-  // ── Stats extraction from log lines ───────────────────────────────────────
-  function parseStats(line) {
-    // TPS from Paper's built-in tps output or plugins
-    const tpsMatch = line.match(/TPS[:\s]+([0-9.]+)/i);
-    if (tpsMatch) statTps.textContent = parseFloat(tpsMatch[1]).toFixed(1);
+  // Charts
+  if(data.tpsHistory)     updateChart(tpsChart,    data.tpsHistory);
+  if(data.ramHistory)     updateChart(ramChart,     data.ramHistory);
+  if(data.playersHistory) updateChart(playersChart, data.playersHistory);
 
-    // Player count
-    const playMatch = line.match(/There are (\d+) of a max/i);
-    if (playMatch) statPlayers.textContent = playMatch[1];
-  }
+  // Players list
+  if(data.playerList!==undefined) renderPlayers(data.playerList);
+}
 
-  // ── Send command ──────────────────────────────────────────────────────────
-  function sendCommand(cmd) {
-    cmd = cmd.trim();
-    if (!cmd || !ws || ws.readyState !== WebSocket.OPEN) return;
+function updateChart(chart,data){
+  if(!chart) return;
+  chart.data.labels=data.map((_,i)=>i);
+  chart.data.datasets[0].data=data;
+  chart.update('none');
+}
 
-    ws.send(JSON.stringify({ type: 'command', command: cmd }));
-
-    // History
-    if (cmdHistory[cmdHistory.length - 1] !== cmd) {
-      cmdHistory.push(cmd);
-      if (cmdHistory.length > 100) cmdHistory.shift();
-      localStorage.setItem('wc_history', JSON.stringify(cmdHistory));
-    }
-    histIdx = -1;
-    currentDraft = '';
-    cmdInput.value = '';
-  }
-
-  btnSend.addEventListener('click', () => sendCommand(cmdInput.value));
-
-  cmdInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      sendCommand(cmdInput.value);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (histIdx === -1) currentDraft = cmdInput.value;
-      histIdx = Math.min(histIdx + 1, cmdHistory.length - 1);
-      cmdInput.value = cmdHistory[cmdHistory.length - 1 - histIdx] || '';
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      histIdx = Math.max(histIdx - 1, -1);
-      cmdInput.value = histIdx === -1 ? currentDraft : (cmdHistory[cmdHistory.length - 1 - histIdx] || '');
+// ── Charts ────────────────────────────────────────────────────────────────
+function makeChart(id,label,color,max){
+  const ctx=document.getElementById(id).getContext('2d');
+  return new Chart(ctx,{
+    type:'line',
+    data:{labels:[],datasets:[{label,data:[],borderColor:color,backgroundColor:color+'22',borderWidth:1.5,pointRadius:0,fill:true,tension:.35}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>label+': '+c.parsed.y}}},
+      scales:{
+        x:{display:false},
+        y:{min:0,max:max||undefined,grid:{color:'#1e2d3d'},ticks:{color:'#5a7590',font:{size:10},maxTicksLimit:4}}
+      }
     }
   });
+}
 
-  // ── Filter ────────────────────────────────────────────────────────────────
-  filterInput.addEventListener('input', () => {
-    filterText = filterInput.value.toLowerCase();
-    reapplyFilter();
+// Charts are init'd after app shows
+function initCharts(){
+  tpsChart     = makeChart('chart-tps',    'TPS',     '#00e5a0', 20);
+  ramChart     = makeChart('chart-ram',    'RAM MB',  '#40aaff');
+  playersChart = makeChart('chart-players','Players', '#a855f7');
+}
+
+// ── Player list ───────────────────────────────────────────────────────────
+function renderPlayers(list){
+  const tbody=$('player-tbody'), tbl=$('player-table'), msg=$('no-players-msg');
+  if(!list||list.length===0){tbl.style.display='none';msg.style.display='';return;}
+  tbl.style.display='';msg.style.display='none';
+  tbody.innerHTML='';
+  list.forEach(p=>{
+    const ping=p.ping||0;
+    const pClass=ping<80?'ping-good':ping<200?'ping-ok':'ping-bad';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${esc(p.name)}${p.op?'<span class="player-op">OP</span>':''}</td>
+      <td>${esc(p.world||'—')}</td>
+      <td class="${pClass}">${ping}ms</td>
+      <td>
+        <button class="action-btn kick" onclick="openModal('kick','${esc(p.name)}')">Kick</button>
+        <button class="action-btn ban"  onclick="openModal('ban','${esc(p.name)}')">Ban</button>
+      </td>`;
+    tbody.appendChild(tr);
   });
+}
 
-  document.querySelectorAll('.filter-tog').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const lvl = btn.dataset.level;
-      const related = lvl === 'INFO' ? ['INFO','FINE','FINER','FINEST']
-                    : lvl === 'WARN' ? ['WARN','WARNING']
-                    : ['SEVERE','ERROR'];
-      const isActive = btn.classList.toggle('active');
-      related.forEach(l => isActive ? activeFilters.add(l) : activeFilters.delete(l));
-      reapplyFilter();
+// ── Modal ─────────────────────────────────────────────────────────────────
+window.openModal=function(action,player){
+  modalAction=action;
+  modalPlayer.value=player;
+  modalReason.value='';
+  modalTitle.textContent=action==='kick'?'Kick Player':'Ban Player';
+  modalConfirm.className='mbtn confirm '+(action==='kick'?'kick-mode':'');
+  modalConfirm.textContent=action==='kick'?'Kick':'Ban';
+  modal.classList.add('show');
+  modalReason.focus();
+};
+modalCancel.addEventListener('click',()=>modal.classList.remove('show'));
+modal.addEventListener('click',e=>{if(e.target===modal) modal.classList.remove('show');});
+modalConfirm.addEventListener('click',()=>{
+  if(!ws||ws.readyState!==WebSocket.OPEN) return;
+  ws.send(JSON.stringify({type:modalAction,player:modalPlayer.value,reason:modalReason.value||'No reason given'}));
+  modal.classList.remove('show');
+  showToast(`${modalAction==='kick'?'Kicked':'Banned'} ${modalPlayer.value}`,'warn');
+});
+modalReason.addEventListener('keydown',e=>{if(e.key==='Enter') modalConfirm.click();});
+
+// ── Aliases ───────────────────────────────────────────────────────────────
+let aliasesLoaded=false;
+async function loadAliases(){
+  if(aliasesLoaded) return;
+  try{
+    const r=await fetch('/api/aliases');
+    const d=await r.json();
+    const list=$('alias-list');
+    list.innerHTML='';
+    (d.aliases||[]).forEach(a=>{
+      const card=document.createElement('div');
+      card.className='alias-card';
+      card.innerHTML=`<span class="alias-name">!${esc(a.name)}</span><span class="alias-sep">→</span><span class="alias-cmd" title="${esc(a.command)}">${esc(a.command)}</span><button class="alias-run">Run</button>`;
+      card.querySelector('.alias-run').addEventListener('click',e=>{
+        e.stopPropagation();
+        sendCommand('!'+a.name);
+        showTab('console');
+      });
+      card.addEventListener('click',()=>{
+        cmdInput.value='!'+a.name;
+        showTab('console');
+        cmdInput.focus();
+      });
+      list.appendChild(card);
     });
-  });
+    if(!d.aliases||d.aliases.length===0) list.innerHTML='<p style="color:var(--text-muted);padding:20px 0">No aliases configured. Add them to config.yml.</p>';
+    aliasesLoaded=true;
+  }catch(_){}
+}
 
-  // ── Toolbar ───────────────────────────────────────────────────────────────
-  btnClear.addEventListener('click', () => {
-    output.innerHTML = '';
-    lineCount = 0;
-    statLines.textContent = '0';
-    showToast('Console cleared');
-  });
+function showTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelector(`.tab[data-panel="${name}"]`).classList.add('active');
+  $('panel-'+name).classList.add('active');
+}
 
-  btnCopy.addEventListener('click', () => {
-    const text = Array.from(output.querySelectorAll('.log-line'))
-      .map(el => el.dataset.raw || el.textContent).join('\n');
-    navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard', 'success'))
-      .catch(() => showToast('Copy failed', 'error'));
-  });
+// ── Tab completion ────────────────────────────────────────────────────────
+let acTimer=null;
+cmdInput.addEventListener('input',()=>{
+  clearTimeout(acTimer);
+  const v=cmdInput.value;
+  if(!v||v.startsWith('!')){hideAc();return;}
+  acTimer=setTimeout(()=>requestComplete(v),200);
+});
 
-  btnLogout.addEventListener('click', doLogout);
-
-  async function doLogout() {
-    try { await fetch('/api/logout', { method: 'POST' }); } catch(_) {}
-    if (ws) ws.close();
-    app.classList.remove('show');
-    loginScreen.classList.remove('hide');
-    loginPass.value = '';
-    loginError.textContent = '';
-    sessionUser = '';
-    cmdInput.disabled = true;
-    btnSend.disabled = true;
-    output.innerHTML = '';
-    lineCount = 0;
-    statLines.textContent = '0';
-    statSession.textContent = '—';
-    userLabel.textContent = '';
+cmdInput.addEventListener('keydown',e=>{
+  if(e.key==='Tab'){
+    e.preventDefault();
+    if(acItems.length>0){
+      acIdx=(acIdx+1)%acItems.length;
+      renderAc();
+    } else requestComplete(cmdInput.value);
+    return;
   }
+  if(e.key==='ArrowDown'&&acItems.length){e.preventDefault();acIdx=(acIdx+1)%acItems.length;renderAc();return;}
+  if(e.key==='ArrowUp'){
+    if(acItems.length){e.preventDefault();acIdx=(acIdx-1+acItems.length)%acItems.length;renderAc();return;}
+    // History navigation
+    if(histIdx===-1) draft=cmdInput.value;
+    histIdx=Math.min(histIdx+1,cmdHistory.length-1);
+    cmdInput.value=cmdHistory[cmdHistory.length-1-histIdx]||'';
+    return;
+  }
+  if(e.key==='Escape'){hideAc();return;}
+  if(e.key==='Enter'){
+    if(acItems.length&&acIdx>=0){applyAc(acItems[acIdx]);return;}
+    sendCommand(cmdInput.value);
+    return;
+  }
+  // History down
+  if(e.key==='ArrowDown'&&!acItems.length){
+    histIdx=Math.max(histIdx-1,-1);
+    cmdInput.value=histIdx===-1?draft:(cmdHistory[cmdHistory.length-1-histIdx]||'');
+  }
+});
 
-  // ── Login ─────────────────────────────────────────────────────────────────
-  async function doLogin() {
-    const username = loginUser.value.trim();
-    const password = loginPass.value;
-    loginError.textContent = '';
+function requestComplete(partial){
+  if(!ws||ws.readyState!==WebSocket.OPEN) return;
+  acReqId++;
+  ws.send(JSON.stringify({type:'complete',partial,reqId:acReqId}));
+}
 
-    if (!username || !password) {
-      loginError.textContent = 'Please enter username and password.';
+function handleCompletions(msg){
+  if(msg.reqId!==acReqId) return; // stale
+  acItems=msg.suggestions||[];
+  acIdx=-1;
+  renderAc();
+}
+
+function renderAc(){
+  if(!acItems.length){hideAc();return;}
+  acDropdown.innerHTML='<div class="ac-hint">Tab / ↑↓ to navigate, Enter to select</div>'
+    +acItems.map((s,i)=>`<div class="ac-item${i===acIdx?' sel':''}" data-i="${i}">${esc(s)}</div>`).join('');
+  acDropdown.querySelectorAll('.ac-item').forEach(el=>{
+    el.addEventListener('mousedown',e=>{e.preventDefault();applyAc(acItems[+el.dataset.i]);});
+  });
+  acDropdown.style.display='block';
+}
+
+function applyAc(val){
+  // Replace the last word of the command with the completion
+  const parts=cmdInput.value.split(' ');
+  parts[parts.length-1]=val;
+  cmdInput.value=parts.join(' ')+' ';
+  hideAc();
+  cmdInput.focus();
+}
+
+function hideAc(){acItems=[];acIdx=-1;acDropdown.style.display='none';}
+
+document.addEventListener('click',e=>{if(!cmdInput.contains(e.target)&&!acDropdown.contains(e.target)) hideAc();});
+
+// ── Send command ──────────────────────────────────────────────────────────
+function sendCommand(cmd){
+  cmd=cmd.trim();
+  if(!cmd||!ws||ws.readyState!==WebSocket.OPEN) return;
+  ws.send(JSON.stringify({type:'command',command:cmd}));
+  hideAc();
+  if(cmdHistory[cmdHistory.length-1]!==cmd){
+    cmdHistory.push(cmd);
+    if(cmdHistory.length>100) cmdHistory.shift();
+    localStorage.setItem('bwc_hist',JSON.stringify(cmdHistory));
+  }
+  histIdx=-1; draft='';
+  cmdInput.value='';
+}
+
+btnSend.addEventListener('click',()=>sendCommand(cmdInput.value));
+
+// ── Notifications ─────────────────────────────────────────────────────────
+$('notif-btn').addEventListener('click',()=>{
+  if(!notifEnabled){
+    Notification.requestPermission().then(p=>{
+      notifEnabled=p==='granted';
+      showToast(notifEnabled?'Notifications enabled':'Notifications denied',notifEnabled?'success':'error');
+    });
+  } else {
+    notifEnabled=false;
+    showToast('Notifications disabled');
+  }
+  notifCount=0; nbadge.classList.remove('show');
+});
+
+function playSound(){
+  try{
+    const ctx=new AudioContext();
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value=440; o.type='sine';
+    g.gain.setValueAtTime(.15,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.3);
+    o.start(); o.stop(ctx.currentTime+.3);
+  }catch(_){}
+}
+
+// ── Export log ────────────────────────────────────────────────────────────
+$('btn-export').addEventListener('click',()=>{
+  window.open('/api/logs/export','_blank');
+});
+
+// ── Clear ─────────────────────────────────────────────────────────────────
+$('btn-clear').addEventListener('click',()=>{
+  output.innerHTML=''; lineCount=0; svLines.textContent='0';
+  showToast('Console cleared');
+});
+
+// ── Logout ────────────────────────────────────────────────────────────────
+$('btn-logout').addEventListener('click',doLogout);
+async function doLogout(){
+  try{await fetch('/api/logout',{method:'POST'});}catch(_){}
+  if(ws) ws.close();
+  app.classList.remove('show');
+  loginScreen.classList.remove('hide');
+  lp.value=''; loginErr.textContent='';
+  sessionUser=''; cmdInput.disabled=true; btnSend.disabled=true;
+  output.innerHTML=''; lineCount=0;
+  aliasesLoaded=false;
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────
+async function doLogin(){
+  const username=lu.value.trim(), password=lp.value;
+  loginErr.textContent='';
+  if(!username||!password){loginErr.textContent='Enter username and password.';return;}
+  btnLogin.disabled=true; btnLogin.textContent='Signing in…';
+  try{
+    const cr=await fetch('/api/csrf');
+    const {token:csrf}=await cr.json();
+    const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,csrf})});
+    const data=await res.json();
+    if(res.ok&&data.success){
+      sessionUser=data.username; sessionStart=Date.now();
+      ulabel.textContent=sessionUser;
+      loginScreen.classList.add('hide');
+      app.classList.add('show');
+      initCharts();
+      connectWs();
+    } else {
+      loginErr.textContent=data.error||'Invalid credentials.';
+      lp.value=''; lp.focus();
+    }
+  }catch(e){loginErr.textContent='Server unreachable.';}
+  finally{btnLogin.disabled=false;btnLogin.textContent='Sign In';}
+}
+
+btnLogin.addEventListener('click',doLogin);
+lp.addEventListener('keydown',e=>{if(e.key==='Enter') doLogin();});
+lu.addEventListener('keydown',e=>{if(e.key==='Enter') lp.focus();});
+
+// ── Utils ─────────────────────────────────────────────────────────────────
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escRe(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+(async()=>{
+  try{
+    const r=await fetch('/api/status');
+    const d=await r.json();
+    if(d.authenticated){
+      sessionUser=d.username; sessionStart=Date.now();
+      ulabel.textContent=sessionUser;
+      loginScreen.classList.add('hide');
+      app.classList.add('show');
+      initCharts();
+      connectWs();
       return;
     }
-
-    btnLogin.disabled = true;
-    btnLogin.textContent = 'Signing in…';
-
-    try {
-      // Get CSRF token first
-      const csrfRes = await fetch('/api/csrf');
-      if (!csrfRes.ok) throw new Error('Failed to get CSRF token');
-      const { token: csrf } = await csrfRes.json();
-
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, csrf })
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        sessionUser = data.username;
-        sessionStart = Date.now();
-        userLabel.textContent = sessionUser;
-        loginScreen.classList.add('hide');
-        app.classList.add('show');
-        connectWs();
-      } else {
-        loginError.textContent = data.error || 'Invalid credentials.';
-        loginPass.value = '';
-        loginPass.focus();
-      }
-    } catch (err) {
-      loginError.textContent = 'Server unreachable. Try again.';
-    } finally {
-      btnLogin.disabled = false;
-      btnLogin.textContent = 'Sign In';
-    }
-  }
-
-  btnLogin.addEventListener('click', doLogin);
-  loginPass.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-  loginUser.addEventListener('keydown', e => { if (e.key === 'Enter') loginPass.focus(); });
-
-  // ── Init ──────────────────────────────────────────────────────────────────
-  // Check if already have a valid session
-  (async () => {
-    try {
-      const res = await fetch('/api/status');
-      const data = await res.json();
-      if (data.authenticated) {
-        sessionUser = data.username;
-        sessionStart = Date.now();
-        userLabel.textContent = sessionUser;
-        loginScreen.classList.add('hide');
-        app.classList.add('show');
-        connectWs();
-        return;
-      }
-    } catch(_) {}
-    loginUser.focus();
-  })();
+  }catch(_){}
+  lu.focus();
+})();
 
 })();
 </script>

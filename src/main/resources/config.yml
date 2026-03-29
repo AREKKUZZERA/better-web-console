@@ -1,42 +1,31 @@
-# Better-WebConsole Configuration
-# ========================
+# Better-WebConsole Configuration v2.0
+# =====================================
 
 web:
-  # Port for the web interface (default: 4242)
   port: 4242
-
-  # Bind address. Use 0.0.0.0 for all interfaces, or specify an IP.
   bind-address: "0.0.0.0"
-
-  # Base path for the web interface (e.g., "/" or "/console")
-  base-path: "/"
-
-  # Maximum number of log lines kept in buffer for new connections
-  log-buffer-size: 500
+  log-buffer-size: 1000
 
 security:
-  # Session token expiry in minutes (default: 60)
   session-timeout: 60
-
-  # Maximum failed login attempts before IP lockout
   max-login-attempts: 5
-
-  # IP lockout duration in minutes after max failed attempts
   lockout-duration: 15
-
-  # Rate limit: max commands per minute per session
   command-rate-limit: 30
-
-  # Allowed IP whitelist (empty = allow all)
-  # Example: ["127.0.0.1", "192.168.1.0/24"]
   ip-whitelist: []
-
-  # Secret key for CSRF token signing (auto-generated if empty)
   csrf-secret: ""
 
 logging:
-  # Log all commands executed via web console to server log
   log-commands: true
-
-  # Log login attempts
   log-auth: true
+  audit-log: true
+
+# Command aliases — shortcuts executed via the web console
+# Use !alias-name to trigger. Supports && to chain commands.
+aliases:
+  restart: "say Server restarting in 10 seconds && title @a times 20 100 20 && title @a subtitle {\"text\":\"Restarting soon!\",\"color\":\"red\"} && title @a {\"text\":\"⚠ WARNING\",\"color\":\"gold\"}"
+  tps: "tps"
+  list: "list"
+  save: "save-all"
+  day: "time set day"
+  night: "time set night"
+  clear-weather: "weather clear"
