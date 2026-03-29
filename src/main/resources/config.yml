@@ -2,8 +2,8 @@
 # ========================
 
 web:
-  # Port for the web interface (default: 8080)
-  port: 8080
+  # Port for the web interface (default: 4242)
+  port: 4242
 
   # Bind address. Use 0.0.0.0 for all interfaces, or specify an IP.
   bind-address: "0.0.0.0"

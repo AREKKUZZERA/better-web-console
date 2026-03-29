@@ -40,7 +40,7 @@ Copy `target/Better-WebConsole-1.0.0.jar` to your server's `plugins/` directory.
    ```
    /better-webconsole adduser admin YourStrongPassword123
    ```
-3. Open `http://your-server-ip:8080` in your browser
+3. Open `http://your-server-ip:4242` in your browser
 4. Log in with the credentials you set
 
 ---
@@ -63,7 +63,7 @@ Permission: `webconsole.admin` (op by default)
 
 ```yaml
 web:
-  port: 8080
+  port: 4242
   bind-address: "0.0.0.0"   # "127.0.0.1" for local-only
   log-buffer-size: 500        # Lines sent to new connections
 
@@ -91,7 +91,7 @@ security:
 
 - **Use a strong password** — minimum 16 characters recommended.
 
-- **Firewall** port 8080 so only your reverse proxy can reach it.
+- **Firewall** port 4242 so only your reverse proxy can reach it.
 
 ---
 

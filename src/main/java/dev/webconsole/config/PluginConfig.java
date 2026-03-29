@@ -23,7 +23,7 @@ public class PluginConfig {
     private final boolean logAuth;
 
     public PluginConfig(FileConfiguration config) {
-        this.port = config.getInt("web.port", 8080);
+        this.port = config.getInt("web.port", 4242);
         this.bindAddress = config.getString("web.bind-address", "0.0.0.0");
         String bp = config.getString("web.base-path", "/");
         this.basePath = bp == null || bp.isBlank() ? "/" : bp;
