@@ -309,6 +309,8 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 
 // ── State ─────────────────────────────────────────────────────────────────
 let ws=null, autoScroll=true, lineCount=0;
+let reconnectTimer=null, reconnectDelay=1000, reconnectAttempt=0, manualDisconnect=false;
+let chartsInitialized=false;
 let cmdHistory=JSON.parse(localStorage.getItem('bwc_hist')||'[]'), histIdx=-1, draft='';
 let sessionUser='', sessionStart=Date.now();
 let filterText='', activeFilters=new Set(['INFO','WARN','WARNING','SEVERE','ERROR']);
@@ -471,11 +473,18 @@ output.addEventListener('scroll',()=>{
 scrollAnchor.addEventListener('click',()=>{output.scrollTop=output.scrollHeight;autoScroll=true;scrollAnchor.classList.remove('show');});
 
 // ── WebSocket ─────────────────────────────────────────────────────────────
-function connectWs(){
+function connectWs(force=false){
+  if(manualDisconnect) return;
+  if(ws && (ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING) && !force) return;
+  clearTimeout(reconnectTimer);
   setStatus('connecting');
   const proto=location.protocol==='https:'?'wss:':'ws:';
   ws=new WebSocket(proto+'//'+location.host+'/ws');
-  ws.onopen=()=>{setStatus('connected');showToast('Console connected','success');};
+  ws.onopen=()=>{
+    reconnectAttempt=0; reconnectDelay=1000;
+    setStatus('connected');
+    showToast('Console connected','success');
+  };
   ws.onmessage=e=>{
     try{
       const msg=JSON.parse(e.data);
@@ -485,8 +494,33 @@ function connectWs(){
       else if(msg.type==='control') handleControl(msg.event);
     }catch(_){}
   };
-  ws.onclose=()=>{setStatus('disconnected');showToast('Connection lost – reconnecting…','error');setTimeout(connectWs,3000);};
+  ws.onclose=async()=>{
+    if(manualDisconnect) return;
+    setStatus('disconnected');
+    const authed=await isStillAuthenticated();
+    if(!authed){handleControl('SESSION_EXPIRED');return;}
+    showToast('Connection lost – reconnecting…','error');
+    scheduleReconnect();
+  };
   ws.onerror=()=>ws.close();
+}
+
+function scheduleReconnect(){
+  clearTimeout(reconnectTimer);
+  const delay=Math.min(reconnectDelay,10000)+Math.floor(Math.random()*250);
+  reconnectTimer=setTimeout(()=>connectWs(true),delay);
+  reconnectAttempt++;
+  reconnectDelay=Math.min(Math.round(reconnectDelay*1.7),10000);
+}
+
+async function isStillAuthenticated(){
+  try{
+    const r=await fetch('/api/status',{cache:'no-store'});
+    const d=await r.json();
+    return !!d.authenticated;
+  }catch(_){
+    return true;
+  }
 }
 
 function handleControl(event){
@@ -560,9 +594,11 @@ function makeChart(id,label,color,max){
 
 // Charts are init'd after app shows
 function initCharts(){
+  if(chartsInitialized) return;
   tpsChart     = makeChart('chart-tps',    'TPS',     '#00e5a0', 20);
   ramChart     = makeChart('chart-ram',    'RAM MB',  '#40aaff');
   playersChart = makeChart('chart-players','Players', '#a855f7');
+  chartsInitialized=true;
 }
 
 // ── Player list ───────────────────────────────────────────────────────────
@@ -778,6 +814,8 @@ $('btn-clear').addEventListener('click',()=>{
 // ── Logout ────────────────────────────────────────────────────────────────
 $('btn-logout').addEventListener('click',doLogout);
 async function doLogout(){
+  manualDisconnect=true;
+  clearTimeout(reconnectTimer);
   try{await fetch('/api/logout',{method:'POST'});}catch(_){}
   if(ws) ws.close();
   app.classList.remove('show');
@@ -805,7 +843,8 @@ async function doLogin(){
       loginScreen.classList.add('hide');
       app.classList.add('show');
       initCharts();
-      connectWs();
+      manualDisconnect=false;
+      connectWs(true);
     } else {
       loginErr.textContent=data.error||'Invalid credentials.';
       lp.value=''; lp.focus();
@@ -833,13 +872,17 @@ function escRe(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
       loginScreen.classList.add('hide');
       app.classList.add('show');
       initCharts();
-      connectWs();
+      manualDisconnect=false;
+      connectWs(true);
       return;
     }
   }catch(_){}
   lu.focus();
 })();
 
+window.addEventListener('online',()=>{ if(!manualDisconnect) connectWs(true); });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && !manualDisconnect && (!ws || ws.readyState!==WebSocket.OPEN)) connectWs(true); });
+setInterval(()=>{ if(!manualDisconnect && (!ws || ws.readyState===WebSocket.CLOSED)) connectWs(); },5000);
 })();
 </script>
 </body>

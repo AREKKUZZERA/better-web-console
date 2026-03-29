@@ -34,13 +34,21 @@ public class BetterWebConsolePlugin extends JavaPlugin {
         this.auditLog     = new AuditLog(getDataFolder());
 
         this.consoleLogHandler = new ConsoleLogHandler(pluginConfig.getLogBufferSize());
-        Logger.getLogger("").addHandler(consoleLogHandler);
+
+        // System.out / System.err
+        consoleLogHandler.hookSystemStreams();
+
+        // Paper / Log4j2
+        consoleLogHandler.hookLog4j();
 
         this.serverStats = new ServerStats(this);
         this.serverStats.start();
 
         var cmd = getCommand("betterwebconsole");
-        if (cmd != null) { cmd.setExecutor(this); cmd.setTabCompleter(this); }
+        if (cmd != null) {
+            cmd.setExecutor(this);
+            cmd.setTabCompleter(this);
+        }
 
         this.webServer = new WebServer(this);
         try {
@@ -57,8 +65,12 @@ public class BetterWebConsolePlugin extends JavaPlugin {
         if (serverStats != null) serverStats.stop();
         if (webServer   != null) try { webServer.stop(); } catch (Exception ignored) {}
         if (auditLog    != null) auditLog.shutdown();
-        Logger.getLogger("").removeHandler(consoleLogHandler);
-        if (consoleLogHandler != null) consoleLogHandler.close();
+
+        if (consoleLogHandler != null) {
+            Logger.getLogger("").removeHandler(consoleLogHandler);
+            consoleLogHandler.close();
+        }
+
         getLogger().info("Better-WebConsole disabled.");
     }
 
@@ -67,16 +79,23 @@ public class BetterWebConsolePlugin extends JavaPlugin {
                              @NotNull String label, @NotNull String[] args) {
         if (!command.getName().equalsIgnoreCase("betterwebconsole")) return false;
         if (!sender.hasPermission("betterwebconsole.admin")) {
-            sender.sendMessage("§cNo permission."); return true;
+            sender.sendMessage("§cNo permission.");
+            return true;
         }
-        if (args.length == 0) { sendHelp(sender); return true; }
+        if (args.length == 0) {
+            sendHelp(sender);
+            return true;
+        }
         return switch (args[0].toLowerCase()) {
             case "reload"     -> handleReload(sender);
             case "status"     -> handleStatus(sender);
             case "adduser"    -> handleAddUser(sender, args);
             case "removeuser" -> handleRemoveUser(sender, args);
             case "listusers"  -> handleListUsers(sender);
-            default           -> { sendHelp(sender); yield true; }
+            default           -> {
+                sendHelp(sender);
+                yield true;
+            }
         };
     }
 
@@ -84,15 +103,20 @@ public class BetterWebConsolePlugin extends JavaPlugin {
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                       @NotNull String alias, @NotNull String[] args) {
         if (!command.getName().equalsIgnoreCase("betterwebconsole")) return Collections.emptyList();
-        if (!sender.hasPermission("betterwebconsole.admin"))         return Collections.emptyList();
+        if (!sender.hasPermission("betterwebconsole.admin")) return Collections.emptyList();
+
         if (args.length == 1) {
-            return List.of("reload","status","adduser","removeuser","listusers").stream()
-                    .filter(s -> s.startsWith(args[0].toLowerCase())).toList();
+            return List.of("reload", "status", "adduser", "removeuser", "listusers").stream()
+                    .filter(s -> s.startsWith(args[0].toLowerCase()))
+                    .toList();
         }
+
         if (args.length == 2 && args[0].equalsIgnoreCase("removeuser")) {
             return userManager.listUsers().stream()
-                    .filter(u -> u.toLowerCase().startsWith(args[1].toLowerCase())).toList();
+                    .filter(u -> u.toLowerCase().startsWith(args[1].toLowerCase()))
+                    .toList();
         }
+
         return Collections.emptyList();
     }
 
@@ -113,34 +137,65 @@ public class BetterWebConsolePlugin extends JavaPlugin {
     }
 
     private boolean handleAddUser(CommandSender s, String[] args) {
-        if (args.length < 3) { s.sendMessage("§cUsage: /bwc adduser <user> <pass>"); return true; }
-        String u = args[1], p = args[2];
-        if (u.length() < 3 || u.length() > 32 || !u.matches("[a-zA-Z0-9_-]+")) {
-            s.sendMessage("§cInvalid username (3-32 chars, a-z 0-9 _ -)"); return true;
+        if (args.length < 3) {
+            s.sendMessage("§cUsage: /bwc adduser <user> <pass>");
+            return true;
         }
-        if (p.length() < 8) { s.sendMessage("§cPassword must be ≥8 chars."); return true; }
-        if (userManager.userExists(u)) { s.sendMessage("§cUser already exists."); return true; }
+
+        String u = args[1];
+        String p = args[2];
+
+        if (u.length() < 3 || u.length() > 32 || !u.matches("[a-zA-Z0-9_-]+")) {
+            s.sendMessage("§cInvalid username (3-32 chars, a-z 0-9 _ -)");
+            return true;
+        }
+
+        if (p.length() < 8) {
+            s.sendMessage("§cPassword must be ≥8 chars.");
+            return true;
+        }
+
+        if (userManager.userExists(u)) {
+            s.sendMessage("§cUser already exists.");
+            return true;
+        }
+
         userManager.addUser(u, p);
         s.sendMessage("§aUser '" + u + "' added.");
-        if (pluginConfig.isLogAuth()) getLogger().info("[AUTH] User '" + u + "' created by " + s.getName());
+
+        if (pluginConfig.isLogAuth()) {
+            getLogger().info("[AUTH] User '" + u + "' created by " + s.getName());
+        }
+
         return true;
     }
 
     private boolean handleRemoveUser(CommandSender s, String[] args) {
-        if (args.length < 2) { s.sendMessage("§cUsage: /bwc removeuser <user>"); return true; }
+        if (args.length < 2) {
+            s.sendMessage("§cUsage: /bwc removeuser <user>");
+            return true;
+        }
+
         if (userManager.removeUser(args[1])) {
             s.sendMessage("§aUser '" + args[1] + "' removed.");
-            if (pluginConfig.isLogAuth()) getLogger().info("[AUTH] User '" + args[1] + "' removed by " + s.getName());
+            if (pluginConfig.isLogAuth()) {
+                getLogger().info("[AUTH] User '" + args[1] + "' removed by " + s.getName());
+            }
         } else {
             s.sendMessage("§cUser not found.");
         }
+
         return true;
     }
 
     private boolean handleListUsers(CommandSender s) {
         List<String> users = userManager.listUsers();
-        if (users.isEmpty()) s.sendMessage("§eNo users. Add with /bwc adduser.");
-        else { s.sendMessage("§6Users:"); users.forEach(u -> s.sendMessage("§7 - §f" + u)); }
+        if (users.isEmpty()) {
+            s.sendMessage("§eNo users. Add with /bwc adduser.");
+        } else {
+            s.sendMessage("§6Users:");
+            users.forEach(u -> s.sendMessage("§7 - §f" + u));
+        }
         return true;
     }
 
@@ -150,9 +205,9 @@ public class BetterWebConsolePlugin extends JavaPlugin {
     }
 
     public static BetterWebConsolePlugin getInstance() { return instance; }
-    public PluginConfig getPluginConfig()          { return pluginConfig; }
-    public UserManager getUserManager()            { return userManager; }
-    public ConsoleLogHandler getConsoleLogHandler(){ return consoleLogHandler; }
-    public AuditLog getAuditLog()                  { return auditLog; }
-    public ServerStats getServerStats()            { return serverStats; }
+    public PluginConfig getPluginConfig() { return pluginConfig; }
+    public UserManager getUserManager() { return userManager; }
+    public ConsoleLogHandler getConsoleLogHandler() { return consoleLogHandler; }
+    public AuditLog getAuditLog() { return auditLog; }
+    public ServerStats getServerStats() { return serverStats; }
 }

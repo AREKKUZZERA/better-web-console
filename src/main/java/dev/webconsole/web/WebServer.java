@@ -39,7 +39,7 @@ public class WebServer {
     }
 
     public void start() throws Exception {
-        sessionManager = new SessionManager(config.getSessionTimeout());
+        sessionManager = new SessionManager(config.getSessionTimeout(), plugin.getDataFolder().toPath().resolve("sessions.tsv"));
         rateLimiter = new RateLimiter(
                 config.getMaxLoginAttempts(),
                 config.getLockoutDuration(),
@@ -49,6 +49,7 @@ public class WebServer {
 
         wsHandler = new WebSocketHandler(plugin, sessionManager, rateLimiter, ipWhitelistChecker);
         plugin.getConsoleLogHandler().setWebSocketHandler(wsHandler);
+        plugin.getServerStats().setWebSocketHandler(wsHandler);
 
         server = new Server(new InetSocketAddress(config.getBindAddress(), config.getPort()));
 
@@ -104,6 +105,7 @@ public class WebServer {
         if (server != null) server.stop();
         if (sessionManager != null) sessionManager.shutdown();
         plugin.getConsoleLogHandler().setWebSocketHandler(null);
+        plugin.getServerStats().setWebSocketHandler(null);
     }
 
     public boolean isRunning() {
