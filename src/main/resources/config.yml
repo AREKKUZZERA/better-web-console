@@ -22,7 +22,7 @@ logging:
 # Command aliases — shortcuts executed via the web console
 # Use !alias-name to trigger. Supports && to chain commands.
 aliases:
-  restart: "say Server restarting in 10 seconds && title @a times 20 100 20 && title @a subtitle {\"text\":\"Restarting soon!\",\"color\":\"red\"} && title @a {\"text\":\"⚠ WARNING\",\"color\":\"gold\"}"
+  restart: "say Server restarting in 10 seconds && title @a times 20 100 20 && title @a title {\"text\":\"⚠ WARNING\",\"color\":\"gold\"} && title @a subtitle {\"text\":\"Restarting soon!\",\"color\":\"red\"}"
   tps: "tps"
   list: "list"
   save: "save-all"
