@@ -9,10 +9,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
-public class BetterWebConsolePlugin extends JavaPlugin {
+    public class BetterWebConsolePlugin extends JavaPlugin {
 
     private static BetterWebConsolePlugin instance;
     private PluginConfig pluginConfig;
@@ -28,6 +30,11 @@ public class BetterWebConsolePlugin extends JavaPlugin {
         this.pluginConfig = new PluginConfig(getConfig());
 
         this.userManager = new UserManager(getDataFolder());
+
+        if (getCommand("betterwebconsole") != null) {
+            getCommand("betterwebconsole").setExecutor(this);
+            getCommand("betterwebconsole").setTabCompleter(this);
+        }
 
         this.consoleLogHandler = new ConsoleLogHandler();
         installLogHandler();
@@ -71,9 +78,9 @@ public class BetterWebConsolePlugin extends JavaPlugin {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
-        if (!command.getName().equalsIgnoreCase("better-webconsole")) return false;
+        if (!command.getName().equalsIgnoreCase("betterwebconsole")) return false;
 
-        if (!sender.hasPermission("webconsole.admin")) {
+        if (!sender.hasPermission("betterwebconsole.admin")) {
             sender.sendMessage("§cYou don't have permission to use this command.");
             return true;
         }
@@ -96,6 +103,43 @@ public class BetterWebConsolePlugin extends JavaPlugin {
         };
     }
 
+    @Override
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
+                                      @NotNull String alias, @NotNull String[] args) {
+        if (!command.getName().equalsIgnoreCase("betterwebconsole")) {
+            return Collections.emptyList();
+        }
+
+        if (!sender.hasPermission("betterwebconsole.admin")) {
+            return Collections.emptyList();
+        }
+
+        if (args.length == 1) {
+            List<String> subs = List.of("reload", "status", "adduser", "removeuser", "listusers");
+            String input = args[0].toLowerCase();
+            List<String> result = new ArrayList<>();
+            for (String sub : subs) {
+                if (sub.startsWith(input)) {
+                    result.add(sub);
+                }
+            }
+            return result;
+        }
+
+        if (args.length == 2 && args[0].equalsIgnoreCase("removeuser")) {
+            String input = args[1].toLowerCase();
+            List<String> result = new ArrayList<>();
+            for (String user : userManager.listUsers()) {
+                if (user.toLowerCase().startsWith(input)) {
+                    result.add(user);
+                }
+            }
+            return result;
+        }
+
+        return Collections.emptyList();
+    }
+
     private boolean handleReload(CommandSender sender) {
         reloadConfig();
         this.pluginConfig = new PluginConfig(getConfig());
@@ -116,7 +160,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
 
     private boolean handleAddUser(CommandSender sender, String[] args) {
         if (args.length < 3) {
-            sender.sendMessage("§cUsage: /better-webconsole adduser <username> <password>");
+            sender.sendMessage("§cUsage: /betterwebconsole adduser <username> <password>");
             return true;
         }
         String username = args[1];
@@ -150,7 +194,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
 
     private boolean handleRemoveUser(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage("§cUsage: /better-webconsole removeuser <username>");
+            sender.sendMessage("§cUsage: /betterwebconsole removeuser <username>");
             return true;
         }
         String username = args[1];
@@ -168,7 +212,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
     private boolean handleListUsers(CommandSender sender) {
         List<String> users = userManager.listUsers();
         if (users.isEmpty()) {
-            sender.sendMessage("§eNo users registered. Add one with /better-webconsole adduser.");
+            sender.sendMessage("§eNo users registered. Add one with /betterwebconsole adduser.");
         } else {
             sender.sendMessage("§6Registered Better-WebConsole users:");
             users.forEach(u -> sender.sendMessage("§7 - §f" + u));
@@ -178,11 +222,11 @@ public class BetterWebConsolePlugin extends JavaPlugin {
 
     private void sendHelp(CommandSender sender) {
         sender.sendMessage("§6=== Better-WebConsole Commands ===");
-        sender.sendMessage("§e/better-webconsole status §7- Show server status");
-        sender.sendMessage("§e/better-webconsole reload §7- Reload configuration");
-        sender.sendMessage("§e/better-webconsole adduser <user> <pass> §7- Add a web user");
-        sender.sendMessage("§e/better-webconsole removeuser <user> §7- Remove a web user");
-        sender.sendMessage("§e/better-webconsole listusers §7- List all web users");
+        sender.sendMessage("§e/betterwebconsole status §7- Show server status");
+        sender.sendMessage("§e/betterwebconsole reload §7- Reload configuration");
+        sender.sendMessage("§e/betterwebconsole adduser <user> <pass> §7- Add a web user");
+        sender.sendMessage("§e/betterwebconsole removeuser <user> §7- Remove a web user");
+        sender.sendMessage("§e/betterwebconsole listusers §7- List all web users");
     }
 
     public static BetterWebConsolePlugin getInstance() { return instance; }

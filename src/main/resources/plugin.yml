@@ -10,7 +10,7 @@ commands:
   betterwebconsole:
     description: Better-WebConsole management commands
     usage: /betterwebconsole <reload|status|adduser|removeuser|listusers>
-    permission: webconsole.admin
+    permission: betterwebconsole.admin
     aliases: [bwc]
 
 permissions:

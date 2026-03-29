@@ -5,7 +5,10 @@ import com.google.gson.JsonParser;
 import dev.webconsole.BetterWebConsolePlugin;
 import dev.webconsole.auth.RateLimiter;
 import dev.webconsole.auth.SessionManager;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.*;
@@ -110,9 +113,28 @@ public class ConsoleWebSocket {
         // Dispatch on main thread
         Bukkit.getScheduler().runTask(plugin, () -> {
             try {
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), loggedCommand);
+                String commandToRun = loggedCommand;
+                if (commandToRun.startsWith("/")) {
+                    commandToRun = commandToRun.substring(1);
+                }
+
+                PlainTextComponentSerializer plain = PlainTextComponentSerializer.plainText();
+
+                CommandSender feedbackSender = Bukkit.createCommandSender(component -> {
+                    String text = plain.serialize(component);
+                    if (!text.isBlank()) {
+                        sendLine("[CMD] " + text.replaceAll("§[0-9A-FK-ORa-fk-or]", ""));
+                    }
+                });
+
+                boolean ok = Bukkit.dispatchCommand(feedbackSender, commandToRun);
+
+                if (!ok) {
+                    sendLine("[CMD] Unknown command.");
+                }
             } catch (Exception e) {
                 plugin.getLogger().warning("[Better-WebConsole] Command error: " + e.getMessage());
+                sendLine("[CMD] Error: " + e.getMessage());
             }
         });
     }
