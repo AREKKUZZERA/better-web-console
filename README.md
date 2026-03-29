@@ -1,4 +1,4 @@
-# Better-WebConsole — Minecraft Server Web Console Plugin
+![Logo](logo.png)
 
 Secure, browser-based server console for Paper 1.21+
 
