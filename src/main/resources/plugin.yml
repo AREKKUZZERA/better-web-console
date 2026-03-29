@@ -3,17 +3,17 @@ version: '1.0.0'
 main: dev.webconsole.BetterWebConsolePlugin
 api-version: '1.21'
 description: Secure web-based Minecraft server console
-authors: [ Better-WebConsole ]
+authors: [ AREKKUZZERA ]
 load: STARTUP
 
 commands:
-  webconsole:
+  betterwebconsole:
     description: Better-WebConsole management commands
-    usage: /webconsole <reload|status|adduser|removeuser|listusers>
+    usage: /betterwebconsole <reload|status|adduser|removeuser|listusers>
     permission: webconsole.admin
-    aliases: [wc]
+    aliases: [bwc]
 
 permissions:
-  webconsole.admin:
+  betterwebconsole.admin:
     description: Full access to Better-WebConsole management
     default: op
