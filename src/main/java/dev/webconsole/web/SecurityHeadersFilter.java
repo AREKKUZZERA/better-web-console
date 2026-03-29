@@ -21,8 +21,9 @@ public class SecurityHeadersFilter implements Filter {
             res.setHeader("Referrer-Policy", "no-referrer");
             res.setHeader("Content-Security-Policy",
                     "default-src 'self'; " +
-                    "script-src 'self' 'unsafe-inline'; " +
-                    "style-src 'self' 'unsafe-inline'; " +
+                    "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+                    "font-src 'self' https://fonts.gstatic.com data:; " +
                     "img-src 'self' data:; " +
                     "connect-src 'self' ws: wss:; " +
                     "frame-ancestors 'none';");
