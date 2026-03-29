@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Better-WebConsole — Minecraft Server</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@600;700;800&display=swap');
+
+  :root {
+    --bg:        #0a0c0f;
+    --bg2:       #0f1215;
+    --bg3:       #151a1f;
+    --border:    #1e2830;
+    --accent:    #00e5a0;
+    --accent2:   #00b87a;
+    --accent-dim:#004d35;
+    --danger:    #ff4d6a;
+    --warn:      #ffb930;
+    --info:      #4db8ff;
+    --text:      #c8d8e4;
+    --text-dim:  #5a7080;
+    --text-muted:#2e3f4d;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --font-ui:   'Syne', sans-serif;
+    --radius:    6px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    overflow: hidden;
+  }
+
+  /* ── Login Screen ── */
+  #login-screen {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+    z-index: 100;
+    transition: opacity .3s, transform .3s;
+  }
+  #login-screen.hide {
+    opacity: 0; transform: translateY(-12px); pointer-events: none;
+  }
+
+  .login-card {
+    width: 380px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 40px 36px;
+    position: relative;
+    overflow: hidden;
+  }
+  .login-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .login-logo {
+    font-family: var(--font-ui);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  .login-logo span { color: var(--text-dim); font-weight: 600; font-size: 13px; display: block; margin-top: 2px; font-family: var(--font-mono); }
+
+  .login-card h2 {
+    font-family: var(--font-ui);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 24px 0 20px;
+  }
+
+  .field {
+    margin-bottom: 14px;
+  }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--text-muted); }
+
+  .btn-login {
+    width: 100%;
+    margin-top: 6px;
+    padding: 11px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: .03em;
+    transition: background .2s, transform .1s;
+  }
+  .btn-login:hover  { background: #00ffb4; }
+  .btn-login:active { transform: scale(.98); }
+  .btn-login:disabled { background: var(--accent-dim); color: var(--text-dim); cursor: not-allowed; }
+
+  #login-error {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--danger);
+    min-height: 16px;
+    text-align: center;
+  }
+
+  /* ── App Layout ── */
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    opacity: 0;
+    transition: opacity .3s;
+  }
+  #app.show { opacity: 1; }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 18px;
+    height: 48px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  .header-logo {
+    font-family: var(--font-ui);
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -.3px;
+  }
+
+  .header-sep { width: 1px; height: 20px; background: var(--border); }
+
+  .status-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: background .3s;
+    flex-shrink: 0;
+  }
+  .status-dot.connected    { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .status-dot.disconnected { background: var(--danger); }
+  .status-dot.connecting   { background: var(--warn); animation: pulse .8s infinite; }
+
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+
+  .header-user {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+  .header-user strong { color: var(--accent); }
+
+  .spacer { flex: 1; }
+
+  .btn-icon {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: border-color .2s, color .2s;
+    white-space: nowrap;
+  }
+  .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-danger:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* ── Stats bar ── */
+  #stats-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    height: 30px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .stat {
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 14px;
+    border-right: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-dim);
+    height: 100%;
+    white-space: nowrap;
+  }
+  .stat .val { color: var(--text); font-weight: 600; }
+  .stat .lbl { color: var(--text-muted); }
+
+  /* ── Console ── */
+  #console-wrap {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #console-output {
+    height: 100%;
+    overflow-y: scroll;
+    padding: 12px 16px 6px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  #console-output::-webkit-scrollbar { width: 6px; }
+  #console-output::-webkit-scrollbar-track { background: transparent; }
+  #console-output::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .log-line {
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-size: 12.5px;
+    color: var(--text);
+    animation: fadein .15s ease;
+  }
+  @keyframes fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+  .log-line.INFO    { color: var(--text); }
+  .log-line.WARN    { color: var(--warn); }
+  .log-line.WARNING { color: var(--warn); }
+  .log-line.SEVERE  { color: var(--danger); }
+  .log-line.ERROR   { color: var(--danger); }
+  .log-line.FINE,
+  .log-line.FINER,
+  .log-line.FINEST  { color: var(--text-dim); }
+
+  .log-ts { color: var(--text-muted); }
+  .log-level-INFO    { color: var(--text-dim); }
+  .log-level-WARN,
+  .log-level-WARNING { color: var(--warn); }
+  .log-level-SEVERE,
+  .log-level-ERROR   { color: var(--danger); }
+
+  /* auto-scroll indicator */
+  #scroll-btn {
+    position: absolute;
+    bottom: 14px; right: 20px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text-dim);
+    font-size: 11px;
+    padding: 4px 12px;
+    cursor: pointer;
+    display: none;
+    gap: 5px;
+    align-items: center;
+    transition: all .2s;
+    z-index: 10;
+  }
+  #scroll-btn.visible { display: flex; }
+  #scroll-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Command Input ── */
+  #input-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 10px 14px;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .input-prompt {
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 0 10px 0 2px;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  #cmd-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    caret-color: var(--accent);
+  }
+  #cmd-input::placeholder { color: var(--text-muted); }
+  #cmd-input:disabled { opacity: .4; }
+
+  .btn-send {
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background .2s;
+    margin-left: 8px;
+    flex-shrink: 0;
+  }
+  .btn-send:hover   { background: var(--accent); color: #000; }
+  .btn-send:disabled { opacity: .3; cursor: not-allowed; }
+
+  /* ── Filter bar ── */
+  #filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    background: var(--bg3);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .filter-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; }
+
+  #filter-input {
+    flex: 1;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 4px 10px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  #filter-input:focus { border-color: var(--accent); }
+  #filter-input::placeholder { color: var(--text-muted); }
+
+  .filter-btns { display: flex; gap: 4px; }
+  .filter-tog {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: all .15s;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .filter-tog.INFO    { color: var(--text-dim); }
+  .filter-tog.WARN    { color: var(--warn); }
+  .filter-tog.SEVERE  { color: var(--danger); }
+  .filter-tog.active  { border-color: currentColor; background: color-mix(in srgb, currentColor 12%, transparent); }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    top: 60px; right: 20px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    font-size: 12px;
+    color: var(--text);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all .25s;
+    z-index: 200;
+    max-width: 280px;
+  }
+  #toast.show { opacity: 1; transform: none; }
+  #toast.error { border-color: var(--danger); color: var(--danger); }
+  #toast.success { border-color: var(--accent); color: var(--accent); }
+  #toast.warn   { border-color: var(--warn); color: var(--warn); }
+
+  /* ── Scrollbar glow on focus ── */
+  #cmd-input:focus ~ * {}
+
+  /* ── Mobile adjustments ── */
+  @media (max-width: 600px) {
+    .stat .lbl { display: none; }
+    .header-user { display: none; }
+    #filter-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Login ─────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">⬡ Better-WebConsole<span>Minecraft Server Manager</span></div>
+    <h2>Sign in to continue</h2>
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="login-user" autocomplete="username" placeholder="admin" spellcheck="false">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="login-pass" autocomplete="current-password" placeholder="••••••••">
+    </div>
+    <button class="btn-login" id="btn-login">Sign In</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- ── App ───────────────────────────────────────────── -->
+<div id="app">
+  <header>
+    <div class="header-logo">⬡ Better-WebConsole</div>
+    <div class="header-sep"></div>
+    <div class="status-badge">
+      <div class="status-dot connecting" id="status-dot"></div>
+      <span id="status-text">Connecting…</span>
+    </div>
+    <div class="header-sep"></div>
+    <div class="header-user">Logged in as <strong id="user-label"></strong></div>
+    <div class="spacer"></div>
+    <button class="btn-icon" id="btn-clear" title="Clear console">Clear</button>
+    <button class="btn-icon" id="btn-copy" title="Copy all logs">Copy</button>
+    <button class="btn-icon btn-danger" id="btn-logout" title="Logout">Logout</button>
+  </header>
+
+  <div id="stats-bar">
+    <div class="stat"><span class="lbl">TPS</span><span class="val" id="stat-tps">—</span></div>
+    <div class="stat"><span class="lbl">Players</span><span class="val" id="stat-players">—</span></div>
+    <div class="stat"><span class="lbl">Lines</span><span class="val" id="stat-lines">0</span></div>
+    <div class="stat"><span class="lbl">Session</span><span class="val" id="stat-session">—</span></div>
+  </div>
+
+  <div id="console-wrap">
+    <div id="console-output"></div>
+    <button id="scroll-btn">↓ Scroll to bottom</button>
+  </div>
+
+  <div id="filter-bar">
+    <span class="filter-lbl">Filter</span>
+    <input type="text" id="filter-input" placeholder="Type to filter logs…" spellcheck="false">
+    <div class="filter-btns">
+      <button class="filter-tog INFO active"   data-level="INFO">Info</button>
+      <button class="filter-tog WARN active"   data-level="WARN">Warn</button>
+      <button class="filter-tog SEVERE active" data-level="SEVERE">Error</button>
+    </div>
+  </div>
+
+  <div id="input-bar">
+    <span class="input-prompt">❯</span>
+    <input type="text" id="cmd-input" placeholder="Enter command…" autocomplete="off" spellcheck="false" disabled>
+    <button class="btn-send" id="btn-send" disabled>Run</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let ws = null;
+  let autoScroll = true;
+  let lineCount  = 0;
+  let cmdHistory = JSON.parse(localStorage.getItem('wc_history') || '[]');
+  let histIdx    = -1;
+  let currentDraft = '';
+  let sessionUser  = '';
+  let sessionStart = Date.now();
+  let filterText   = '';
+  let activeFilters = new Set(['INFO','WARN','WARNING','SEVERE','ERROR','FINE','FINER','FINEST']);
+  const MAX_LINES  = 2000;
+
+  // ── DOM ───────────────────────────────────────────────────────────────────
+  const $  = id => document.getElementById(id);
+  const loginScreen = $('login-screen');
+  const app         = $('app');
+  const loginUser   = $('login-user');
+  const loginPass   = $('login-pass');
+  const loginError  = $('login-error');
+  const btnLogin    = $('btn-login');
+  const statusDot   = $('status-dot');
+  const statusText  = $('status-text');
+  const output      = $('console-output');
+  const cmdInput    = $('cmd-input');
+  const btnSend     = $('btn-send');
+  const btnClear    = $('btn-clear');
+  const btnCopy     = $('btn-copy');
+  const btnLogout   = $('btn-logout');
+  const scrollBtn   = $('scroll-btn');
+  const filterInput = $('filter-input');
+  const userLabel   = $('user-label');
+  const statLines   = $('stat-lines');
+  const statSession = $('stat-session');
+  const statTps     = $('stat-tps');
+  const statPlayers = $('stat-players');
+  const toast       = $('toast');
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, type = '') {
+    clearTimeout(toastTimer);
+    toast.textContent = msg;
+    toast.className = 'show ' + type;
+    toastTimer = setTimeout(() => toast.className = '', 3000);
+  }
+
+  // ── Session timer ─────────────────────────────────────────────────────────
+  setInterval(() => {
+    if (!sessionUser) return;
+    const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+    const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+    const s = (elapsed % 60).toString().padStart(2, '0');
+    statSession.textContent = m + ':' + s;
+  }, 1000);
+
+  // ── Level detection ───────────────────────────────────────────────────────
+  function detectLevel(line) {
+    const m = line.match(/\[[\d:]+\s+(\w+)\]/);
+    return m ? m[1].toUpperCase() : 'INFO';
+  }
+
+  // ── Log line rendering ────────────────────────────────────────────────────
+  function appendLine(rawLine) {
+    lineCount++;
+    statLines.textContent = lineCount;
+
+    const level = detectLevel(rawLine);
+    const div = document.createElement('div');
+    div.className = 'log-line ' + level;
+    div.dataset.level = level;
+    div.dataset.raw   = rawLine;
+
+    // Colorise timestamp/level tokens
+    div.innerHTML = rawLine
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/(\[\d{2}:\d{2}:\d{2})/g, '<span class="log-ts">$1</span>')
+      .replace(/\b(INFO|FINE|FINER|FINEST)\b/,
+               '<span class="log-level-INFO">$1</span>')
+      .replace(/\b(WARN|WARNING)\b/g,
+               '<span class="log-level-WARN">$1</span>')
+      .replace(/\b(SEVERE|ERROR)\b/g,
+               '<span class="log-level-SEVERE">$1</span>');
+
+    applyLineVisibility(div);
+    output.appendChild(div);
+    trimOldLines();
+
+    if (autoScroll) output.scrollTop = output.scrollHeight;
+  }
+
+  function applyLineVisibility(div) {
+    const level = div.dataset.level;
+    const raw   = div.dataset.raw || div.textContent;
+    const levelOk = activeFilters.has(level);
+    const textOk  = !filterText || raw.toLowerCase().includes(filterText);
+    div.style.display = (levelOk && textOk) ? '' : 'none';
+  }
+
+  function reapplyFilter() {
+    output.querySelectorAll('.log-line').forEach(applyLineVisibility);
+  }
+
+  function trimOldLines() {
+    while (output.children.length > MAX_LINES) {
+      output.removeChild(output.firstChild);
+    }
+  }
+
+  // ── Scroll tracking ───────────────────────────────────────────────────────
+  output.addEventListener('scroll', () => {
+    const atBottom = output.scrollHeight - output.scrollTop - output.clientHeight < 40;
+    autoScroll = atBottom;
+    scrollBtn.classList.toggle('visible', !atBottom);
+  });
+  scrollBtn.addEventListener('click', () => {
+    output.scrollTop = output.scrollHeight;
+    autoScroll = true;
+    scrollBtn.classList.remove('visible');
+  });
+
+  // ── Status ────────────────────────────────────────────────────────────────
+  function setStatus(state) {
+    statusDot.className = 'status-dot ' + state;
+    const labels = { connected:'Connected', disconnected:'Disconnected', connecting:'Connecting…' };
+    statusText.textContent = labels[state] || state;
+    const ok = state === 'connected';
+    cmdInput.disabled  = !ok;
+    btnSend.disabled   = !ok;
+  }
+
+  // ── WebSocket ─────────────────────────────────────────────────────────────
+  function connectWs() {
+    setStatus('connecting');
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(proto + '//' + location.host + '/ws');
+
+    ws.onopen = () => {
+      setStatus('connected');
+      showToast('Console connected', 'success');
+    };
+
+    ws.onmessage = e => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'log') {
+          appendLine(msg.line);
+          parseStats(msg.line);
+        } else if (msg.type === 'control') {
+          handleControl(msg.event);
+        }
+      } catch(_) {}
+    };
+
+    ws.onclose = () => {
+      setStatus('disconnected');
+      showToast('Connection lost — reconnecting…', 'error');
+      setTimeout(connectWs, 3000);
+    };
+
+    ws.onerror = () => {
+      ws.close();
+    };
+  }
+
+  function handleControl(event) {
+    if (event === 'SESSION_EXPIRED') {
+      showToast('Session expired. Please log in again.', 'error');
+      setTimeout(doLogout, 1500);
+    } else if (event === 'RATE_LIMITED') {
+      showToast('Command rate limit reached. Slow down.', 'warn');
+    } else if (event === 'BLOCKED') {
+      showToast('Command blocked by server policy.', 'warn');
+    }
+  }
+
+  // ── Stats extraction from log lines ───────────────────────────────────────
+  function parseStats(line) {
+    // TPS from Paper's built-in tps output or plugins
+    const tpsMatch = line.match(/TPS[:\s]+([0-9.]+)/i);
+    if (tpsMatch) statTps.textContent = parseFloat(tpsMatch[1]).toFixed(1);
+
+    // Player count
+    const playMatch = line.match(/There are (\d+) of a max/i);
+    if (playMatch) statPlayers.textContent = playMatch[1];
+  }
+
+  // ── Send command ──────────────────────────────────────────────────────────
+  function sendCommand(cmd) {
+    cmd = cmd.trim();
+    if (!cmd || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+    ws.send(JSON.stringify({ type: 'command', command: cmd }));
+
+    // History
+    if (cmdHistory[cmdHistory.length - 1] !== cmd) {
+      cmdHistory.push(cmd);
+      if (cmdHistory.length > 100) cmdHistory.shift();
+      localStorage.setItem('wc_history', JSON.stringify(cmdHistory));
+    }
+    histIdx = -1;
+    currentDraft = '';
+    cmdInput.value = '';
+  }
+
+  btnSend.addEventListener('click', () => sendCommand(cmdInput.value));
+
+  cmdInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      sendCommand(cmdInput.value);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (histIdx === -1) currentDraft = cmdInput.value;
+      histIdx = Math.min(histIdx + 1, cmdHistory.length - 1);
+      cmdInput.value = cmdHistory[cmdHistory.length - 1 - histIdx] || '';
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      histIdx = Math.max(histIdx - 1, -1);
+      cmdInput.value = histIdx === -1 ? currentDraft : (cmdHistory[cmdHistory.length - 1 - histIdx] || '');
+    }
+  });
+
+  // ── Filter ────────────────────────────────────────────────────────────────
+  filterInput.addEventListener('input', () => {
+    filterText = filterInput.value.toLowerCase();
+    reapplyFilter();
+  });
+
+  document.querySelectorAll('.filter-tog').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lvl = btn.dataset.level;
+      const related = lvl === 'INFO' ? ['INFO','FINE','FINER','FINEST']
+                    : lvl === 'WARN' ? ['WARN','WARNING']
+                    : ['SEVERE','ERROR'];
+      const isActive = btn.classList.toggle('active');
+      related.forEach(l => isActive ? activeFilters.add(l) : activeFilters.delete(l));
+      reapplyFilter();
+    });
+  });
+
+  // ── Toolbar ───────────────────────────────────────────────────────────────
+  btnClear.addEventListener('click', () => {
+    output.innerHTML = '';
+    lineCount = 0;
+    statLines.textContent = '0';
+    showToast('Console cleared');
+  });
+
+  btnCopy.addEventListener('click', () => {
+    const text = Array.from(output.querySelectorAll('.log-line'))
+      .map(el => el.dataset.raw || el.textContent).join('\n');
+    navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard', 'success'))
+      .catch(() => showToast('Copy failed', 'error'));
+  });
+
+  btnLogout.addEventListener('click', doLogout);
+
+  async function doLogout() {
+    try { await fetch('/api/logout', { method: 'POST' }); } catch(_) {}
+    if (ws) ws.close();
+    app.classList.remove('show');
+    loginScreen.classList.remove('hide');
+    loginPass.value = '';
+    loginError.textContent = '';
+    sessionUser = '';
+    cmdInput.disabled = true;
+    btnSend.disabled = true;
+    output.innerHTML = '';
+    lineCount = 0;
+    statLines.textContent = '0';
+    statSession.textContent = '—';
+    userLabel.textContent = '';
+  }
+
+  // ── Login ─────────────────────────────────────────────────────────────────
+  async function doLogin() {
+    const username = loginUser.value.trim();
+    const password = loginPass.value;
+    loginError.textContent = '';
+
+    if (!username || !password) {
+      loginError.textContent = 'Please enter username and password.';
+      return;
+    }
+
+    btnLogin.disabled = true;
+    btnLogin.textContent = 'Signing in…';
+
+    try {
+      // Get CSRF token first
+      const csrfRes = await fetch('/api/csrf');
+      if (!csrfRes.ok) throw new Error('Failed to get CSRF token');
+      const { token: csrf } = await csrfRes.json();
+
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, csrf })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        sessionUser = data.username;
+        sessionStart = Date.now();
+        userLabel.textContent = sessionUser;
+        loginScreen.classList.add('hide');
+        app.classList.add('show');
+        connectWs();
+      } else {
+        loginError.textContent = data.error || 'Invalid credentials.';
+        loginPass.value = '';
+        loginPass.focus();
+      }
+    } catch (err) {
+      loginError.textContent = 'Server unreachable. Try again.';
+    } finally {
+      btnLogin.disabled = false;
+      btnLogin.textContent = 'Sign In';
+    }
+  }
+
+  btnLogin.addEventListener('click', doLogin);
+  loginPass.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  loginUser.addEventListener('keydown', e => { if (e.key === 'Enter') loginPass.focus(); });
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  // Check if already have a valid session
+  (async () => {
+    try {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      if (data.authenticated) {
+        sessionUser = data.username;
+        sessionStart = Date.now();
+        userLabel.textContent = sessionUser;
+        loginScreen.classList.add('hide');
+        app.classList.add('show');
+        connectWs();
+        return;
+      }
+    } catch(_) {}
+    loginUser.focus();
+  })();
+
+})();
+</script>
+</body>
+</html>
