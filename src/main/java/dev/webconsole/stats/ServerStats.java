@@ -37,6 +37,7 @@ public class ServerStats {
     private volatile int lastWorlds = 0;
     private volatile int lastTotalChunks = 0;
     private volatile WebSocketHandler wsHandler;
+    private final long startTimeMs = System.currentTimeMillis();
 
     private BukkitTask task;
     private String lastBroadcastSignature = "";
@@ -103,6 +104,8 @@ public class ServerStats {
         obj.addProperty("ramMax", maxRam);
         obj.addProperty("players", lastPlayers);
         obj.addProperty("maxPlayers", Bukkit.getMaxPlayers());
+        // Server uptime in seconds since plugin enable
+        obj.addProperty("uptimeSeconds", (System.currentTimeMillis() - startTimeMs) / 1000L);
 
         JsonArray worlds = new JsonArray();
         for (World w : Bukkit.getWorlds()) {
@@ -110,6 +113,7 @@ public class ServerStats {
             wobj.addProperty("name", w.getName());
             wobj.addProperty("entities", w.getEntities().size());
             wobj.addProperty("chunks", w.getLoadedChunks().length);
+            wobj.addProperty("environment", w.getEnvironment().name());
             worlds.add(wobj);
         }
         obj.add("worlds", worlds);

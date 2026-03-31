@@ -11,7 +11,7 @@
   --bg:#181818;--bg2:#1e1e1e;--bg3:#212121;--bg4:#272727;--bg5:#2f2f2f;--bg6:#3a3a3a;
   --border:rgba(255,255,255,.055);--border2:rgba(255,255,255,.10);--border-strong:rgba(255,255,255,.17);
   --accent:#f23987;--accent2:#ff79b0;--accent-dim:rgba(242,57,135,.14);--accent-glow:rgba(242,57,135,.26);
-  --danger:#e55555;--warn:#ffb020;--info:#ff79b0;--purple:#d05ce3;
+  --danger:#e55555;--warn:#ffb020;--info:#4fc3f7;--purple:#d05ce3;
   --success:#00e676;--success-dim:rgba(0,230,118,.12);
   --text:#eeeeee;--text-dim:#aaaaaa;--text-muted:#666666;
   --font:'JetBrains Mono',monospace;--ui:'Syne',sans-serif;
@@ -33,7 +33,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 @keyframes uiEnter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes lineReveal{from{opacity:0;transform:translateY(8px);clip-path:inset(0 100% 0 0)}to{opacity:1;transform:translateY(0);clip-path:inset(0 0 0 0)}}
 
-/* ── Login ── */
+/* Login */
 #login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at top, rgba(242,57,135,.08), transparent 38%),var(--bg);z-index:200;transition:opacity var(--slow) var(--ease),transform var(--slow) var(--ease)}
 #login-screen.hide{opacity:0;transform:translateY(-14px);pointer-events:none}
 .lcard{width:360px;background:linear-gradient(180deg, rgba(255,255,255,.02), transparent 24%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:38px 34px;position:relative;overflow:hidden;box-shadow:var(--shadow-soft);animation:riseIn .45s var(--ease)}
@@ -54,11 +54,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .btn-login:disabled{background:var(--accent-dim);color:var(--text-dim);cursor:not-allowed}
 #login-error{margin-top:10px;font-size:12px;color:var(--danger);text-align:center;min-height:15px}
 
-/* ── App shell ── */
+/* App shell */
 #app{display:flex;flex-direction:column;height:100vh;opacity:0;transition:opacity .3s}
 #app.show{opacity:1}
 
-/* ── Header ── */
+/* Header */
 header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;background:linear-gradient(180deg, rgba(255,255,255,.02), transparent 55%),var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;user-select:none;box-shadow:0 10px 25px rgba(0,0,0,.14)}
 .hlogo{font-family:var(--ui);font-size:14px;font-weight:800;color:var(--accent);letter-spacing:-.2px}
 .hsep{width:1px;height:18px;background:var(--border)}
@@ -74,42 +74,39 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .hbtn{background:rgba(255,255,255,.01);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text-dim);font-family:var(--font);font-size:11px;padding:4px 10px;cursor:pointer;transition:border-color var(--fast), color var(--fast), background var(--fast), transform var(--fast) var(--ease), box-shadow var(--fast);white-space:nowrap}
 .hbtn:hover{border-color:var(--accent);color:var(--accent2);background:var(--accent-dim);transform:translateY(-1px);box-shadow:var(--shadow-accent)}
 .hbtn:active{transform:translateY(0) scale(.98)}
-.hbtn.danger:hover{border-color:var(--danger);color:var(--danger)}
+.hbtn.danger:hover{border-color:var(--danger);color:var(--danger);background:rgba(229,85,85,.10)}
 
-/* ── Tabs ── */
+/* Tabs */
 #tabs{display:flex;align-items:center;gap:4px;padding:0 10px;height:40px;background:var(--bg3);border-bottom:1px solid var(--border);flex-shrink:0}
-.tab{padding:7px 14px;font-size:12px;font-weight:600;color:var(--text-dim);cursor:pointer;border-radius:var(--r-sm);border:1px solid transparent;transition:color var(--fast), background var(--fast), border-color var(--fast), transform var(--fast) var(--ease), box-shadow var(--fast);user-select:none;position:relative;overflow:hidden}
+.tab{padding:7px 14px;font-size:12px;font-weight:600;color:var(--text-dim);cursor:pointer;border-radius:var(--r-sm);border:1px solid transparent;transition:color var(--fast), background var(--fast), border-color var(--fast), transform var(--fast) var(--ease), box-shadow var(--fast);user-select:none}
 .tab:hover{color:var(--text);transform:translateY(-1px);background:rgba(255,255,255,.02)}
 .tab.active{color:var(--accent2);background:var(--bg2);border-color:var(--border2);box-shadow:inset 0 -2px 0 var(--accent), 0 8px 18px rgba(0,0,0,.16)}
 
-/* ── Content panels ── */
+/* Panels */
 .panel{display:none;flex:1;min-height:0;flex-direction:column;transform-origin:50% 24px}
 .panel.active{display:flex}
 .panel.enter-from-right{display:flex;animation:panelInRight var(--slow) var(--ease) both}
 .panel.enter-from-left{display:flex;animation:panelInLeft var(--slow) var(--ease) both}
 .ui-enter{animation:uiEnter .38s var(--ease) both;animation-delay:var(--delay,0ms)}
 
-/* ── Console panel ── */
+/* Console */
 #stats-bar{display:flex;align-items:center;height:28px;background:var(--bg3);border-bottom:1px solid var(--border);flex-shrink:0;overflow:hidden}
 .stat{display:flex;align-items:center;gap:5px;padding:0 12px;border-right:1px solid var(--border);font-size:11px;color:var(--text-dim);height:100%;white-space:nowrap}
 .stat .v{color:var(--text);font-weight:600}
-.stat.tps-good .v{color:var(--accent)}
-.stat.tps-ok .v{color:var(--warn)}
-.stat.tps-bad .v{color:var(--danger)}
-
+.stat.tps-good .v{color:var(--accent)}.stat.tps-ok .v{color:var(--warn)}.stat.tps-bad .v{color:var(--danger)}
 #console-wrap{flex:1;overflow:hidden;position:relative}
 #console-output{height:100%;overflow-y:scroll;padding:10px 14px 4px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;contain:content}
 #console-output::-webkit-scrollbar{width:5px}
 #console-output::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-
-.log-line{line-height:1.65;white-space:pre-wrap;word-break:break-all;font-size:12.5px;color:var(--text);transform-origin:left center;will-change:transform,opacity,clip-path}
+.log-line{line-height:1.65;white-space:pre-wrap;word-break:break-all;font-size:12.5px;color:var(--text);will-change:transform,opacity}
 .log-line.log-enter{animation:lineReveal .3s var(--ease) both}
 .log-line.WARN,.log-line.WARNING{color:var(--warn)}
 .log-line.SEVERE,.log-line.ERROR{color:var(--danger)}
 .log-line.DEBUG,.log-line.FINE,.log-line.FINER,.log-line.FINEST{color:var(--text-dim)}
+/* FIX 1: INFO gets a distinct colour (cyan-blue) */
+.log-line.INFO{color:var(--info)}
 .log-line .hl{background:rgba(255,176,32,.25);color:#ffcc55;border-radius:2px;padding:0 1px}
 .log-ts{color:var(--text-muted)}
-
 #scroll-anchor{display:none;position:absolute;bottom:12px;right:16px;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--text-dim);cursor:pointer;z-index:5;transition:all var(--fast)}
 #scroll-anchor.show{display:flex;align-items:center;gap:4px}
 #scroll-anchor:hover{border-color:var(--accent);color:var(--accent2);transform:translateY(-1px);box-shadow:var(--shadow-accent)}
@@ -123,6 +120,8 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 #search-count{font-size:11px;color:var(--text-dim);white-space:nowrap}
 .ftog{background:none;border:1px solid var(--border2);border-radius:var(--r-xs);font-size:10px;font-family:var(--font);font-weight:600;padding:4px 8px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;transition:all var(--fast)}
 .ftog.WARN{color:var(--warn)}.ftog.SEVERE{color:var(--danger)}.ftog.DEBUG{color:var(--text-dim)}
+/* FIX 2: INFO toggle */
+.ftog.INFO{color:var(--info)}
 .ftog.active{border-color:currentColor;background:color-mix(in srgb,currentColor 12%,transparent);box-shadow:0 0 0 3px color-mix(in srgb,currentColor 13%,transparent)}
 
 /* Input bar */
@@ -131,51 +130,76 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 #cmd-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font);font-size:13px;caret-color:var(--accent2)}
 #cmd-input::placeholder{color:var(--text-muted)}
 #cmd-input:disabled{opacity:.35}
-.btn-send{background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--r-sm);color:var(--accent2);font-family:var(--font);font-size:12px;font-weight:600;padding:7px 13px;cursor:pointer;transition:all var(--fast);flex-shrink:0;box-shadow:0 0 0 0 rgba(242,57,135,0)}
+.btn-send{background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--r-sm);color:var(--accent2);font-family:var(--font);font-size:12px;font-weight:600;padding:7px 13px;cursor:pointer;transition:all var(--fast);flex-shrink:0}
 .btn-send:hover{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;transform:translateY(-1px);box-shadow:var(--shadow-accent)}
 .btn-send:active{transform:translateY(0) scale(.98)}
 .btn-send:disabled{opacity:.3;cursor:not-allowed}
-
-/* Autocomplete dropdown */
-#autocomplete{position:absolute;bottom:calc(100% + 4px);left:28px;right:80px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);max-height:180px;overflow-y:auto;z-index:50;display:none;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+#autocomplete{position:absolute;bottom:calc(100% + 4px);left:28px;right:80px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);max-height:180px;overflow-y:auto;z-index:50;display:none;scrollbar-width:thin}
 .ac-item{padding:5px 10px;font-size:12px;color:var(--text-dim);cursor:pointer;transition:background .1s}
 .ac-item:hover,.ac-item.sel{background:var(--bg4);color:var(--accent)}
 .ac-hint{padding:4px 10px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border)}
 
-/* ── Dashboard panel ── */
-#panel-dash{padding:14px;gap:12px;overflow-y:auto}
-.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+/* ── Dashboard — Redesigned ── */
+#panel-dash{padding:16px;gap:14px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+#panel-dash::-webkit-scrollbar{width:5px}
+#panel-dash::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.dash-section{margin-bottom:4px}
+.dash-section-title{font-size:10px;text-transform:uppercase;letter-spacing:.10em;color:var(--text-muted);margin-bottom:8px;padding-left:2px;display:flex;align-items:center;gap:8px}
+.dash-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(192px,1fr));gap:10px}
 .kpi{background:linear-gradient(180deg, rgba(255,255,255,.018), transparent 28%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:14px 16px;position:relative;overflow:hidden;transition:transform var(--slow) var(--ease), border-color var(--fast), box-shadow var(--slow);animation:riseIn .4s var(--ease)}
 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.kpi.green::before{background:var(--accent)}.kpi.warn::before{background:var(--warn)}.kpi.red::before{background:var(--danger)}.kpi.blue::before{background:var(--info)}.kpi.purple::before{background:var(--purple)}
+.kpi.green::before{background:var(--accent)}.kpi.warn::before{background:var(--warn)}.kpi.red::before{background:var(--danger)}.kpi.blue::before{background:var(--info)}.kpi.purple::before{background:var(--purple)}.kpi.teal::before{background:var(--success)}
+.kpi:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow-accent)}
 .kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:6px}
 .kpi-value{font-size:28px;font-weight:700;font-family:var(--ui);color:var(--text);line-height:1}
 .kpi-sub{font-size:11px;color:var(--text-dim);margin-top:4px}
-.dash-charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-top:2px}
-.chart-card{background:linear-gradient(180deg, rgba(255,255,255,.018), transparent 28%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:14px;transition:transform var(--slow) var(--ease), border-color var(--fast), box-shadow var(--slow);animation:riseIn .48s var(--ease)}
-.kpi:hover,.chart-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow-accent)}
-.chart-card h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:10px}
-.chart-wrap{height:110px;position:relative}
+.dash-charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(295px,1fr));gap:12px}
+.chart-card{background:linear-gradient(180deg, rgba(255,255,255,.018), transparent 28%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:14px 16px;transition:transform var(--slow) var(--ease), border-color var(--fast), box-shadow var(--slow);animation:riseIn .48s var(--ease)}
+.chart-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow-accent)}
+.chart-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.chart-card h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim)}
+.chart-badge{font-size:10px;padding:2px 7px;border-radius:20px;background:var(--bg3);border:1px solid var(--border2);color:var(--text-muted);font-family:var(--font)}
+.chart-wrap{height:118px;position:relative}
 
-/* ── Players panel ── */
+/* World table */
+.world-table{width:100%;border-collapse:collapse;font-size:12px}
+.world-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);padding:4px 8px;border-bottom:1px solid var(--border)}
+.world-table td{padding:6px 8px;border-bottom:1px solid var(--border2);color:var(--text-dim)}
+.world-table td:first-child{color:var(--text);font-weight:600}
+.world-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+
+/* Level bars */
+.level-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.level-bar-label{width:48px;color:var(--text-dim);flex-shrink:0;text-transform:uppercase;letter-spacing:.05em;font-size:10px}
+.level-bar-track{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.level-bar-fill{height:100%;border-radius:3px;transition:width .6s var(--ease)}
+.level-bar-count{width:36px;text-align:right;color:var(--text-muted);font-size:10px;flex-shrink:0}
+
+/* Activity feed */
+.activity-feed{display:flex;flex-direction:column;gap:5px;max-height:170px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.activity-item{display:flex;align-items:flex-start;gap:7px;padding:5px 8px;background:var(--bg3);border-radius:var(--r-sm);border-left:2px solid var(--border)}
+.activity-item.join{border-left-color:var(--success)}.activity-item.leave{border-left-color:var(--text-muted)}.activity-item.err{border-left-color:var(--danger)}.activity-item.warn{border-left-color:var(--warn)}.activity-item.cmd{border-left-color:var(--accent)}
+.activity-icon{font-size:11px;flex-shrink:0;margin-top:1px}
+.activity-text{font-size:11px;color:var(--text-dim);flex:1;word-break:break-word}
+.activity-text strong{color:var(--text)}
+.activity-time{font-size:10px;color:var(--text-muted);flex-shrink:0;white-space:nowrap}
+
+/* Players */
 #panel-players{overflow-y:auto;padding:12px}
 .player-table{width:100%;border-collapse:collapse}
 .player-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);padding:6px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg)}
-.player-table td{padding:7px 10px;border-bottom:1px solid var(--border2);font-size:12.5px;vertical-align:middle;transition:background-color var(--fast), border-color var(--fast)}
-.player-table tr{transition:background-color var(--fast)}
-.player-table tbody tr:hover td{background:rgba(242,57,135,.08);border-bottom-color:rgba(242,57,135,.18)}
+.player-table td{padding:7px 10px;border-bottom:1px solid var(--border2);font-size:12.5px;vertical-align:middle;transition:background-color var(--fast)}
+.player-table tbody tr:hover td{background:rgba(242,57,135,.08)}
 .player-op{display:inline-block;font-size:9px;background:rgba(255,176,32,.15);color:var(--warn);border:1px solid rgba(255,176,32,.3);border-radius:3px;padding:1px 5px;margin-left:5px}
 .ping-good{color:var(--accent)}.ping-ok{color:var(--warn)}.ping-bad{color:var(--danger)}
 .action-btn{background:none;border:1px solid var(--border2);border-radius:var(--r-xs);font-family:var(--font);font-size:11px;color:var(--text-dim);padding:4px 8px;cursor:pointer;transition:all var(--fast)}
 .action-btn:hover{transform:translateY(-1px)}
-.action-btn:active{transform:translateY(0) scale(.97)}
-.action-btn:hover.kick{border-color:var(--warn);color:var(--warn)}
-.action-btn:hover.ban{border-color:var(--danger);color:var(--danger)}
 .action-btn.kick:hover{border-color:var(--warn);color:var(--warn)}
 .action-btn.ban:hover{border-color:var(--danger);color:var(--danger)}
 .no-players{text-align:center;color:var(--text-muted);padding:40px 0;font-size:13px}
 
-/* ── Aliases panel ── */
+/* Aliases */
 #panel-aliases{overflow-y:auto;padding:12px}
 .alias-list{display:flex;flex-direction:column;gap:8px}
 .alias-card{background:linear-gradient(180deg, rgba(255,255,255,.018), transparent 24%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color var(--fast), transform var(--fast) var(--ease), box-shadow var(--fast)}
@@ -187,10 +211,10 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .alias-run:hover{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;transform:translateY(-1px)}
 .alias-hint{font-size:11px;color:var(--text-muted);margin-bottom:8px}
 
-/* ── Modal ── */
+/* Modal — FIX 3: label for= added in HTML */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:300;opacity:0;pointer-events:none;transition:opacity var(--slow)}
 .modal-bg.show{opacity:1;pointer-events:all}
-.modal{background:linear-gradient(180deg, rgba(255,255,255,.018), transparent 24%),var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:24px;width:380px;position:relative;box-shadow:var(--shadow-soft);transform:translateY(10px) scale(.97);transition:transform var(--slow) var(--ease)}
+.modal{background:linear-gradient(180deg, rgba(255,255,255,.018), transparent 24%),var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:24px;width:380px;position:relative;box-shadow:var(--shadow-soft)}
 .modal-bg.show .modal{animation:modalIn var(--slow) var(--ease) both}
 .modal h3{font-family:var(--ui);font-size:16px;color:var(--text);margin-bottom:16px}
 .modal-field{margin-bottom:12px}
@@ -199,57 +223,59 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .modal-field input:focus{border-color:var(--accent);background:var(--bg4);box-shadow:0 0 0 4px var(--accent-dim);transform:translateY(-1px)}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .mbtn{border:1px solid var(--border2);border-radius:var(--r-sm);font-family:var(--font);font-size:12px;padding:7px 14px;cursor:pointer;transition:all var(--fast)}
-.mbtn:hover{transform:translateY(-1px)}
-.mbtn:active{transform:translateY(0) scale(.98)}
+.mbtn:hover{transform:translateY(-1px)}.mbtn:active{transform:translateY(0) scale(.98)}
 .mbtn.cancel{background:none;color:var(--text-dim)}.mbtn.cancel:hover{border-color:var(--text-dim);color:var(--text)}
 .mbtn.confirm{background:var(--danger);border-color:var(--danger);color:#fff}.mbtn.confirm:hover{background:#ff2233}
 .mbtn.confirm.kick-mode{background:var(--warn);border-color:var(--warn);color:#000}.mbtn.confirm.kick-mode:hover{background:#ffc840}
 
-/* ── Toast ── */
+/* Toast */
 #toast{position:fixed;top:56px;right:16px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 14px;font-size:12px;color:var(--text);pointer-events:none;opacity:0;transform:translateX(14px) scale(.98);transition:all var(--slow) var(--ease);z-index:400;max-width:260px;box-shadow:var(--shadow-soft)}
 #toast.show{opacity:1;transform:none}
 #toast.error{border-color:var(--danger);color:var(--danger)}
 #toast.success{border-color:var(--accent);color:var(--accent)}
 #toast.warn{border-color:var(--warn);color:var(--warn)}
-
-/* ── Notification bell ── */
 #notif-btn{position:relative}
 .notif-badge{position:absolute;top:-3px;right:-3px;width:8px;height:8px;background:var(--danger);border-radius:50%;display:none}
 .notif-badge.show{display:block}
-@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important;scroll-behavior:auto !important}.panel{transform:none !important}.log-line{clip-path:none !important}}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}.panel{transform:none !important}.log-line{clip-path:none !important}}
 </style>
 </head>
 <body>
 
-<!-- Login -->
+<!-- Login  FIX #3 accessibility: label for= attributes -->
 <div id="login-screen">
   <div class="lcard">
-    <div class="llogo">⬡ B-WebConsole <small>V2</small></div>
+    <div class="llogo">&#x2B21; B-WebConsole <small>V2</small></div>
     <h2>Sign in</h2>
-    <div class="field"><label>Username</label><input id="lu" type="text" autocomplete="username" placeholder="admin" spellcheck="false"></div>
-    <div class="field"><label>Password</label><input id="lp" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+    <div class="field">
+      <label for="lu">Username</label>
+      <input id="lu" type="text" autocomplete="username" placeholder="admin" spellcheck="false">
+    </div>
+    <div class="field">
+      <label for="lp">Password</label>
+      <input id="lp" type="password" autocomplete="current-password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;">
+    </div>
     <button class="btn-login" id="btn-login">Sign In</button>
-    <div id="login-error"></div>
+    <div id="login-error" role="alert"></div>
   </div>
 </div>
 
 <!-- App -->
 <div id="app">
   <header>
-    <div class="hlogo">⬡ BWC</div>
+    <div class="hlogo">&#x2B21; BWC</div>
     <div class="hsep"></div>
     <div class="status-dot connecting" id="sdot"></div>
-    <span id="status-text">Connecting…</span>
+    <span id="status-text">Connecting&#8230;</span>
     <div class="hsep"></div>
     <div class="huser">as <strong id="ulabel"></strong></div>
     <div class="spacer"></div>
-    <button class="hbtn" id="notif-btn" title="Notifications">🔔 <span class="notif-badge" id="nbadge"></span></button>
+    <button class="hbtn" id="notif-btn" title="Toggle error notifications">&#128276; <span class="notif-badge" id="nbadge"></span></button>
     <button class="hbtn" id="btn-export">Export Log</button>
     <button class="hbtn" id="btn-clear">Clear</button>
     <button class="hbtn danger" id="btn-logout">Logout</button>
   </header>
 
-  <!-- Tabs -->
   <div id="tabs">
     <div class="tab active" data-panel="console">Console</div>
     <div class="tab" data-panel="dash">Dashboard</div>
@@ -260,56 +286,107 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
   <!-- Console Panel -->
   <div class="panel active" id="panel-console">
     <div id="stats-bar">
-      <div class="stat" id="stat-tps"><span>TPS</span><span class="v" id="sv-tps">—</span></div>
-      <div class="stat"><span>RAM</span><span class="v" id="sv-ram">—</span></div>
-      <div class="stat"><span>Players</span><span class="v" id="sv-players">—</span></div>
+      <div class="stat" id="stat-tps"><span>TPS</span><span class="v" id="sv-tps">&#8212;</span></div>
+      <div class="stat"><span>RAM</span><span class="v" id="sv-ram">&#8212;</span></div>
+      <div class="stat"><span>Players</span><span class="v" id="sv-players">&#8212;</span></div>
       <div class="stat"><span>Lines</span><span class="v" id="sv-lines">0</span></div>
-      <div class="stat"><span>Session</span><span class="v" id="sv-session">—</span></div>
+      <div class="stat"><span>Session</span><span class="v" id="sv-session">&#8212;</span></div>
     </div>
     <div id="console-wrap">
       <div id="console-output"></div>
-      <button id="scroll-anchor">↓ Bottom</button>
+      <button id="scroll-anchor">&#8595; Bottom</button>
     </div>
     <div id="search-bar">
-      <span class="slbl">Search</span>
-      <input id="search-input" type="text" placeholder="Search logs… (Ctrl+F)" spellcheck="false">
+      <span class="slbl">Filter</span>
+      <input id="search-input" type="text" placeholder="Search logs&#8230; (Ctrl+F)" spellcheck="false">
       <span id="search-count"></span>
+      <!-- FIX #2: INFO filter toggle added -->
+      <button class="ftog INFO active" data-lv="INFO">Info</button>
       <button class="ftog WARN active" data-lv="WARN">Warn</button>
       <button class="ftog SEVERE active" data-lv="SEVERE">Error</button>
       <button class="ftog DEBUG" data-lv="DEBUG">Debug</button>
     </div>
     <div id="input-bar">
-      <span class="prompt">❯</span>
-      <input id="cmd-input" type="text" placeholder="Type command or !alias… (Tab to complete)" autocomplete="off" spellcheck="false" disabled>
+      <span class="prompt">&#10095;</span>
+      <input id="cmd-input" type="text" placeholder="Type command or !alias&#8230; (Tab to complete)" autocomplete="off" spellcheck="false" disabled>
       <div id="autocomplete"></div>
       <button class="btn-send" id="btn-send" disabled>Run</button>
     </div>
   </div>
 
-  <!-- Dashboard Panel -->
+  <!-- Dashboard Panel — Redesigned -->
   <div class="panel" id="panel-dash">
-    <div class="dash-grid" id="kpi-grid">
-      <div class="kpi green"><div class="kpi-label">TPS (1 min)</div><div class="kpi-value" id="kpi-tps">—</div><div class="kpi-sub" id="kpi-tps-sub">Server tick rate</div></div>
-      <div class="kpi blue"><div class="kpi-label">RAM Used</div><div class="kpi-value" id="kpi-ram">—</div><div class="kpi-sub" id="kpi-ram-sub">Heap memory</div></div>
-      <div class="kpi purple"><div class="kpi-label">Players Online</div><div class="kpi-value" id="kpi-players">—</div><div class="kpi-sub" id="kpi-players-sub">of — max</div></div>
-      <div class="kpi warn"><div class="kpi-label">Worlds</div><div class="kpi-value" id="kpi-worlds">—</div><div class="kpi-sub" id="kpi-worlds-sub">Loaded chunks: —</div></div>
+    <div class="dash-section">
+      <div class="dash-section-title">Server Health</div>
+      <div class="dash-grid" id="kpi-grid">
+        <div class="kpi green"><div class="kpi-label">TPS (1 min)</div><div class="kpi-value" id="kpi-tps">&#8212;</div><div class="kpi-sub" id="kpi-tps-sub">Server tick rate</div></div>
+        <div class="kpi blue"><div class="kpi-label">RAM Used</div><div class="kpi-value" id="kpi-ram">&#8212;</div><div class="kpi-sub" id="kpi-ram-sub">Heap memory</div></div>
+        <div class="kpi purple"><div class="kpi-label">Players Online</div><div class="kpi-value" id="kpi-players">&#8212;</div><div class="kpi-sub" id="kpi-players-sub">of &#8212; max</div></div>
+        <div class="kpi warn"><div class="kpi-label">Worlds</div><div class="kpi-value" id="kpi-worlds">&#8212;</div><div class="kpi-sub" id="kpi-worlds-sub">Loaded chunks: &#8212;</div></div>
+        <div class="kpi teal"><div class="kpi-label">Total Entities</div><div class="kpi-value" id="kpi-entities">&#8212;</div><div class="kpi-sub">Across all worlds</div></div>
+        <div class="kpi red"><div class="kpi-label">Errors (session)</div><div class="kpi-value" id="kpi-errors">0</div><div class="kpi-sub" id="kpi-errors-sub">SEVERE / ERROR lines</div></div>
+      </div>
     </div>
-    <div class="dash-charts">
-      <div class="chart-card"><h3>TPS History (5 min)</h3><div class="chart-wrap"><canvas id="chart-tps"></canvas></div></div>
-      <div class="chart-card"><h3>RAM History (5 min)</h3><div class="chart-wrap"><canvas id="chart-ram"></canvas></div></div>
-      <div class="chart-card"><h3>Players History (5 min)</h3><div class="chart-wrap"><canvas id="chart-players"></canvas></div></div>
+
+    <div class="dash-section">
+      <div class="dash-section-title">Performance History (5 min)</div>
+      <div class="dash-charts">
+        <div class="chart-card">
+          <div class="chart-card-header"><h3>TPS</h3><span class="chart-badge" id="badge-tps">&#8212;</span></div>
+          <div class="chart-wrap"><canvas id="chart-tps"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header"><h3>RAM (MB)</h3><span class="chart-badge" id="badge-ram">&#8212;</span></div>
+          <div class="chart-wrap"><canvas id="chart-ram"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header"><h3>Players</h3><span class="chart-badge" id="badge-players">&#8212;</span></div>
+          <div class="chart-wrap"><canvas id="chart-players"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-section">
+      <div class="dash-section-title">Analytics</div>
+      <div class="dash-charts">
+        <div class="chart-card">
+          <div class="chart-card-header"><h3>Log Level Breakdown</h3><span class="chart-badge" id="badge-logcount">0 lines</span></div>
+          <div style="padding-top:6px">
+            <div class="level-bar-row"><span class="level-bar-label" style="color:var(--danger)">ERROR</span><div class="level-bar-track"><div class="level-bar-fill" id="bar-error" style="background:var(--danger);width:0%"></div></div><span class="level-bar-count" id="cnt-error">0</span></div>
+            <div class="level-bar-row"><span class="level-bar-label" style="color:var(--warn)">WARN</span><div class="level-bar-track"><div class="level-bar-fill" id="bar-warn" style="background:var(--warn);width:0%"></div></div><span class="level-bar-count" id="cnt-warn">0</span></div>
+            <div class="level-bar-row"><span class="level-bar-label" style="color:var(--info)">INFO</span><div class="level-bar-track"><div class="level-bar-fill" id="bar-info" style="background:var(--info);width:0%"></div></div><span class="level-bar-count" id="cnt-info">0</span></div>
+            <div class="level-bar-row"><span class="level-bar-label" style="color:var(--text-dim)">DEBUG</span><div class="level-bar-track"><div class="level-bar-fill" id="bar-debug" style="background:var(--text-dim);width:0%"></div></div><span class="level-bar-count" id="cnt-debug">0</span></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header"><h3>World Breakdown</h3></div>
+          <div style="overflow-y:auto;max-height:150px;scrollbar-width:thin">
+            <table class="world-table">
+              <thead><tr><th>World</th><th>Chunks</th><th>Entities</th></tr></thead>
+              <tbody id="world-tbody"><tr><td colspan="3" style="color:var(--text-muted);text-align:center;padding:12px 0">No data yet</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header"><h3>Activity Feed</h3><span class="chart-badge" style="color:var(--success)">live</span></div>
+          <div class="activity-feed" id="activity-feed">
+            <div class="activity-item">
+              <span class="activity-icon">&#128564;</span>
+              <span class="activity-text" style="color:var(--text-muted)">Waiting for activity&#8230;</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Players Panel -->
   <div class="panel" id="panel-players">
-    <div id="player-list-wrap">
-      <p class="no-players" id="no-players-msg">No players online.</p>
-      <table class="player-table" id="player-table" style="display:none">
-        <thead><tr><th>Name</th><th>World</th><th>Ping</th><th>Actions</th></tr></thead>
-        <tbody id="player-tbody"></tbody>
-      </table>
-    </div>
+    <p class="no-players" id="no-players-msg">No players online.</p>
+    <table class="player-table" id="player-table" style="display:none">
+      <thead><tr><th>Name</th><th>World</th><th>Ping</th><th>Actions</th></tr></thead>
+      <tbody id="player-tbody"></tbody>
+    </table>
   </div>
 
   <!-- Aliases Panel -->
@@ -319,12 +396,18 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
   </div>
 </div>
 
-<!-- Action Modal -->
-<div class="modal-bg" id="modal">
+<!-- Action Modal — FIX #3: label for= matches input id -->
+<div class="modal-bg" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <div class="modal">
     <h3 id="modal-title">Action</h3>
-    <div class="modal-field"><label>Player</label><input id="modal-player" type="text" readonly></div>
-    <div class="modal-field"><label>Reason</label><input id="modal-reason" type="text" placeholder="Enter reason…"></div>
+    <div class="modal-field">
+      <label for="modal-player">Player</label>
+      <input id="modal-player" type="text" readonly>
+    </div>
+    <div class="modal-field">
+      <label for="modal-reason">Reason</label>
+      <input id="modal-reason" type="text" placeholder="Enter reason&#8230;">
+    </div>
     <div class="modal-actions">
       <button class="mbtn cancel" id="modal-cancel">Cancel</button>
       <button class="mbtn confirm" id="modal-confirm">Confirm</button>
@@ -332,17 +415,18 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
   </div>
 </div>
 
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 (function(){
 'use strict';
 
-// ── State ─────────────────────────────────────────────────────────────────
+// ── State ──────────────────────────────────────────────────────────────────
 let ws=null, autoScroll=true, lineCount=0;
 let reconnectTimer=null, reconnectDelay=1000, reconnectAttempt=0, manualDisconnect=false;
 let chartsInitialized=false;
-let cmdHistory=JSON.parse(localStorage.getItem('bwc_hist')||'[]'), histIdx=-1, draft='';
+let cmdHistory=[], histIdx=-1, draft='';
+try{ cmdHistory=JSON.parse(localStorage.getItem('bwc_hist')||'[]'); }catch(_){}
 let sessionUser='', sessionStart=Date.now();
 let filterText='', activeFilters=new Set(['INFO','WARN','WARNING','SEVERE','ERROR']);
 let searchQuery='', searchMatches=[], searchIdx=0;
@@ -356,7 +440,14 @@ let lastPlayersVisualSignature='__init__';
 const panelOrder=['console','dash','players','aliases'];
 const MAX_LINES=3000;
 
-// ── DOM ───────────────────────────────────────────────────────────────────
+// Dashboard counters
+const levelCounts={INFO:0,WARN:0,SEVERE:0,DEBUG:0};
+let sessionErrors=0;
+const activityLog=[];
+const MAX_ACTIVITY=40;
+let prevPlayerNames=new Set();
+
+// ── DOM ────────────────────────────────────────────────────────────────────
 const $=id=>document.getElementById(id);
 const loginScreen=$('login-screen'), app=$('app');
 const lu=$('lu'), lp=$('lp'), loginErr=$('login-error'), btnLogin=$('btn-login');
@@ -370,7 +461,7 @@ const modal=$('modal'), modalTitle=$('modal-title'), modalPlayer=$('modal-player
 const modalReason=$('modal-reason'), modalCancel=$('modal-cancel'), modalConfirm=$('modal-confirm');
 const toast=$('toast'), nbadge=$('nbadge');
 
-// ── Toast ─────────────────────────────────────────────────────────────────
+// ── Toast ──────────────────────────────────────────────────────────────────
 let toastT;
 function showToast(msg,type=''){
   clearTimeout(toastT);
@@ -378,7 +469,7 @@ function showToast(msg,type=''){
   toastT=setTimeout(()=>toast.className='',3000);
 }
 
-// ── Tab switching ─────────────────────────────────────────────────────────
+// ── Tab switching ──────────────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(tab=>{
   tab.addEventListener('click',()=>switchToPanel(tab.dataset.panel));
 });
@@ -386,22 +477,15 @@ document.querySelectorAll('.tab').forEach(tab=>{
 function switchToPanel(name){
   if(!name) return;
   if(name==='aliases') loadAliases();
-  if(activePanelName===name){
-    animatePanelContent(name);
-    return;
-  }
-
+  if(activePanelName===name){ animatePanelContent(name); return; }
   const prevIdx=panelOrder.indexOf(activePanelName);
   const nextIdx=panelOrder.indexOf(name);
   const enterClass=(prevIdx!==-1 && nextIdx<prevIdx)?'enter-from-left':'enter-from-right';
-
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.panel===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active','enter-from-right','enter-from-left'));
-
   const nextPanel=$('panel-'+name);
   nextPanel.classList.add('active',enterClass);
   nextPanel.addEventListener('animationend',()=>nextPanel.classList.remove('enter-from-right','enter-from-left'),{once:true});
-
   activePanelName=name;
   requestAnimationFrame(()=>animatePanelContent(name));
 }
@@ -412,80 +496,72 @@ function staggerAnimate(nodes,step=40){
     el.style.setProperty('--delay',`${i*step}ms`);
     void el.offsetWidth;
     el.classList.add('ui-enter');
-    el.addEventListener('animationend',()=>{
-      el.classList.remove('ui-enter');
-      el.style.removeProperty('--delay');
-    },{once:true});
+    el.addEventListener('animationend',()=>{ el.classList.remove('ui-enter'); el.style.removeProperty('--delay'); },{once:true});
   });
 }
 
 function animatePanelContent(name){
-  if(name==='console'){
-    staggerAnimate([$('stats-bar'), $('console-wrap'), $('search-bar'), $('input-bar')],50);
-    return;
-  }
-  if(name==='players'){
-    const rows=[...document.querySelectorAll('#player-tbody tr')];
-    staggerAnimate(rows.length?rows:[$('player-table'), $('no-players-msg')],26);
-    return;
-  }
-  if(name==='aliases'){
-    staggerAnimate([$('panel-aliases').querySelector('.alias-hint'), ...document.querySelectorAll('#alias-list > *')],26);
-    return;
-  }
-  if(name==='dash'){
-    staggerAnimate([...document.querySelectorAll('#kpi-grid .kpi'), ...document.querySelectorAll('.chart-card')],24);
-  }
+  if(name==='console'){ staggerAnimate([$('stats-bar'), $('console-wrap'), $('search-bar'), $('input-bar')],50); return; }
+  if(name==='players'){ const r=[...document.querySelectorAll('#player-tbody tr')]; staggerAnimate(r.length?r:[$('player-table'), $('no-players-msg')],26); return; }
+  if(name==='aliases'){ staggerAnimate([$('panel-aliases').querySelector('.alias-hint'), ...document.querySelectorAll('#alias-list > *')],26); return; }
+  if(name==='dash'){ staggerAnimate([...document.querySelectorAll('#kpi-grid .kpi'), ...document.querySelectorAll('.chart-card')],22); }
 }
 
-// ── Status ────────────────────────────────────────────────────────────────
+// ── Status ─────────────────────────────────────────────────────────────────
 function setStatus(state){
   sdot.className='status-dot '+state;
-  statusText.textContent={connected:'Connected',disconnected:'Disconnected',connecting:'Connecting…'}[state]||state;
+  statusText.textContent={connected:'Connected',disconnected:'Disconnected',connecting:'Connecting\u2026'}[state]||state;
   const ok=state==='connected';
   cmdInput.disabled=!ok; btnSend.disabled=!ok;
 }
 
-// ── Session timer ─────────────────────────────────────────────────────────
 setInterval(()=>{
   if(!sessionUser) return;
   const s=Math.floor((Date.now()-sessionStart)/1000);
   svSession.textContent=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
 },1000);
 
-// ── Log line rendering ────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
 function levelOf(line){
   const m=line.match(/\[[\d:]+\s+(\w+)\]/);
   return m?m[1].toUpperCase():'INFO';
 }
 
+// Map level string to filter group key
+function filterGroup(lv){
+  if(lv==='WARN'||lv==='WARNING') return 'WARN';
+  if(lv==='SEVERE'||lv==='ERROR') return 'SEVERE';
+  if(lv==='DEBUG'||lv==='FINE'||lv==='FINER'||lv==='FINEST') return 'DEBUG';
+  return 'INFO';
+}
+
+// ── Log line rendering ─────────────────────────────────────────────────────
 function appendLine(raw){
   lineCount++;
   svLines.textContent=lineCount;
-
-  // Notification for errors
   const lv=levelOf(raw);
-  if((lv==='SEVERE'||lv==='ERROR')&&notifEnabled){
-    notifCount++;
-    nbadge.classList.add('show');
-    if(document.hidden) new Notification('BWC Error',{body:raw.substring(0,80),icon:''}).catch(()=>{});
+  const fg=filterGroup(lv);
+
+  // Dashboard counters
+  if(fg==='SEVERE'){ levelCounts.SEVERE++; sessionErrors++; const e=$('kpi-errors'); if(e) e.textContent=sessionErrors; pushActivity('err','&#128308;',raw.substring(0,90)); }
+  else if(fg==='WARN'){ levelCounts.WARN++; pushActivity('warn','&#128993;',raw.substring(0,90)); }
+  else if(fg==='INFO') levelCounts.INFO++;
+  else levelCounts.DEBUG++;
+  updateLevelBars();
+
+  if((fg==='SEVERE')&&notifEnabled){
+    notifCount++; nbadge.classList.add('show');
+    if(document.hidden) new Notification('BWC Error',{body:raw.substring(0,80)}).catch(()=>{});
     playSound();
   }
 
   const div=document.createElement('div');
   div.className='log-line '+lv+' log-enter';
   div.dataset.raw=raw;
-
   let html=raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  // Colorise timestamp
   html=html.replace(/(\[\d{2}:\d{2}:\d{2})/,'<span class="log-ts">$1</span>');
-  // Highlight search
-  if(searchQuery){
-    const re=new RegExp(escRe(searchQuery),'gi');
-    html=html.replace(re,m=>'<span class="hl">'+m+'</span>');
-  }
+  if(searchQuery){ const re=new RegExp(escRe(searchQuery),'gi'); html=html.replace(re,m=>'<span class="hl">'+m+'</span>'); }
   div.innerHTML=html;
-
   applyVis(div);
   output.appendChild(div);
   div.addEventListener('animationend',()=>div.classList.remove('log-enter'),{once:true});
@@ -495,69 +571,56 @@ function appendLine(raw){
 
 function applyVis(div){
   const lv=div.dataset.raw?levelOf(div.dataset.raw):'INFO';
-  const ok=activeFilters.has(lv)||!['WARN','WARNING','SEVERE','ERROR','DEBUG','FINE','FINER','FINEST'].includes(lv);
+  const fg=filterGroup(lv);
+  // FIX: INFO filter now works — activeFilters tracks 'INFO'
+  const ok=activeFilters.has(fg);
   const textOk=!filterText||div.dataset.raw.toLowerCase().includes(filterText);
   div.style.display=(ok&&textOk)?'':'none';
 }
 
-function reapply(){output.querySelectorAll('.log-line').forEach(applyVis);}
+function reapply(){ output.querySelectorAll('.log-line').forEach(applyVis); }
 
-// ── Search ────────────────────────────────────────────────────────────────
+// ── Search ─────────────────────────────────────────────────────────────────
 function doSearch(){
   searchQuery=searchInput.value.trim();
-  // Re-render all lines with new highlights
   output.querySelectorAll('.log-line').forEach(div=>{
     let html=div.dataset.raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     html=html.replace(/(\[\d{2}:\d{2}:\d{2})/,'<span class="log-ts">$1</span>');
-    if(searchQuery){
-      const re=new RegExp(escRe(searchQuery),'gi');
-      html=html.replace(re,m=>'<span class="hl">'+m+'</span>');
-    }
+    if(searchQuery){ const re=new RegExp(escRe(searchQuery),'gi'); html=html.replace(re,m=>'<span class="hl">'+m+'</span>'); }
     div.innerHTML=html;
   });
-  // Count matches
   searchMatches=Array.from(output.querySelectorAll('.hl'));
   searchCount.textContent=searchMatches.length?`${searchMatches.length} match${searchMatches.length>1?'es':''}` :'';
-  if(searchMatches.length>0){
-    searchIdx=0;
-    searchMatches[0].scrollIntoView({block:'center'});
-  }
+  if(searchMatches.length){ searchIdx=0; searchMatches[0].scrollIntoView({block:'center'}); }
 }
 
 searchInput.addEventListener('input',doSearch);
 searchInput.addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&searchMatches.length>0){
-    searchIdx=(searchIdx+1)%searchMatches.length;
-    searchMatches[searchIdx].scrollIntoView({block:'center'});
-  }
+  if(e.key==='Enter'&&searchMatches.length){ searchIdx=(searchIdx+1)%searchMatches.length; searchMatches[searchIdx].scrollIntoView({block:'center'}); }
 });
-
 document.addEventListener('keydown',e=>{
-  if((e.ctrlKey||e.metaKey)&&e.key==='f'){
-    e.preventDefault();
-    searchInput.focus(); searchInput.select();
-  }
+  if((e.ctrlKey||e.metaKey)&&e.key==='f'){ e.preventDefault(); searchInput.focus(); searchInput.select(); }
 });
 
-// ── Filter toggles ────────────────────────────────────────────────────────
+// ── Filter toggles — FIX: INFO group properly handled ─────────────────────
 document.querySelectorAll('.ftog').forEach(btn=>{
   btn.addEventListener('click',()=>{
     const lv=btn.dataset.lv;
-    const rel={WARN:['WARN','WARNING'],SEVERE:['SEVERE','ERROR'],DEBUG:['DEBUG','FINE','FINER','FINEST']}[lv]||[lv];
+    const rel={WARN:['WARN','WARNING'],SEVERE:['SEVERE','ERROR'],DEBUG:['DEBUG','FINE','FINER','FINEST'],INFO:['INFO']}[lv]||[lv];
     const on=btn.classList.toggle('active');
     rel.forEach(l=>on?activeFilters.add(l):activeFilters.delete(l));
     reapply();
   });
 });
 
-// ── Scroll tracking ───────────────────────────────────────────────────────
+// ── Scroll tracking ────────────────────────────────────────────────────────
 output.addEventListener('scroll',()=>{
   autoScroll=output.scrollHeight-output.scrollTop-output.clientHeight<50;
   scrollAnchor.classList.toggle('show',!autoScroll);
 });
-scrollAnchor.addEventListener('click',()=>{output.scrollTop=output.scrollHeight;autoScroll=true;scrollAnchor.classList.remove('show');});
+scrollAnchor.addEventListener('click',()=>{ output.scrollTop=output.scrollHeight; autoScroll=true; scrollAnchor.classList.remove('show'); });
 
-// ── WebSocket ─────────────────────────────────────────────────────────────
+// ── WebSocket ──────────────────────────────────────────────────────────────
 function connectWs(force=false){
   if(manualDisconnect) return;
   if(ws && (ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING) && !force) return;
@@ -565,15 +628,11 @@ function connectWs(force=false){
   setStatus('connecting');
   const proto=location.protocol==='https:'?'wss:':'ws:';
   ws=new WebSocket(proto+'//'+location.host+'/ws');
-  ws.onopen=()=>{
-    reconnectAttempt=0; reconnectDelay=1000;
-    setStatus('connected');
-    showToast('Console connected','success');
-  };
+  ws.onopen=()=>{ reconnectAttempt=0; reconnectDelay=1000; setStatus('connected'); showToast('Console connected','success'); };
   ws.onmessage=e=>{
     try{
       const msg=JSON.parse(e.data);
-      if(msg.type==='log')     appendLine(msg.line);
+      if(msg.type==='log')          appendLine(msg.line);
       else if(msg.type==='stats')   handleStats(msg);
       else if(msg.type==='completions') handleCompletions(msg);
       else if(msg.type==='control') handleControl(msg.event);
@@ -583,8 +642,8 @@ function connectWs(force=false){
     if(manualDisconnect) return;
     setStatus('disconnected');
     const authed=await isStillAuthenticated();
-    if(!authed){handleControl('SESSION_EXPIRED');return;}
-    showToast('Connection lost – reconnecting…','error');
+    if(!authed){ handleControl('SESSION_EXPIRED'); return; }
+    showToast('Connection lost \u2013 reconnecting\u2026','error');
     scheduleReconnect();
   };
   ws.onerror=()=>ws.close();
@@ -599,58 +658,62 @@ function scheduleReconnect(){
 }
 
 async function isStillAuthenticated(){
-  try{
-    const r=await fetch('/api/status',{cache:'no-store'});
-    const d=await r.json();
-    return !!d.authenticated;
-  }catch(_){
-    return true;
-  }
+  try{ const r=await fetch('/api/status',{cache:'no-store'}); const d=await r.json(); return !!d.authenticated; }
+  catch(_){ return true; }
 }
 
 function handleControl(event){
-  if(event==='SESSION_EXPIRED'){showToast('Session expired','error');setTimeout(doLogout,1500);}
-  else if(event==='RATE_LIMITED') showToast('Rate limited – slow down','warn');
+  if(event==='SESSION_EXPIRED'){ showToast('Session expired','error'); setTimeout(doLogout,1500); }
+  else if(event==='RATE_LIMITED') showToast('Rate limited \u2013 slow down','warn');
   else if(event==='BLOCKED')      showToast('Command blocked','warn');
 }
 
-// ── Stats ─────────────────────────────────────────────────────────────────
+// ── Stats ──────────────────────────────────────────────────────────────────
 function handleStats(data){
-  const tps=data.tps||0;
-  const ramUsed=data.ramUsed||0, ramMax=data.ramMax||0;
+  const tps=data.tps||0, ramUsed=data.ramUsed||0, ramMax=data.ramMax||0;
   const players=data.players||0, maxPlayers=data.maxPlayers||0;
 
-  // Stats bar
   svTps.textContent=tps.toFixed(1);
   statTpsEl.className='stat '+(tps>=18?'tps-good':tps>=15?'tps-ok':'tps-bad');
   svRam.textContent=ramUsed+'MB';
   svPlayers.textContent=players;
 
-  // KPIs
-  $('kpi-tps').textContent=tps.toFixed(1);
-  $('kpi-tps-sub').textContent=tps>=18?'Excellent':tps>=15?'Degraded':'Critical';
-  $('kpi-tps').parentElement.className='kpi '+(tps>=18?'green':tps>=15?'warn':'red');
-
-  $('kpi-ram').textContent=ramUsed+'MB';
-  $('kpi-ram-sub').textContent='of '+ramMax+'MB';
-
-  $('kpi-players').textContent=players;
-  $('kpi-players-sub').textContent='of '+maxPlayers+' max';
-  $('player-count-tab').textContent='('+players+')';
+  const kpiTps=$('kpi-tps');
+  if(kpiTps){
+    kpiTps.textContent=tps.toFixed(1);
+    $('kpi-tps-sub').textContent=tps>=18?'Excellent \u2713':tps>=15?'Degraded':'Critical \u26a0';
+    kpiTps.parentElement.className='kpi '+(tps>=18?'green':tps>=15?'warn':'red');
+  }
+  const kpiRam=$('kpi-ram');
+  if(kpiRam){ kpiRam.textContent=ramUsed+'MB'; $('kpi-ram-sub').textContent='of '+ramMax+'MB ('+Math.round(ramUsed/(ramMax||1)*100)+'%)'; }
+  const kpiPlayers=$('kpi-players');
+  if(kpiPlayers){ kpiPlayers.textContent=players; $('kpi-players-sub').textContent='of '+maxPlayers+' max'; $('player-count-tab').textContent='('+players+')'; }
 
   if(data.worlds){
     $('kpi-worlds').textContent=data.worlds.length;
     const chunks=data.worlds.reduce((a,w)=>a+(w.chunks||0),0);
     $('kpi-worlds-sub').textContent='Chunks loaded: '+chunks;
+    const entities=data.worlds.reduce((a,w)=>a+(w.entities||0),0);
+    $('kpi-entities').textContent=entities;
+    renderWorldTable(data.worlds);
   }
 
-  // Charts
+  const bt=$('badge-tps'); if(bt) bt.textContent=tps.toFixed(1)+' TPS';
+  const br=$('badge-ram'); if(br) br.textContent=ramUsed+'MB';
+  const bp=$('badge-players'); if(bp) bp.textContent=players+' online';
+
   if(data.tpsHistory)     updateChart(tpsChart,    data.tpsHistory);
   if(data.ramHistory)     updateChart(ramChart,     data.ramHistory);
   if(data.playersHistory) updateChart(playersChart, data.playersHistory);
-
-  // Players list
   if(data.playerList!==undefined) renderPlayers(data.playerList);
+}
+
+function renderWorldTable(worlds){
+  const tbody=$('world-tbody'); if(!tbody) return;
+  const colors=['var(--accent)','var(--info)','var(--purple)','var(--success)','var(--warn)'];
+  tbody.innerHTML=worlds.map((w,i)=>
+    `<tr><td><span class="world-dot" style="background:${colors[i%colors.length]}"></span>${esc(w.name||'?')}</td><td>${w.chunks||0}</td><td>${w.entities||0}</td></tr>`
+  ).join('');
 }
 
 function updateChart(chart,data){
@@ -660,241 +723,174 @@ function updateChart(chart,data){
   chart.update('none');
 }
 
-// ── Charts ────────────────────────────────────────────────────────────────
+// ── Level bars ─────────────────────────────────────────────────────────────
+function updateLevelBars(){
+  const total=Math.max(1,levelCounts.INFO+levelCounts.WARN+levelCounts.SEVERE+levelCounts.DEBUG);
+  const set=(fid,cid,v)=>{ const f=$(fid),c=$(cid); if(f) f.style.width=Math.round(v/total*100)+'%'; if(c) c.textContent=v; };
+  set('bar-error','cnt-error',levelCounts.SEVERE);
+  set('bar-warn','cnt-warn',levelCounts.WARN);
+  set('bar-info','cnt-info',levelCounts.INFO);
+  set('bar-debug','cnt-debug',levelCounts.DEBUG);
+  const badge=$('badge-logcount');
+  if(badge) badge.textContent=(levelCounts.INFO+levelCounts.WARN+levelCounts.SEVERE+levelCounts.DEBUG)+' lines';
+}
+
+// ── Activity feed ──────────────────────────────────────────────────────────
+function pushActivity(type,icon,text){
+  const t=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  activityLog.unshift({type,icon,text,t});
+  if(activityLog.length>MAX_ACTIVITY) activityLog.pop();
+  renderActivity();
+}
+
+function renderActivity(){
+  const feed=$('activity-feed'); if(!feed) return;
+  if(!activityLog.length){ feed.innerHTML='<div class="activity-item"><span class="activity-icon">&#128564;</span><span class="activity-text" style="color:var(--text-muted)">Waiting for activity\u2026</span></div>'; return; }
+  feed.innerHTML=activityLog.slice(0,18).map(a=>`<div class="activity-item ${a.type}"><span class="activity-icon">${a.icon}</span><span class="activity-text">${a.text}</span><span class="activity-time">${a.t}</span></div>`).join('');
+}
+
+// ── Charts ─────────────────────────────────────────────────────────────────
 function makeChart(id,label,color,max){
   const ctx=document.getElementById(id).getContext('2d');
   return new Chart(ctx,{
     type:'line',
-    data:{labels:[],datasets:[{label,data:[],borderColor:color,backgroundColor:color+'22',borderWidth:1.8,pointRadius:0,fill:true,tension:.35}]},
-    options:{
-      responsive:true,maintainAspectRatio:false,animation:false,
-      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,backgroundColor:'#1e1e1e',borderColor:'rgba(255,255,255,.10)',borderWidth:1,titleColor:'#eeeeee',bodyColor:'#eeeeee',callbacks:{label:c=>label+': '+c.parsed.y}}},
-      scales:{
-        x:{display:false},
-        y:{min:0,max:max||undefined,grid:{color:'rgba(255,255,255,.055)'},ticks:{color:'#aaaaaa',font:{size:10},maxTicksLimit:4}}
-      }
-    }
+    data:{labels:[],datasets:[{label,data:[],borderColor:color,backgroundColor:color+'18',borderWidth:1.8,pointRadius:0,fill:true,tension:.35}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,backgroundColor:'#1e1e1e',borderColor:'rgba(255,255,255,.10)',borderWidth:1,titleColor:'#eee',bodyColor:'#eee',callbacks:{label:c=>label+': '+c.parsed.y}}},
+      scales:{x:{display:false},y:{min:0,max:max||undefined,grid:{color:'rgba(255,255,255,.042)'},ticks:{color:'#aaa',font:{size:10},maxTicksLimit:4}}}}
   });
 }
 
-// Charts are init'd after app shows
 function initCharts(){
   if(chartsInitialized) return;
   tpsChart     = makeChart('chart-tps',    'TPS',     '#f23987', 20);
-  ramChart     = makeChart('chart-ram',    'RAM MB',  '#ff79b0');
+  ramChart     = makeChart('chart-ram',    'RAM MB',  '#4fc3f7');
   playersChart = makeChart('chart-players','Players', '#d05ce3');
   chartsInitialized=true;
 }
 
-// ── Player list ───────────────────────────────────────────────────────────
+// ── Player list ─────────────────────────────────────────────────────────────
 function renderPlayers(list){
   const tbody=$('player-tbody'), tbl=$('player-table'), msg=$('no-players-msg');
   const safeList=Array.isArray(list)?list:[];
-  const structureSignature=JSON.stringify(safeList.map(p=>({name:p.name||'',world:p.world||'',op:!!p.op})));
-  const visualSignature=JSON.stringify(safeList.map(p=>({name:p.name||'',world:p.world||'',op:!!p.op,ping:p.ping||0})));
-  const structureChanged=structureSignature!==lastPlayersStructureSignature;
-  const visualChanged=visualSignature!==lastPlayersVisualSignature;
-  if(!visualChanged) return;
+  const structureSig=JSON.stringify(safeList.map(p=>({n:p.name||'',w:p.world||'',o:!!p.op})));
+  const visualSig=JSON.stringify(safeList.map(p=>({n:p.name||'',w:p.world||'',o:!!p.op,p:p.ping||0})));
+  const structureChanged=structureSig!==lastPlayersStructureSignature;
+  if(visualSig===lastPlayersVisualSignature) return;
+  lastPlayersStructureSignature=structureSig;
+  lastPlayersVisualSignature=visualSig;
 
-  lastPlayersStructureSignature=structureSignature;
-  lastPlayersVisualSignature=visualSignature;
+  // Detect join / leave for activity feed
+  const newNames=new Set(safeList.map(p=>p.name));
+  newNames.forEach(n=>{ if(!prevPlayerNames.has(n)) pushActivity('join','&#128994;',`<strong>${esc(n)}</strong> joined the server`); });
+  prevPlayerNames.forEach(n=>{ if(!newNames.has(n)) pushActivity('leave','&#9899;',`<strong>${esc(n)}</strong> left the server`); });
+  prevPlayerNames=newNames;
 
-  if(safeList.length===0){
-    tbody.innerHTML='';
-    tbl.style.display='none';
-    msg.style.display='';
-    if(activePanelName==='players' && structureChanged) animatePanelContent('players');
-    return;
-  }
-
-  tbl.style.display='';
-  msg.style.display='none';
-  tbody.innerHTML='';
+  if(!safeList.length){ tbody.innerHTML=''; tbl.style.display='none'; msg.style.display=''; if(activePanelName==='players'&&structureChanged) animatePanelContent('players'); return; }
+  tbl.style.display=''; msg.style.display='none'; tbody.innerHTML='';
   safeList.forEach(p=>{
-    const ping=p.ping||0;
-    const pClass=ping<80?'ping-good':ping<200?'ping-ok':'ping-bad';
+    const ping=p.ping||0, pc=ping<80?'ping-good':ping<200?'ping-ok':'ping-bad';
     const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td>${esc(p.name)}${p.op?'<span class="player-op">OP</span>':''}</td>
-      <td>${esc(p.world||'—')}</td>
-      <td class="${pClass}">${ping}ms</td>
-      <td>
-        <button class="action-btn kick" onclick="openModal('kick','${esc(p.name)}')">Kick</button>
-        <button class="action-btn ban"  onclick="openModal('ban','${esc(p.name)}')">Ban</button>
-      </td>`;
+    tr.innerHTML=`<td>${esc(p.name)}${p.op?'<span class="player-op">OP</span>':''}</td><td>${esc(p.world||'\u2014')}</td><td class="${pc}">${ping}ms</td><td><button class="action-btn kick" onclick="openModal('kick','${esc(p.name)}')">Kick</button> <button class="action-btn ban" onclick="openModal('ban','${esc(p.name)}')">Ban</button></td>`;
     tbody.appendChild(tr);
   });
-
-  if(activePanelName==='players' && structureChanged) animatePanelContent('players');
+  if(activePanelName==='players'&&structureChanged) animatePanelContent('players');
 }
 
-// ── Modal ─────────────────────────────────────────────────────────────────
+// ── Modal ──────────────────────────────────────────────────────────────────
 window.openModal=function(action,player){
-  modalAction=action;
-  modalPlayer.value=player;
-  modalReason.value='';
+  modalAction=action; modalPlayer.value=player; modalReason.value='';
   modalTitle.textContent=action==='kick'?'Kick Player':'Ban Player';
   modalConfirm.className='mbtn confirm '+(action==='kick'?'kick-mode':'');
   modalConfirm.textContent=action==='kick'?'Kick':'Ban';
-  modal.classList.add('show');
-  modalReason.focus();
+  modal.classList.add('show'); modalReason.focus();
 };
 modalCancel.addEventListener('click',()=>modal.classList.remove('show'));
-modal.addEventListener('click',e=>{if(e.target===modal) modal.classList.remove('show');});
+modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.remove('show'); });
 modalConfirm.addEventListener('click',()=>{
   if(!ws||ws.readyState!==WebSocket.OPEN) return;
   ws.send(JSON.stringify({type:modalAction,player:modalPlayer.value,reason:modalReason.value||'No reason given'}));
   modal.classList.remove('show');
-  showToast(`${modalAction==='kick'?'Kicked':'Banned'} ${modalPlayer.value}`,'warn');
+  const act=modalAction==='kick'?'Kicked':'Banned';
+  showToast(`${act} ${modalPlayer.value}`,'warn');
+  pushActivity('cmd','&#9889;',`<strong>${act}</strong> ${esc(modalPlayer.value)}: ${esc(modalReason.value||'No reason given')}`);
 });
-modalReason.addEventListener('keydown',e=>{if(e.key==='Enter') modalConfirm.click();});
+modalReason.addEventListener('keydown',e=>{ if(e.key==='Enter') modalConfirm.click(); });
 
-// ── Aliases ───────────────────────────────────────────────────────────────
+// ── Aliases ────────────────────────────────────────────────────────────────
 let aliasesLoaded=false;
 async function loadAliases(){
   if(aliasesLoaded) return;
   try{
-    const r=await fetch('/api/aliases');
-    const d=await r.json();
-    const list=$('alias-list');
-    list.innerHTML='';
+    const r=await fetch('/api/aliases'), d=await r.json();
+    const list=$('alias-list'); list.innerHTML='';
     (d.aliases||[]).forEach(a=>{
-      const card=document.createElement('div');
-      card.className='alias-card';
-      card.innerHTML=`<span class="alias-name">!${esc(a.name)}</span><span class="alias-sep">→</span><span class="alias-cmd" title="${esc(a.command)}">${esc(a.command)}</span><button class="alias-run">Run</button>`;
-      card.querySelector('.alias-run').addEventListener('click',e=>{
-        e.stopPropagation();
-        sendCommand('!'+a.name);
-        showTab('console');
-      });
-      card.addEventListener('click',()=>{
-        cmdInput.value='!'+a.name;
-        showTab('console');
-        cmdInput.focus();
-      });
+      const card=document.createElement('div'); card.className='alias-card';
+      card.innerHTML=`<span class="alias-name">!${esc(a.name)}</span><span class="alias-sep">\u2192</span><span class="alias-cmd" title="${esc(a.command)}">${esc(a.command)}</span><button class="alias-run">Run</button>`;
+      card.querySelector('.alias-run').addEventListener('click',e=>{ e.stopPropagation(); sendCommand('!'+a.name); showTab('console'); });
+      card.addEventListener('click',()=>{ cmdInput.value='!'+a.name; showTab('console'); cmdInput.focus(); });
       list.appendChild(card);
     });
-    if(!d.aliases||d.aliases.length===0) list.innerHTML='<p style="color:var(--text-muted);padding:20px 0">No aliases configured. Add them to config.yml.</p>';
+    if(!d.aliases||!d.aliases.length) list.innerHTML='<p style="color:var(--text-muted);padding:20px 0">No aliases configured. Add them to config.yml.</p>';
     aliasesLoaded=true;
     if(activePanelName==='aliases') requestAnimationFrame(()=>animatePanelContent('aliases'));
   }catch(_){}
 }
+function showTab(name){ switchToPanel(name); }
 
-function showTab(name){
-  switchToPanel(name);
-}
-
-// ── Tab completion ────────────────────────────────────────────────────────
+// ── Tab completion ──────────────────────────────────────────────────────────
 let acTimer=null;
 cmdInput.addEventListener('input',()=>{
-  clearTimeout(acTimer);
-  const v=cmdInput.value;
-  if(!v||v.startsWith('!')){hideAc();return;}
+  clearTimeout(acTimer); const v=cmdInput.value;
+  if(!v||v.startsWith('!')){ hideAc(); return; }
   acTimer=setTimeout(()=>requestComplete(v),200);
 });
-
 cmdInput.addEventListener('keydown',e=>{
-  if(e.key==='Tab'){
-    e.preventDefault();
-    if(acItems.length>0){
-      acIdx=(acIdx+1)%acItems.length;
-      renderAc();
-    } else requestComplete(cmdInput.value);
-    return;
-  }
-  if(e.key==='ArrowDown'&&acItems.length){e.preventDefault();acIdx=(acIdx+1)%acItems.length;renderAc();return;}
-  if(e.key==='ArrowUp'){
-    if(acItems.length){e.preventDefault();acIdx=(acIdx-1+acItems.length)%acItems.length;renderAc();return;}
-    // History navigation
-    if(histIdx===-1) draft=cmdInput.value;
-    histIdx=Math.min(histIdx+1,cmdHistory.length-1);
-    cmdInput.value=cmdHistory[cmdHistory.length-1-histIdx]||'';
-    return;
-  }
-  if(e.key==='Escape'){hideAc();return;}
-  if(e.key==='Enter'){
-    if(acItems.length&&acIdx>=0){applyAc(acItems[acIdx]);return;}
-    sendCommand(cmdInput.value);
-    return;
-  }
-  // History down
-  if(e.key==='ArrowDown'&&!acItems.length){
-    histIdx=Math.max(histIdx-1,-1);
-    cmdInput.value=histIdx===-1?draft:(cmdHistory[cmdHistory.length-1-histIdx]||'');
-  }
+  if(e.key==='Tab'){ e.preventDefault(); if(acItems.length){ acIdx=(acIdx+1)%acItems.length; renderAc(); } else requestComplete(cmdInput.value); return; }
+  if(e.key==='ArrowDown'&&acItems.length){ e.preventDefault(); acIdx=(acIdx+1)%acItems.length; renderAc(); return; }
+  if(e.key==='ArrowUp'){ if(acItems.length){ e.preventDefault(); acIdx=(acIdx-1+acItems.length)%acItems.length; renderAc(); return; } if(histIdx===-1) draft=cmdInput.value; histIdx=Math.min(histIdx+1,cmdHistory.length-1); cmdInput.value=cmdHistory[cmdHistory.length-1-histIdx]||''; return; }
+  if(e.key==='Escape'){ hideAc(); return; }
+  if(e.key==='Enter'){ if(acItems.length&&acIdx>=0){ applyAc(acItems[acIdx]); return; } sendCommand(cmdInput.value); return; }
+  if(e.key==='ArrowDown'&&!acItems.length){ histIdx=Math.max(histIdx-1,-1); cmdInput.value=histIdx===-1?draft:(cmdHistory[cmdHistory.length-1-histIdx]||''); }
 });
-
-function requestComplete(partial){
-  if(!ws||ws.readyState!==WebSocket.OPEN) return;
-  acReqId++;
-  ws.send(JSON.stringify({type:'complete',partial,reqId:acReqId}));
-}
-
-function handleCompletions(msg){
-  if(msg.reqId!==acReqId) return; // stale
-  acItems=msg.suggestions||[];
-  acIdx=-1;
-  renderAc();
-}
-
+function requestComplete(partial){ if(!ws||ws.readyState!==WebSocket.OPEN) return; acReqId++; ws.send(JSON.stringify({type:'complete',partial,reqId:acReqId})); }
+function handleCompletions(msg){ if(msg.reqId!==acReqId) return; acItems=msg.suggestions||[]; acIdx=-1; renderAc(); }
 function renderAc(){
-  if(!acItems.length){hideAc();return;}
-  acDropdown.innerHTML='<div class="ac-hint">Tab / ↑↓ to navigate, Enter to select</div>'
-    +acItems.map((s,i)=>`<div class="ac-item${i===acIdx?' sel':''}" data-i="${i}">${esc(s)}</div>`).join('');
-  acDropdown.querySelectorAll('.ac-item').forEach(el=>{
-    el.addEventListener('mousedown',e=>{e.preventDefault();applyAc(acItems[+el.dataset.i]);});
-  });
+  if(!acItems.length){ hideAc(); return; }
+  acDropdown.innerHTML='<div class="ac-hint">Tab / \u2191\u2193 to navigate, Enter to select</div>'+acItems.map((s,i)=>`<div class="ac-item${i===acIdx?' sel':''}" data-i="${i}">${esc(s)}</div>`).join('');
+  acDropdown.querySelectorAll('.ac-item').forEach(el=>el.addEventListener('mousedown',e=>{ e.preventDefault(); applyAc(acItems[+el.dataset.i]); }));
   acDropdown.style.display='block';
 }
+function applyAc(val){ const pts=cmdInput.value.split(' '); pts[pts.length-1]=val; cmdInput.value=pts.join(' ')+' '; hideAc(); cmdInput.focus(); }
+function hideAc(){ acItems=[]; acIdx=-1; acDropdown.style.display='none'; }
+document.addEventListener('click',e=>{ if(!cmdInput.contains(e.target)&&!acDropdown.contains(e.target)) hideAc(); });
 
-function applyAc(val){
-  // Replace the last word of the command with the completion
-  const parts=cmdInput.value.split(' ');
-  parts[parts.length-1]=val;
-  cmdInput.value=parts.join(' ')+' ';
-  hideAc();
-  cmdInput.focus();
-}
-
-function hideAc(){acItems=[];acIdx=-1;acDropdown.style.display='none';}
-
-document.addEventListener('click',e=>{if(!cmdInput.contains(e.target)&&!acDropdown.contains(e.target)) hideAc();});
-
-// ── Send command ──────────────────────────────────────────────────────────
+// ── Send command ────────────────────────────────────────────────────────────
 function sendCommand(cmd){
   cmd=cmd.trim();
   if(!cmd||!ws||ws.readyState!==WebSocket.OPEN) return;
   ws.send(JSON.stringify({type:'command',command:cmd}));
+  pushActivity('cmd','&#9000;',`<strong>CMD:</strong> ${esc(cmd)}`);
   hideAc();
   if(cmdHistory[cmdHistory.length-1]!==cmd){
     cmdHistory.push(cmd);
     if(cmdHistory.length>100) cmdHistory.shift();
-    localStorage.setItem('bwc_hist',JSON.stringify(cmdHistory));
+    try{ localStorage.setItem('bwc_hist',JSON.stringify(cmdHistory)); }catch(_){}
   }
-  histIdx=-1; draft='';
-  cmdInput.value='';
+  histIdx=-1; draft=''; cmdInput.value='';
 }
-
 btnSend.addEventListener('click',()=>sendCommand(cmdInput.value));
 
-// ── Notifications ─────────────────────────────────────────────────────────
+// ── Notifications ───────────────────────────────────────────────────────────
 $('notif-btn').addEventListener('click',()=>{
-  if(!notifEnabled){
-    Notification.requestPermission().then(p=>{
-      notifEnabled=p==='granted';
-      showToast(notifEnabled?'Notifications enabled':'Notifications denied',notifEnabled?'success':'error');
-    });
-  } else {
-    notifEnabled=false;
-    showToast('Notifications disabled');
-  }
+  if(!notifEnabled){ Notification.requestPermission().then(p=>{ notifEnabled=p==='granted'; showToast(notifEnabled?'Notifications enabled':'Notifications denied',notifEnabled?'success':'error'); }); }
+  else{ notifEnabled=false; showToast('Notifications disabled'); }
   notifCount=0; nbadge.classList.remove('show');
 });
 
 function playSound(){
   try{
-    const ctx=new AudioContext();
-    const o=ctx.createOscillator(), g=ctx.createGain();
+    const ctx=new AudioContext(), o=ctx.createOscillator(), g=ctx.createGain();
     o.connect(g); g.connect(ctx.destination);
     o.frequency.value=440; o.type='sine';
     g.gain.setValueAtTime(.15,ctx.currentTime);
@@ -903,97 +899,75 @@ function playSound(){
   }catch(_){}
 }
 
-// ── Export log ────────────────────────────────────────────────────────────
-$('btn-export').addEventListener('click',()=>{
-  window.open('/api/logs/export','_blank');
-});
-
-// ── Clear ─────────────────────────────────────────────────────────────────
+// ── Export / Clear / Logout ─────────────────────────────────────────────────
+$('btn-export').addEventListener('click',()=>window.open('/api/logs/export','_blank'));
 $('btn-clear').addEventListener('click',()=>{
   output.innerHTML=''; lineCount=0; svLines.textContent='0';
-  showToast('Console cleared');
+  levelCounts.INFO=0; levelCounts.WARN=0; levelCounts.SEVERE=0; levelCounts.DEBUG=0;
+  updateLevelBars(); showToast('Console cleared');
 });
-
-// ── Logout ────────────────────────────────────────────────────────────────
 $('btn-logout').addEventListener('click',doLogout);
 async function doLogout(){
-  manualDisconnect=true;
-  clearTimeout(reconnectTimer);
-  try{await fetch('/api/logout',{method:'POST'});}catch(_){}
+  manualDisconnect=true; clearTimeout(reconnectTimer);
+  try{ await fetch('/api/logout',{method:'POST'}); }catch(_){}
   if(ws) ws.close();
-  app.classList.remove('show');
-  loginScreen.classList.remove('hide');
+  app.classList.remove('show'); loginScreen.classList.remove('hide');
   lp.value=''; loginErr.textContent='';
   sessionUser=''; cmdInput.disabled=true; btnSend.disabled=true;
-  output.innerHTML=''; lineCount=0;
-  aliasesLoaded=false;
-  lastPlayersStructureSignature='__init__';
-  lastPlayersVisualSignature='__init__';
-  activePanelName='';
-  switchToPanel('console');
+  output.innerHTML=''; lineCount=0; aliasesLoaded=false;
+  lastPlayersStructureSignature='__init__'; lastPlayersVisualSignature='__init__';
+  activePanelName=''; switchToPanel('console');
 }
 
-// ── Login ─────────────────────────────────────────────────────────────────
+// ── Login ───────────────────────────────────────────────────────────────────
 async function doLogin(){
   const username=lu.value.trim(), password=lp.value;
   loginErr.textContent='';
-  if(!username||!password){loginErr.textContent='Enter username and password.';return;}
-  btnLogin.disabled=true; btnLogin.textContent='Signing in…';
+  if(!username||!password){ loginErr.textContent='Enter username and password.'; return; }
+  btnLogin.disabled=true; btnLogin.textContent='Signing in\u2026';
   try{
-    const cr=await fetch('/api/csrf');
-    const {token:csrf}=await cr.json();
+    const cr=await fetch('/api/csrf'), {token:csrf}=await cr.json();
     const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,csrf})});
     const data=await res.json();
     if(res.ok&&data.success){
       sessionUser=data.username; sessionStart=Date.now();
       ulabel.textContent=sessionUser;
-      loginScreen.classList.add('hide');
-      app.classList.add('show');
-      switchToPanel(activePanelName);
-      initCharts();
-      animatePanelContent(activePanelName);
-      manualDisconnect=false;
-      connectWs(true);
+      loginScreen.classList.add('hide'); app.classList.add('show');
+      switchToPanel('console'); initCharts(); animatePanelContent('console');
+      manualDisconnect=false; connectWs(true);
     } else {
       loginErr.textContent=data.error||'Invalid credentials.';
       lp.value=''; lp.focus();
     }
-  }catch(e){loginErr.textContent='Server unreachable.';}
-  finally{btnLogin.disabled=false;btnLogin.textContent='Sign In';}
+  }catch(_){ loginErr.textContent='Server unreachable.'; }
+  finally{ btnLogin.disabled=false; btnLogin.textContent='Sign In'; }
 }
-
 btnLogin.addEventListener('click',doLogin);
-lp.addEventListener('keydown',e=>{if(e.key==='Enter') doLogin();});
-lu.addEventListener('keydown',e=>{if(e.key==='Enter') lp.focus();});
+lp.addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+lu.addEventListener('keydown',e=>{ if(e.key==='Enter') lp.focus(); });
 
-// ── Utils ─────────────────────────────────────────────────────────────────
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function escRe(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+// ── Utils ───────────────────────────────────────────────────────────────────
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 
-// ── Init ──────────────────────────────────────────────────────────────────
+// ── Init ────────────────────────────────────────────────────────────────────
 (async()=>{
   try{
-    const r=await fetch('/api/status');
-    const d=await r.json();
+    const r=await fetch('/api/status'), d=await r.json();
     if(d.authenticated){
       sessionUser=d.username; sessionStart=Date.now();
       ulabel.textContent=sessionUser;
-      loginScreen.classList.add('hide');
-      app.classList.add('show');
-      switchToPanel(activePanelName);
-      initCharts();
-      animatePanelContent(activePanelName);
-      manualDisconnect=false;
-      connectWs(true);
-      return;
+      loginScreen.classList.add('hide'); app.classList.add('show');
+      switchToPanel('console'); initCharts(); animatePanelContent('console');
+      manualDisconnect=false; connectWs(true); return;
     }
   }catch(_){}
   lu.focus();
 })();
 
 window.addEventListener('online',()=>{ if(!manualDisconnect) connectWs(true); });
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden && !manualDisconnect && (!ws || ws.readyState!==WebSocket.OPEN)) connectWs(true); });
-setInterval(()=>{ if(!manualDisconnect && (!ws || ws.readyState===WebSocket.CLOSED)) connectWs(); },5000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&!manualDisconnect&&(!ws||ws.readyState!==WebSocket.OPEN)) connectWs(true); });
+setInterval(()=>{ if(!manualDisconnect&&(!ws||ws.readyState===WebSocket.CLOSED)) connectWs(); },5000);
 })();
 </script>
 </body>
