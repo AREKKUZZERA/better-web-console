@@ -1,4 +1,3 @@
-![Logo](logo.png)
 
 Secure, browser-based server console for Paper 1.21+
 
