@@ -98,10 +98,32 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/INDEX.LIST</exclude>
+                                        <exclude>module-info.class</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+
                             <relocations>
                                 <relocation>
                                     <pattern>org.eclipse.jetty</pattern>
                                     <shadedPattern>dev.webconsole.shaded.jetty</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.eclipse.jetty.websocket</pattern>
+                                    <shadedPattern>dev.webconsole.shaded.jetty.websocket</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>at.favre.lib</pattern>
