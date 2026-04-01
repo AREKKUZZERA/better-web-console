@@ -33,7 +33,7 @@ mvn clean package
 Output:
 
 ```
-target/Better-WebConsole-2.0.0.jar
+target/Better-WebConsole-2.1.0.jar
 ```
 
 Copy the JAR into your server's `plugins/` directory.
