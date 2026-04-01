@@ -16,7 +16,7 @@
   --text:#eeeeee;--text-dim:#aaaaaa;--text-muted:#666666;
   --font:'JetBrains Mono',monospace;--ui:'Syne',sans-serif;
   --r:13px;--r-sm:9px;--r-xs:6px;
-  --ease: cubic-bezier(.22,1,.36,1);
+  --ease:cubic-bezier(.22,1,.36,1);
   --fast:150ms;--slow:260ms;
   --shadow-accent:0 0 0 1px rgba(242,57,135,.16),0 12px 30px rgba(242,57,135,.14);
   --shadow-soft:0 10px 30px rgba(0,0,0,.22);
@@ -34,21 +34,21 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 @keyframes lineReveal{from{opacity:0;transform:translateY(8px);clip-path:inset(0 100% 0 0)}to{opacity:1;transform:translateY(0);clip-path:inset(0 0 0 0)}}
 
 /* Login */
-#login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at top, rgba(242,57,135,.08), transparent 38%),var(--bg);z-index:200;transition:opacity var(--slow) var(--ease),transform var(--slow) var(--ease)}
+#login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at top,rgba(242,57,135,.08),transparent 38%),var(--bg);z-index:200;transition:opacity var(--slow) var(--ease),transform var(--slow) var(--ease)}
 #login-screen.hide{opacity:0;transform:translateY(-14px);pointer-events:none}
-.lcard{width:360px;background:linear-gradient(180deg, rgba(255,255,255,.02), transparent 24%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:38px 34px;position:relative;overflow:hidden;box-shadow:var(--shadow-soft);animation:riseIn .45s var(--ease)}
+.lcard{width:360px;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent 24%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:38px 34px;position:relative;overflow:hidden;box-shadow:var(--shadow-soft);animation:riseIn .45s var(--ease)}
 .lcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
 .llogo{font-family:var(--ui);font-size:20px;font-weight:800;color:var(--accent)}
 .llogo small{display:block;font-family:var(--font);font-size:11px;color:var(--text-dim);font-weight:400;margin-top:2px}
 .lcard h2{font-family:var(--ui);font-size:16px;color:var(--text);margin:22px 0 18px}
 .field{margin-bottom:13px}
 .field label{display:block;font-size:10px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
-.field input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:var(--font);font-size:13px;padding:9px 11px;outline:none;transition:border-color var(--fast), box-shadow var(--fast), transform var(--fast), background var(--fast)}
+.field input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:var(--font);font-size:13px;padding:9px 11px;outline:none;transition:border-color var(--fast),box-shadow var(--fast),transform var(--fast),background var(--fast)}
 .field input:focus{border-color:var(--accent);background:var(--bg4);box-shadow:0 0 0 4px var(--accent-dim);transform:translateY(-1px)}
 .field input::placeholder{color:var(--text-muted)}
-.btn-login{width:100%;margin-top:4px;padding:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:var(--r-sm);font-family:var(--ui);font-size:14px;font-weight:700;cursor:pointer;transition:transform var(--fast) var(--ease), box-shadow var(--fast), filter var(--fast);box-shadow:var(--shadow-accent);position:relative;overflow:hidden}
+.btn-login{width:100%;margin-top:4px;padding:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:var(--r-sm);font-family:var(--ui);font-size:14px;font-weight:700;cursor:pointer;transition:transform var(--fast) var(--ease),box-shadow var(--fast),filter var(--fast);box-shadow:var(--shadow-accent);position:relative;overflow:hidden}
 .btn-login:hover{transform:translateY(-2px) scale(1.01);filter:brightness(1.06)}
-.btn-login::after{content:'';position:absolute;inset:0;background:linear-gradient(110deg, transparent 20%, rgba(255,255,255,.18) 50%, transparent 80%);transform:translateX(-130%)}
+.btn-login::after{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent 20%,rgba(255,255,255,.18) 50%,transparent 80%);transform:translateX(-130%)}
 .btn-login:hover::after{animation:shimmerX .9s var(--ease)}
 .btn-login:active{transform:translateY(0) scale(.99)}
 .btn-login:disabled{background:var(--accent-dim);color:var(--text-dim);cursor:not-allowed}
@@ -59,7 +59,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 #app.show{opacity:1}
 
 /* Header */
-header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;background:linear-gradient(180deg, rgba(255,255,255,.02), transparent 55%),var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;user-select:none;box-shadow:0 10px 25px rgba(0,0,0,.14)}
+header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent 55%),var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;user-select:none;box-shadow:0 10px 25px rgba(0,0,0,.14)}
 .hlogo{font-family:var(--ui);font-size:14px;font-weight:800;color:var(--accent);letter-spacing:-.2px}
 .hsep{width:1px;height:18px;background:var(--border)}
 .status-dot{width:7px;height:7px;border-radius:50%;background:var(--text-muted);transition:background .3s;flex-shrink:0}
@@ -71,16 +71,16 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .huser{font-size:11px;color:var(--text-dim);margin-left:2px}
 .huser strong{color:var(--accent)}
 .spacer{flex:1}
-.hbtn{background:rgba(255,255,255,.01);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text-dim);font-family:var(--font);font-size:11px;padding:4px 10px;cursor:pointer;transition:border-color var(--fast), color var(--fast), background var(--fast), transform var(--fast) var(--ease), box-shadow var(--fast);white-space:nowrap}
+.hbtn{background:rgba(255,255,255,.01);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text-dim);font-family:var(--font);font-size:11px;padding:4px 10px;cursor:pointer;transition:border-color var(--fast),color var(--fast),background var(--fast),transform var(--fast) var(--ease),box-shadow var(--fast);white-space:nowrap}
 .hbtn:hover{border-color:var(--accent);color:var(--accent2);background:var(--accent-dim);transform:translateY(-1px);box-shadow:var(--shadow-accent)}
 .hbtn:active{transform:translateY(0) scale(.98)}
 .hbtn.danger:hover{border-color:var(--danger);color:var(--danger);background:rgba(229,85,85,.10)}
 
 /* Tabs */
 #tabs{display:flex;align-items:center;gap:4px;padding:0 10px;height:40px;background:var(--bg3);border-bottom:1px solid var(--border);flex-shrink:0}
-.tab{padding:7px 14px;font-size:12px;font-weight:600;color:var(--text-dim);cursor:pointer;border-radius:var(--r-sm);border:1px solid transparent;transition:color var(--fast), background var(--fast), border-color var(--fast), transform var(--fast) var(--ease), box-shadow var(--fast);user-select:none}
+.tab{padding:7px 14px;font-size:12px;font-weight:600;color:var(--text-dim);cursor:pointer;border-radius:var(--r-sm);border:1px solid transparent;transition:color var(--fast),background var(--fast),border-color var(--fast),transform var(--fast) var(--ease),box-shadow var(--fast);user-select:none}
 .tab:hover{color:var(--text);transform:translateY(-1px);background:rgba(255,255,255,.02)}
-.tab.active{color:var(--accent2);background:var(--bg2);border-color:var(--border2);box-shadow:inset 0 -2px 0 var(--accent), 0 8px 18px rgba(0,0,0,.16)}
+.tab.active{color:var(--accent2);background:var(--bg2);border-color:var(--border2);box-shadow:inset 0 -2px 0 var(--accent),0 8px 18px rgba(0,0,0,.16)}
 
 /* Panels */
 .panel{display:none;flex:1;min-height:0;flex-direction:column;transform-origin:50% 24px}
@@ -103,7 +103,6 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .log-line.WARN,.log-line.WARNING{color:var(--warn)}
 .log-line.SEVERE,.log-line.ERROR{color:var(--danger)}
 .log-line.DEBUG,.log-line.FINE,.log-line.FINER,.log-line.FINEST{color:var(--text-dim)}
-/* FIX 1: INFO gets a distinct colour (cyan-blue) */
 .log-line.INFO{color:var(--info)}
 .log-line .hl{background:rgba(255,176,32,.25);color:#ffcc55;border-radius:2px;padding:0 1px}
 .log-ts{color:var(--text-muted)}
@@ -114,18 +113,16 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 /* Search bar */
 #search-bar{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--bg3);border-bottom:1px solid var(--border);flex-shrink:0}
 .slbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;flex-shrink:0}
-#search-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:var(--font);font-size:12px;padding:6px 10px;outline:none;transition:border-color var(--fast), box-shadow var(--fast), background var(--fast), transform var(--fast)}
+#search-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:var(--font);font-size:12px;padding:6px 10px;outline:none;transition:border-color var(--fast),box-shadow var(--fast),background var(--fast),transform var(--fast)}
 #search-input:focus{border-color:var(--accent);background:var(--bg4);box-shadow:0 0 0 4px var(--accent-dim);transform:translateY(-1px)}
 #search-input::placeholder{color:var(--text-muted)}
 #search-count{font-size:11px;color:var(--text-dim);white-space:nowrap}
 .ftog{background:none;border:1px solid var(--border2);border-radius:var(--r-xs);font-size:10px;font-family:var(--font);font-weight:600;padding:4px 8px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;transition:all var(--fast)}
-.ftog.WARN{color:var(--warn)}.ftog.SEVERE{color:var(--danger)}.ftog.DEBUG{color:var(--text-dim)}
-/* FIX 2: INFO toggle */
-.ftog.INFO{color:var(--info)}
+.ftog.WARN{color:var(--warn)}.ftog.SEVERE{color:var(--danger)}.ftog.DEBUG{color:var(--text-dim)}.ftog.INFO{color:var(--info)}
 .ftog.active{border-color:currentColor;background:color-mix(in srgb,currentColor 12%,transparent);box-shadow:0 0 0 3px color-mix(in srgb,currentColor 13%,transparent)}
 
 /* Input bar */
-#input-bar{display:flex;align-items:center;padding:10px 12px;background:linear-gradient(180deg, transparent, rgba(255,255,255,.01)),var(--bg2);border-top:1px solid var(--border);flex-shrink:0;gap:8px;position:relative}
+#input-bar{display:flex;align-items:center;padding:10px 12px;background:linear-gradient(180deg,transparent,rgba(255,255,255,.01)),var(--bg2);border-top:1px solid var(--border);flex-shrink:0;gap:8px;position:relative}
 .prompt{color:var(--accent);font-size:14px;font-weight:700;flex-shrink:0}
 #cmd-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font);font-size:13px;caret-color:var(--accent2)}
 #cmd-input::placeholder{color:var(--text-muted)}
@@ -139,7 +136,7 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .ac-item:hover,.ac-item.sel{background:var(--bg4);color:var(--accent)}
 .ac-hint{padding:4px 10px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border)}
 
-/* ── Dashboard — Redesigned ── */
+/* Dashboard */
 #panel-dash{padding:16px;gap:14px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 #panel-dash::-webkit-scrollbar{width:5px}
 #panel-dash::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
@@ -147,7 +144,7 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .dash-section-title{font-size:10px;text-transform:uppercase;letter-spacing:.10em;color:var(--text-muted);margin-bottom:8px;padding-left:2px;display:flex;align-items:center;gap:8px}
 .dash-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
 .dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(192px,1fr));gap:10px}
-.kpi{background:linear-gradient(180deg, rgba(255,255,255,.018), transparent 28%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:14px 16px;position:relative;overflow:hidden;transition:transform var(--slow) var(--ease), border-color var(--fast), box-shadow var(--slow);animation:riseIn .4s var(--ease)}
+.kpi{background:linear-gradient(180deg,rgba(255,255,255,.018),transparent 28%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:14px 16px;position:relative;overflow:hidden;transition:transform var(--slow) var(--ease),border-color var(--fast),box-shadow var(--slow);animation:riseIn .4s var(--ease)}
 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
 .kpi.green::before{background:var(--accent)}.kpi.warn::before{background:var(--warn)}.kpi.red::before{background:var(--danger)}.kpi.blue::before{background:var(--info)}.kpi.purple::before{background:var(--purple)}.kpi.teal::before{background:var(--success)}
 .kpi:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow-accent)}
@@ -155,7 +152,7 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .kpi-value{font-size:28px;font-weight:700;font-family:var(--ui);color:var(--text);line-height:1}
 .kpi-sub{font-size:11px;color:var(--text-dim);margin-top:4px}
 .dash-charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(295px,1fr));gap:12px}
-.chart-card{background:linear-gradient(180deg, rgba(255,255,255,.018), transparent 28%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:14px 16px;transition:transform var(--slow) var(--ease), border-color var(--fast), box-shadow var(--slow);animation:riseIn .48s var(--ease)}
+.chart-card{background:linear-gradient(180deg,rgba(255,255,255,.018),transparent 28%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:14px 16px;transition:transform var(--slow) var(--ease),border-color var(--fast),box-shadow var(--slow);animation:riseIn .48s var(--ease)}
 .chart-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow-accent)}
 .chart-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .chart-card h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim)}
@@ -202,7 +199,7 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 /* Aliases */
 #panel-aliases{overflow-y:auto;padding:12px}
 .alias-list{display:flex;flex-direction:column;gap:8px}
-.alias-card{background:linear-gradient(180deg, rgba(255,255,255,.018), transparent 24%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color var(--fast), transform var(--fast) var(--ease), box-shadow var(--fast)}
+.alias-card{background:linear-gradient(180deg,rgba(255,255,255,.018),transparent 24%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color var(--fast),transform var(--fast) var(--ease),box-shadow var(--fast)}
 .alias-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-accent)}
 .alias-name{font-weight:700;color:var(--accent);font-size:13px;flex-shrink:0}
 .alias-sep{color:var(--text-muted);flex-shrink:0}
@@ -211,15 +208,15 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .alias-run:hover{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;transform:translateY(-1px)}
 .alias-hint{font-size:11px;color:var(--text-muted);margin-bottom:8px}
 
-/* Modal — FIX 3: label for= added in HTML */
+/* Modal */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:300;opacity:0;pointer-events:none;transition:opacity var(--slow)}
 .modal-bg.show{opacity:1;pointer-events:all}
-.modal{background:linear-gradient(180deg, rgba(255,255,255,.018), transparent 24%),var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:24px;width:380px;position:relative;box-shadow:var(--shadow-soft)}
+.modal{background:linear-gradient(180deg,rgba(255,255,255,.018),transparent 24%),var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:24px;width:380px;position:relative;box-shadow:var(--shadow-soft)}
 .modal-bg.show .modal{animation:modalIn var(--slow) var(--ease) both}
 .modal h3{font-family:var(--ui);font-size:16px;color:var(--text);margin-bottom:16px}
 .modal-field{margin-bottom:12px}
 .modal-field label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin-bottom:4px}
-.modal-field input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:var(--font);font-size:13px;padding:8px 10px;outline:none;transition:border-color var(--fast), box-shadow var(--fast), background var(--fast), transform var(--fast)}
+.modal-field input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:var(--font);font-size:13px;padding:8px 10px;outline:none;transition:border-color var(--fast),box-shadow var(--fast),background var(--fast),transform var(--fast)}
 .modal-field input:focus{border-color:var(--accent);background:var(--bg4);box-shadow:0 0 0 4px var(--accent-dim);transform:translateY(-1px)}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .mbtn{border:1px solid var(--border2);border-radius:var(--r-sm);font-family:var(--font);font-size:12px;padding:7px 14px;cursor:pointer;transition:all var(--fast)}
@@ -242,20 +239,23 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 </head>
 <body>
 
-<!-- Login  FIX #3 accessibility: label for= attributes -->
+<!-- FIX #1: Password field wrapped in <form> to silence browser warning.
+     action="#" prevents page reload; JS handles actual submission. -->
 <div id="login-screen">
   <div class="lcard">
     <div class="llogo">&#x2B21; B-WebConsole <small>V2</small></div>
     <h2>Sign in</h2>
-    <div class="field">
-      <label for="lu">Username</label>
-      <input id="lu" type="text" autocomplete="username" placeholder="admin" spellcheck="false">
-    </div>
-    <div class="field">
-      <label for="lp">Password</label>
-      <input id="lp" type="password" autocomplete="current-password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;">
-    </div>
-    <button class="btn-login" id="btn-login">Sign In</button>
+    <form id="login-form" action="#" onsubmit="return false;">
+      <div class="field">
+        <label for="lu">Username</label>
+        <input id="lu" type="text" autocomplete="username" placeholder="admin" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="lp">Password</label>
+        <input id="lp" type="password" autocomplete="current-password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;">
+      </div>
+      <button class="btn-login" id="btn-login" type="submit">Sign In</button>
+    </form>
     <div id="login-error" role="alert"></div>
   </div>
 </div>
@@ -300,7 +300,6 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
       <span class="slbl">Filter</span>
       <input id="search-input" type="text" placeholder="Search logs&#8230; (Ctrl+F)" spellcheck="false">
       <span id="search-count"></span>
-      <!-- FIX #2: INFO filter toggle added -->
       <button class="ftog INFO active" data-lv="INFO">Info</button>
       <button class="ftog WARN active" data-lv="WARN">Warn</button>
       <button class="ftog SEVERE active" data-lv="SEVERE">Error</button>
@@ -314,7 +313,7 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
     </div>
   </div>
 
-  <!-- Dashboard Panel — Redesigned -->
+  <!-- Dashboard Panel -->
   <div class="panel" id="panel-dash">
     <div class="dash-section">
       <div class="dash-section-title">Server Health</div>
@@ -327,7 +326,6 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
         <div class="kpi red"><div class="kpi-label">Errors (session)</div><div class="kpi-value" id="kpi-errors">0</div><div class="kpi-sub" id="kpi-errors-sub">SEVERE / ERROR lines</div></div>
       </div>
     </div>
-
     <div class="dash-section">
       <div class="dash-section-title">Performance History (5 min)</div>
       <div class="dash-charts">
@@ -345,7 +343,6 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
         </div>
       </div>
     </div>
-
     <div class="dash-section">
       <div class="dash-section-title">Analytics</div>
       <div class="dash-charts">
@@ -396,7 +393,7 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
   </div>
 </div>
 
-<!-- Action Modal — FIX #3: label for= matches input id -->
+<!-- Action Modal -->
 <div class="modal-bg" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <div class="modal">
     <h3 id="modal-title">Action</h3>
@@ -428,7 +425,8 @@ let chartsInitialized=false;
 let cmdHistory=[], histIdx=-1, draft='';
 try{ cmdHistory=JSON.parse(localStorage.getItem('bwc_hist')||'[]'); }catch(_){}
 let sessionUser='', sessionStart=Date.now();
-let filterText='', activeFilters=new Set(['INFO','WARN','WARNING','SEVERE','ERROR']);
+let activeFilters=new Set(['INFO','WARN','WARNING','SEVERE','ERROR']);
+let filterText='';
 let searchQuery='', searchMatches=[], searchIdx=0;
 let notifEnabled=false, notifCount=0;
 let modalAction=null;
@@ -476,11 +474,12 @@ document.querySelectorAll('.tab').forEach(tab=>{
 
 function switchToPanel(name){
   if(!name) return;
+  // FIX #3: aliases only load when tab is actually clicked (lazy), not on connect
   if(name==='aliases') loadAliases();
   if(activePanelName===name){ animatePanelContent(name); return; }
   const prevIdx=panelOrder.indexOf(activePanelName);
   const nextIdx=panelOrder.indexOf(name);
-  const enterClass=(prevIdx!==-1 && nextIdx<prevIdx)?'enter-from-left':'enter-from-right';
+  const enterClass=(prevIdx!==-1&&nextIdx<prevIdx)?'enter-from-left':'enter-from-right';
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.panel===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active','enter-from-right','enter-from-left'));
   const nextPanel=$('panel-'+name);
@@ -501,10 +500,10 @@ function staggerAnimate(nodes,step=40){
 }
 
 function animatePanelContent(name){
-  if(name==='console'){ staggerAnimate([$('stats-bar'), $('console-wrap'), $('search-bar'), $('input-bar')],50); return; }
-  if(name==='players'){ const r=[...document.querySelectorAll('#player-tbody tr')]; staggerAnimate(r.length?r:[$('player-table'), $('no-players-msg')],26); return; }
-  if(name==='aliases'){ staggerAnimate([$('panel-aliases').querySelector('.alias-hint'), ...document.querySelectorAll('#alias-list > *')],26); return; }
-  if(name==='dash'){ staggerAnimate([...document.querySelectorAll('#kpi-grid .kpi'), ...document.querySelectorAll('.chart-card')],22); }
+  if(name==='console'){ staggerAnimate([$('stats-bar'),$('console-wrap'),$('search-bar'),$('input-bar')],50); return; }
+  if(name==='players'){ const r=[...document.querySelectorAll('#player-tbody tr')]; staggerAnimate(r.length?r:[$('player-table'),$('no-players-msg')],26); return; }
+  if(name==='aliases'){ staggerAnimate([$('panel-aliases').querySelector('.alias-hint'),...document.querySelectorAll('#alias-list > *')],26); return; }
+  if(name==='dash'){ staggerAnimate([...document.querySelectorAll('#kpi-grid .kpi'),...document.querySelectorAll('.chart-card')],22); }
 }
 
 // ── Status ─────────────────────────────────────────────────────────────────
@@ -526,8 +525,6 @@ function levelOf(line){
   const m=line.match(/\[[\d:]+\s+(\w+)\]/);
   return m?m[1].toUpperCase():'INFO';
 }
-
-// Map level string to filter group key
 function filterGroup(lv){
   if(lv==='WARN'||lv==='WARNING') return 'WARN';
   if(lv==='SEVERE'||lv==='ERROR') return 'SEVERE';
@@ -542,14 +539,13 @@ function appendLine(raw){
   const lv=levelOf(raw);
   const fg=filterGroup(lv);
 
-  // Dashboard counters
   if(fg==='SEVERE'){ levelCounts.SEVERE++; sessionErrors++; const e=$('kpi-errors'); if(e) e.textContent=sessionErrors; pushActivity('err','&#128308;',raw.substring(0,90)); }
   else if(fg==='WARN'){ levelCounts.WARN++; pushActivity('warn','&#128993;',raw.substring(0,90)); }
   else if(fg==='INFO') levelCounts.INFO++;
   else levelCounts.DEBUG++;
   updateLevelBars();
 
-  if((fg==='SEVERE')&&notifEnabled){
+  if(fg==='SEVERE'&&notifEnabled){
     notifCount++; nbadge.classList.add('show');
     if(document.hidden) new Notification('BWC Error',{body:raw.substring(0,80)}).catch(()=>{});
     playSound();
@@ -572,7 +568,6 @@ function appendLine(raw){
 function applyVis(div){
   const lv=div.dataset.raw?levelOf(div.dataset.raw):'INFO';
   const fg=filterGroup(lv);
-  // FIX: INFO filter now works — activeFilters tracks 'INFO'
   const ok=activeFilters.has(fg);
   const textOk=!filterText||div.dataset.raw.toLowerCase().includes(filterText);
   div.style.display=(ok&&textOk)?'':'none';
@@ -602,7 +597,7 @@ document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key==='f'){ e.preventDefault(); searchInput.focus(); searchInput.select(); }
 });
 
-// ── Filter toggles — FIX: INFO group properly handled ─────────────────────
+// ── Filter toggles ─────────────────────────────────────────────────────────
 document.querySelectorAll('.ftog').forEach(btn=>{
   btn.addEventListener('click',()=>{
     const lv=btn.dataset.lv;
@@ -620,13 +615,14 @@ output.addEventListener('scroll',()=>{
 });
 scrollAnchor.addEventListener('click',()=>{ output.scrollTop=output.scrollHeight; autoScroll=true; scrollAnchor.classList.remove('show'); });
 
-// ── WebSocket ──────────────────────────────────────────────────────────────
+// ── FIX #2: WebSocket always connects to the page's own host (no hardcoded URL) ──
 function connectWs(force=false){
   if(manualDisconnect) return;
-  if(ws && (ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING) && !force) return;
+  if(ws&&(ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING)&&!force) return;
   clearTimeout(reconnectTimer);
   setStatus('connecting');
   const proto=location.protocol==='https:'?'wss:':'ws:';
+  // Always use the same host+port the page was loaded from
   ws=new WebSocket(proto+'//'+location.host+'/ws');
   ws.onopen=()=>{ reconnectAttempt=0; reconnectDelay=1000; setStatus('connected'); showToast('Console connected','success'); };
   ws.onmessage=e=>{
@@ -780,7 +776,6 @@ function renderPlayers(list){
   lastPlayersStructureSignature=structureSig;
   lastPlayersVisualSignature=visualSig;
 
-  // Detect join / leave for activity feed
   const newNames=new Set(safeList.map(p=>p.name));
   newNames.forEach(n=>{ if(!prevPlayerNames.has(n)) pushActivity('join','&#128994;',`<strong>${esc(n)}</strong> joined the server`); });
   prevPlayerNames.forEach(n=>{ if(!newNames.has(n)) pushActivity('leave','&#9899;',`<strong>${esc(n)}</strong> left the server`); });
@@ -817,18 +812,21 @@ modalConfirm.addEventListener('click',()=>{
 });
 modalReason.addEventListener('keydown',e=>{ if(e.key==='Enter') modalConfirm.click(); });
 
-// ── Aliases ────────────────────────────────────────────────────────────────
+// ── FIX #3: Aliases — lazy load only on tab click, cache result ─────────────
 let aliasesLoaded=false;
 async function loadAliases(){
   if(aliasesLoaded) return;
   try{
-    const r=await fetch('/api/aliases'), d=await r.json();
+    const r=await fetch('/api/aliases');
+    // Guard: if server returned non-OK (e.g. 401 before login), skip silently
+    if(!r.ok) return;
+    const d=await r.json();
     const list=$('alias-list'); list.innerHTML='';
     (d.aliases||[]).forEach(a=>{
       const card=document.createElement('div'); card.className='alias-card';
       card.innerHTML=`<span class="alias-name">!${esc(a.name)}</span><span class="alias-sep">\u2192</span><span class="alias-cmd" title="${esc(a.command)}">${esc(a.command)}</span><button class="alias-run">Run</button>`;
-      card.querySelector('.alias-run').addEventListener('click',e=>{ e.stopPropagation(); sendCommand('!'+a.name); showTab('console'); });
-      card.addEventListener('click',()=>{ cmdInput.value='!'+a.name; showTab('console'); cmdInput.focus(); });
+      card.querySelector('.alias-run').addEventListener('click',e=>{ e.stopPropagation(); sendCommand('!'+a.name); switchToPanel('console'); });
+      card.addEventListener('click',()=>{ cmdInput.value='!'+a.name; switchToPanel('console'); cmdInput.focus(); });
       list.appendChild(card);
     });
     if(!d.aliases||!d.aliases.length) list.innerHTML='<p style="color:var(--text-muted);padding:20px 0">No aliases configured. Add them to config.yml.</p>';
@@ -836,7 +834,6 @@ async function loadAliases(){
     if(activePanelName==='aliases') requestAnimationFrame(()=>animatePanelContent('aliases'));
   }catch(_){}
 }
-function showTab(name){ switchToPanel(name); }
 
 // ── Tab completion ──────────────────────────────────────────────────────────
 let acTimer=null;
@@ -942,8 +939,9 @@ async function doLogin(){
   }catch(_){ loginErr.textContent='Server unreachable.'; }
   finally{ btnLogin.disabled=false; btnLogin.textContent='Sign In'; }
 }
-btnLogin.addEventListener('click',doLogin);
-lp.addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+
+// Bind login form — handles both button click and Enter key via form submit
+$('login-form').addEventListener('submit',e=>{ e.preventDefault(); doLogin(); });
 lu.addEventListener('keydown',e=>{ if(e.key==='Enter') lp.focus(); });
 
 // ── Utils ───────────────────────────────────────────────────────────────────
