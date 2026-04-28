@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.1 - 2026-04-28
+
+### Fixed
+
+- Fixed web console command execution for plugins that require a real console sender, including CMI commands such as `/cmi`.
+- Command responses from plugin commands now flow through the server console/log capture into the web console instead of using a synthetic callback sender.
+
 ## 2.2.0 - 2026-04-28
 
 ### Added

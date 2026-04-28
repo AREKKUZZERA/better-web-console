@@ -7,7 +7,6 @@ import dev.webconsole.BetterWebConsolePlugin;
 import dev.webconsole.auth.RateLimiter;
 import dev.webconsole.auth.SessionManager;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandMap;
 import org.bukkit.entity.Player;
@@ -24,7 +23,6 @@ import java.util.List;
 @WebSocket
 public class ConsoleWebSocket {
 
-    private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
     private static final String PLAYER_NAME_PATTERN = "[A-Za-z0-9_]{3,16}";
     private static final int MAX_ALIAS_CHAIN = 10;
 
@@ -139,11 +137,7 @@ public class ConsoleWebSocket {
 
         Bukkit.getScheduler().runTask(plugin, () -> {
             try {
-                var sender = Bukkit.createCommandSender(component -> {
-                    String text = PLAIN.serialize(component);
-                    if (!text.isBlank()) sendLine("[>] " + stripColor(text));
-                });
-                boolean ok = Bukkit.dispatchCommand(sender, toRun);
+                boolean ok = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), toRun);
                 if (!ok) sendLine("[BWC] Unknown command: " + toRun);
             } catch (Exception e) {
                 sendLine("[BWC] Error: " + e.getMessage());
@@ -234,10 +228,6 @@ public class ConsoleWebSocket {
     private void send(String text) {
         if (wsSession == null || !wsSession.isOpen()) return;
         wsSession.getRemote().sendString(text, WriteCallback.NOOP);
-    }
-
-    private String stripColor(String s) {
-        return s.replaceAll("\\u00A7[0-9A-FK-ORa-fk-or]", "");
     }
 
     private boolean isValidPlayerName(String playerName) {

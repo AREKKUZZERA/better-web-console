@@ -26,7 +26,7 @@ mvn clean package
 Output:
 
 ```text
-target/Better-WebConsole-2.2.0.jar
+target/Better-WebConsole-2.2.1.jar
 ```
 
 ## First Setup

@@ -1,5 +1,5 @@
 name: Better-WebConsole
-version: '2.2.0'
+version: '2.2.1'
 main: dev.webconsole.BetterWebConsolePlugin
 api-version: '1.21'
 description: Secure web-based Minecraft server console with dashboard
