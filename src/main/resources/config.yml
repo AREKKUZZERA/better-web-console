@@ -39,6 +39,16 @@ logging:
   log-auth: true
   audit-log: true
 
+system-stats:
+  # Adds host CPU, machine RAM, disk, OS and JVM details to the dashboard.
+  enabled: true
+
+  # OS-level polling interval. Keep this above 2 seconds for production servers.
+  update-interval-seconds: 5
+
+  # Reports disk usage for the Minecraft server folder.
+  show-disk: true
+
 commands:
   # Exact command labels blocked from the web console and aliases.
   # Leave empty for full console access. Examples: ["stop", "restart", "op", "deop"]

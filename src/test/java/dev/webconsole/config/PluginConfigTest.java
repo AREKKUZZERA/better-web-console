@@ -44,4 +44,18 @@ class PluginConfigTest {
         assertTrue(pluginConfig.isCommandBlocked("/minecraft:stop now"));
         assertFalse(pluginConfig.isCommandBlocked("say hello"));
     }
+
+    @Test
+    void readsAndClampsSystemStatsConfig() {
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("system-stats.enabled", false);
+        config.set("system-stats.update-interval-seconds", 1);
+        config.set("system-stats.show-disk", false);
+
+        PluginConfig pluginConfig = new PluginConfig(config);
+
+        assertFalse(pluginConfig.isSystemStatsEnabled());
+        assertEquals(2, pluginConfig.getSystemStatsUpdateIntervalSeconds());
+        assertFalse(pluginConfig.isShowDiskStats());
+    }
 }

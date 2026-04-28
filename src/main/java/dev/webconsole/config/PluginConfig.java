@@ -29,6 +29,9 @@ public class PluginConfig {
     private final Map<String, String> aliases;
     private final Set<String> blockedCommands;
     private final boolean secureCookies;
+    private final boolean systemStatsEnabled;
+    private final int systemStatsUpdateIntervalSeconds;
+    private final boolean showDiskStats;
 
     public PluginConfig(FileConfiguration config) {
         this.port          = validPort(config.getInt("web.port", 4242));
@@ -45,6 +48,9 @@ public class PluginConfig {
         this.logCommands = config.getBoolean("logging.log-commands", true);
         this.logAuth     = config.getBoolean("logging.log-auth", true);
         this.auditLog    = config.getBoolean("logging.audit-log", true);
+        this.systemStatsEnabled = config.getBoolean("system-stats.enabled", true);
+        this.systemStatsUpdateIntervalSeconds = Math.max(2, Math.min(60, config.getInt("system-stats.update-interval-seconds", 5)));
+        this.showDiskStats = config.getBoolean("system-stats.show-disk", true);
 
         this.aliases = new LinkedHashMap<>();
         loadAliases(config, "commands.aliases");
@@ -108,4 +114,7 @@ public class PluginConfig {
     public boolean isAuditLog()        { return auditLog; }
     public Map<String, String> getAliases() { return aliases; }
     public Set<String> getBlockedCommands() { return blockedCommands; }
+    public boolean isSystemStatsEnabled() { return systemStatsEnabled; }
+    public int getSystemStatsUpdateIntervalSeconds() { return systemStatsUpdateIntervalSeconds; }
+    public boolean isShowDiskStats() { return showDiskStats; }
 }

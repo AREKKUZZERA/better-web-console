@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.3.0 - 2026-04-28
+
+### Added
+
+- Added machine/system metrics to the dashboard:
+  - host CPU load and Java process CPU load
+  - CPU model and core/thread count
+  - physical RAM total/used/free
+  - JVM heap and non-heap memory
+  - JVM uptime
+  - server disk total/used/free
+  - OS, Java version, process id and JVM thread count
+- Added `system-stats` config section to enable/disable system metrics, control polling interval and disk reporting.
+
+### Changed
+
+- Reworked the dashboard desktop layout into a wider two-column admin view with grouped health, charts, machine details and analytics.
+- Added hover states to Machine Details cards to match KPI and chart cards.
+
+### Fixed
+
+- Fixed repeated Players tab entrance animation loops by preventing re-animation on active-tab clicks and unchanged player lists.
+- Fixed OSHI configuration warning by keeping OSHI package/resource names unrelocated in the shaded jar.
+
 ## 2.2.1 - 2026-04-28
 
 ### Fixed

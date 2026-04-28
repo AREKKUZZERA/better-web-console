@@ -26,7 +26,7 @@ mvn clean package
 Output:
 
 ```text
-target/Better-WebConsole-2.2.1.jar
+target/Better-WebConsole-2.3.0.jar
 ```
 
 ## First Setup
@@ -87,6 +87,11 @@ logging:
   log-commands: true
   log-auth: true
   audit-log: true
+
+system-stats:
+  enabled: true
+  update-interval-seconds: 5
+  show-disk: true
 
 commands:
   blocked: []

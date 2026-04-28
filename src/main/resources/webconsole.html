@@ -143,7 +143,11 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .dash-section{margin-bottom:4px}
 .dash-section-title{font-size:10px;text-transform:uppercase;letter-spacing:.10em;color:var(--text-muted);margin-bottom:8px;padding-left:2px;display:flex;align-items:center;gap:8px}
 .dash-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
-.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(192px,1fr));gap:10px}
+.dash-layout{width:min(100%,1760px);display:grid;grid-template-columns:minmax(0,1.36fr) minmax(360px,.64fr);gap:14px;align-items:start}
+.dash-main,.dash-side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.dash-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.dash-grid.primary{grid-template-columns:repeat(6,minmax(0,1fr))}
+.dash-grid.machine{grid-template-columns:repeat(4,minmax(0,1fr))}
 .kpi{background:linear-gradient(180deg,rgba(255,255,255,.018),transparent 28%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:14px 16px;position:relative;overflow:hidden;transition:transform var(--slow) var(--ease),border-color var(--fast),box-shadow var(--slow);animation:riseIn .4s var(--ease)}
 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
 .kpi.green::before{background:var(--accent)}.kpi.warn::before{background:var(--warn)}.kpi.red::before{background:var(--danger)}.kpi.blue::before{background:var(--info)}.kpi.purple::before{background:var(--purple)}.kpi.teal::before{background:var(--success)}
@@ -151,13 +155,24 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:6px}
 .kpi-value{font-size:28px;font-weight:700;font-family:var(--ui);color:var(--text);line-height:1}
 .kpi-sub{font-size:11px;color:var(--text-dim);margin-top:4px}
-.dash-charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(295px,1fr));gap:12px}
+.dash-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.dash-side .dash-charts{grid-template-columns:1fr}
 .chart-card{background:linear-gradient(180deg,rgba(255,255,255,.018),transparent 28%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:14px 16px;transition:transform var(--slow) var(--ease),border-color var(--fast),box-shadow var(--slow);animation:riseIn .48s var(--ease)}
 .chart-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow-accent)}
 .chart-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .chart-card h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim)}
 .chart-badge{font-size:10px;padding:2px 7px;border-radius:20px;background:var(--bg3);border:1px solid var(--border2);color:var(--text-muted);font-family:var(--font)}
 .chart-wrap{height:118px;position:relative}
+.machine-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.machine-card{background:linear-gradient(180deg,rgba(255,255,255,.018),transparent 28%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:13px 15px;transition:transform var(--slow) var(--ease),border-color var(--fast),box-shadow var(--slow);animation:riseIn .45s var(--ease)}
+.machine-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow-accent)}
+.machine-card h3{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:9px}
+.metric-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid var(--border)}
+.metric-row:last-child{border-bottom:0}
+.metric-k{font-size:11px;color:var(--text-muted);white-space:nowrap}
+.metric-v{font-size:11px;color:var(--text);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meter{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:8px}
+.meter-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--info));border-radius:3px;transition:width .5s var(--ease)}
 
 /* World table */
 .world-table{width:100%;border-collapse:collapse;font-size:12px}
@@ -234,6 +249,8 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 #notif-btn{position:relative}
 .notif-badge{position:absolute;top:-3px;right:-3px;width:8px;height:8px;background:var(--danger);border-radius:50%;display:none}
 .notif-badge.show{display:block}
+@media (max-width:1350px){.dash-layout{grid-template-columns:1fr}.dash-grid.primary,.dash-grid.machine{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}.dash-side .dash-charts{grid-template-columns:repeat(auto-fit,minmax(295px,1fr))}}
+@media (max-width:760px){#panel-dash{padding:12px}.dash-charts,.machine-grid{grid-template-columns:1fr}.dash-grid,.dash-grid.primary,.dash-grid.machine{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.kpi-value{font-size:23px}}
 @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}.panel{transform:none !important}.log-line{clip-path:none !important}}
 </style>
 </head>
@@ -315,61 +332,113 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 
   <!-- Dashboard Panel -->
   <div class="panel" id="panel-dash">
-    <div class="dash-section">
-      <div class="dash-section-title">Server Health</div>
-      <div class="dash-grid" id="kpi-grid">
-        <div class="kpi green"><div class="kpi-label">TPS (1 min)</div><div class="kpi-value" id="kpi-tps">&#8212;</div><div class="kpi-sub" id="kpi-tps-sub">Server tick rate</div></div>
-        <div class="kpi blue"><div class="kpi-label">RAM Used</div><div class="kpi-value" id="kpi-ram">&#8212;</div><div class="kpi-sub" id="kpi-ram-sub">Heap memory</div></div>
-        <div class="kpi purple"><div class="kpi-label">Players Online</div><div class="kpi-value" id="kpi-players">&#8212;</div><div class="kpi-sub" id="kpi-players-sub">of &#8212; max</div></div>
-        <div class="kpi warn"><div class="kpi-label">Worlds</div><div class="kpi-value" id="kpi-worlds">&#8212;</div><div class="kpi-sub" id="kpi-worlds-sub">Loaded chunks: &#8212;</div></div>
-        <div class="kpi teal"><div class="kpi-label">Total Entities</div><div class="kpi-value" id="kpi-entities">&#8212;</div><div class="kpi-sub">Across all worlds</div></div>
-        <div class="kpi red"><div class="kpi-label">Errors (session)</div><div class="kpi-value" id="kpi-errors">0</div><div class="kpi-sub" id="kpi-errors-sub">SEVERE / ERROR lines</div></div>
-      </div>
-    </div>
-    <div class="dash-section">
-      <div class="dash-section-title">Performance History (5 min)</div>
-      <div class="dash-charts">
-        <div class="chart-card">
-          <div class="chart-card-header"><h3>TPS</h3><span class="chart-badge" id="badge-tps">&#8212;</span></div>
-          <div class="chart-wrap"><canvas id="chart-tps"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-card-header"><h3>RAM (MB)</h3><span class="chart-badge" id="badge-ram">&#8212;</span></div>
-          <div class="chart-wrap"><canvas id="chart-ram"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-card-header"><h3>Players</h3><span class="chart-badge" id="badge-players">&#8212;</span></div>
-          <div class="chart-wrap"><canvas id="chart-players"></canvas></div>
-        </div>
-      </div>
-    </div>
-    <div class="dash-section">
-      <div class="dash-section-title">Analytics</div>
-      <div class="dash-charts">
-        <div class="chart-card">
-          <div class="chart-card-header"><h3>Log Level Breakdown</h3><span class="chart-badge" id="badge-logcount">0 lines</span></div>
-          <div style="padding-top:6px">
-            <div class="level-bar-row"><span class="level-bar-label" style="color:var(--danger)">ERROR</span><div class="level-bar-track"><div class="level-bar-fill" id="bar-error" style="background:var(--danger);width:0%"></div></div><span class="level-bar-count" id="cnt-error">0</span></div>
-            <div class="level-bar-row"><span class="level-bar-label" style="color:var(--warn)">WARN</span><div class="level-bar-track"><div class="level-bar-fill" id="bar-warn" style="background:var(--warn);width:0%"></div></div><span class="level-bar-count" id="cnt-warn">0</span></div>
-            <div class="level-bar-row"><span class="level-bar-label" style="color:var(--info)">INFO</span><div class="level-bar-track"><div class="level-bar-fill" id="bar-info" style="background:var(--info);width:0%"></div></div><span class="level-bar-count" id="cnt-info">0</span></div>
-            <div class="level-bar-row"><span class="level-bar-label" style="color:var(--text-dim)">DEBUG</span><div class="level-bar-track"><div class="level-bar-fill" id="bar-debug" style="background:var(--text-dim);width:0%"></div></div><span class="level-bar-count" id="cnt-debug">0</span></div>
+    <div class="dash-layout">
+      <div class="dash-main">
+        <div class="dash-section">
+          <div class="dash-section-title">Server Health</div>
+          <div class="dash-grid primary" id="kpi-grid">
+            <div class="kpi green"><div class="kpi-label">TPS (1 min)</div><div class="kpi-value" id="kpi-tps">&#8212;</div><div class="kpi-sub" id="kpi-tps-sub">Server tick rate</div></div>
+            <div class="kpi blue"><div class="kpi-label">RAM Used</div><div class="kpi-value" id="kpi-ram">&#8212;</div><div class="kpi-sub" id="kpi-ram-sub">Heap memory</div></div>
+            <div class="kpi purple"><div class="kpi-label">Players Online</div><div class="kpi-value" id="kpi-players">&#8212;</div><div class="kpi-sub" id="kpi-players-sub">of &#8212; max</div></div>
+            <div class="kpi warn"><div class="kpi-label">Worlds</div><div class="kpi-value" id="kpi-worlds">&#8212;</div><div class="kpi-sub" id="kpi-worlds-sub">Loaded chunks: &#8212;</div></div>
+            <div class="kpi teal"><div class="kpi-label">Total Entities</div><div class="kpi-value" id="kpi-entities">&#8212;</div><div class="kpi-sub">Across all worlds</div></div>
+            <div class="kpi red"><div class="kpi-label">Errors (session)</div><div class="kpi-value" id="kpi-errors">0</div><div class="kpi-sub" id="kpi-errors-sub">SEVERE / ERROR lines</div></div>
           </div>
         </div>
-        <div class="chart-card">
-          <div class="chart-card-header"><h3>World Breakdown</h3></div>
-          <div style="overflow-y:auto;max-height:150px;scrollbar-width:thin">
-            <table class="world-table">
-              <thead><tr><th>World</th><th>Chunks</th><th>Entities</th></tr></thead>
-              <tbody id="world-tbody"><tr><td colspan="3" style="color:var(--text-muted);text-align:center;padding:12px 0">No data yet</td></tr></tbody>
-            </table>
+        <div class="dash-section">
+          <div class="dash-section-title">Machine Health</div>
+          <div class="dash-grid machine">
+            <div class="kpi green"><div class="kpi-label">Host CPU</div><div class="kpi-value" id="kpi-cpu">&#8212;</div><div class="kpi-sub" id="kpi-cpu-sub">System load</div></div>
+            <div class="kpi blue"><div class="kpi-label">Machine RAM</div><div class="kpi-value" id="kpi-host-ram">&#8212;</div><div class="kpi-sub" id="kpi-host-ram-sub">Physical memory</div></div>
+            <div class="kpi warn"><div class="kpi-label">Server Disk</div><div class="kpi-value" id="kpi-disk">&#8212;</div><div class="kpi-sub" id="kpi-disk-sub">World container</div></div>
+            <div class="kpi purple"><div class="kpi-label">JVM Threads</div><div class="kpi-value" id="kpi-threads">&#8212;</div><div class="kpi-sub" id="kpi-threads-sub">Java process</div></div>
           </div>
         </div>
-        <div class="chart-card">
-          <div class="chart-card-header"><h3>Activity Feed</h3><span class="chart-badge" style="color:var(--success)">live</span></div>
-          <div class="activity-feed" id="activity-feed">
-            <div class="activity-item">
-              <span class="activity-icon">&#128564;</span>
-              <span class="activity-text" style="color:var(--text-muted)">Waiting for activity&#8230;</span>
+        <div class="dash-section">
+          <div class="dash-section-title">Performance History (5 min)</div>
+          <div class="dash-charts">
+            <div class="chart-card">
+              <div class="chart-card-header"><h3>TPS</h3><span class="chart-badge" id="badge-tps">&#8212;</span></div>
+              <div class="chart-wrap"><canvas id="chart-tps"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card-header"><h3>CPU (%)</h3><span class="chart-badge" id="badge-cpu">&#8212;</span></div>
+              <div class="chart-wrap"><canvas id="chart-cpu"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card-header"><h3>RAM (MB)</h3><span class="chart-badge" id="badge-ram">&#8212;</span></div>
+              <div class="chart-wrap"><canvas id="chart-ram"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card-header"><h3>Players</h3><span class="chart-badge" id="badge-players">&#8212;</span></div>
+              <div class="chart-wrap"><canvas id="chart-players"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div class="dash-section">
+          <div class="dash-section-title">Machine Details</div>
+          <div class="machine-grid">
+            <div class="machine-card">
+              <h3>CPU</h3>
+              <div class="metric-row"><span class="metric-k">Model</span><span class="metric-v" id="sys-cpu-model">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k">Cores / Threads</span><span class="metric-v" id="sys-cpu-cores">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k">Process Load</span><span class="metric-v" id="sys-cpu-process">&#8212;</span></div>
+              <div class="meter"><div class="meter-fill" id="sys-cpu-meter"></div></div>
+            </div>
+            <div class="machine-card">
+              <h3>Memory</h3>
+              <div class="metric-row"><span class="metric-k">Machine Used</span><span class="metric-v" id="sys-ram-used">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k">Machine Free</span><span class="metric-v" id="sys-ram-free">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k">JVM Heap</span><span class="metric-v" id="sys-jvm-heap">&#8212;</span></div>
+              <div class="meter"><div class="meter-fill" id="sys-ram-meter"></div></div>
+            </div>
+            <div class="machine-card">
+              <h3>Disk</h3>
+              <div class="metric-row"><span class="metric-k">Used</span><span class="metric-v" id="sys-disk-used">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k">Free</span><span class="metric-v" id="sys-disk-free">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k">Mount</span><span class="metric-v" id="sys-disk-mount">&#8212;</span></div>
+              <div class="meter"><div class="meter-fill" id="sys-disk-meter"></div></div>
+            </div>
+            <div class="machine-card">
+              <h3>Runtime</h3>
+              <div class="metric-row"><span class="metric-k">OS</span><span class="metric-v" id="sys-os">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k">Java</span><span class="metric-v" id="sys-java">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k">PID</span><span class="metric-v" id="sys-pid">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k">JVM Uptime</span><span class="metric-v" id="sys-jvm-uptime">&#8212;</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dash-side">
+        <div class="dash-section">
+          <div class="dash-section-title">Analytics</div>
+          <div class="dash-charts">
+            <div class="chart-card">
+              <div class="chart-card-header"><h3>Log Level Breakdown</h3><span class="chart-badge" id="badge-logcount">0 lines</span></div>
+              <div style="padding-top:6px">
+                <div class="level-bar-row"><span class="level-bar-label" style="color:var(--danger)">ERROR</span><div class="level-bar-track"><div class="level-bar-fill" id="bar-error" style="background:var(--danger);width:0%"></div></div><span class="level-bar-count" id="cnt-error">0</span></div>
+                <div class="level-bar-row"><span class="level-bar-label" style="color:var(--warn)">WARN</span><div class="level-bar-track"><div class="level-bar-fill" id="bar-warn" style="background:var(--warn);width:0%"></div></div><span class="level-bar-count" id="cnt-warn">0</span></div>
+                <div class="level-bar-row"><span class="level-bar-label" style="color:var(--info)">INFO</span><div class="level-bar-track"><div class="level-bar-fill" id="bar-info" style="background:var(--info);width:0%"></div></div><span class="level-bar-count" id="cnt-info">0</span></div>
+                <div class="level-bar-row"><span class="level-bar-label" style="color:var(--text-dim)">DEBUG</span><div class="level-bar-track"><div class="level-bar-fill" id="bar-debug" style="background:var(--text-dim);width:0%"></div></div><span class="level-bar-count" id="cnt-debug">0</span></div>
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card-header"><h3>World Breakdown</h3></div>
+              <div style="overflow-y:auto;max-height:150px;scrollbar-width:thin">
+                <table class="world-table">
+                  <thead><tr><th>World</th><th>Chunks</th><th>Entities</th></tr></thead>
+                  <tbody id="world-tbody"><tr><td colspan="3" style="color:var(--text-muted);text-align:center;padding:12px 0">No data yet</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card-header"><h3>Activity Feed</h3><span class="chart-badge" style="color:var(--success)">live</span></div>
+              <div class="activity-feed" id="activity-feed">
+                <div class="activity-item">
+                  <span class="activity-icon">&#128564;</span>
+                  <span class="activity-text" style="color:var(--text-muted)">Waiting for activity&#8230;</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -431,10 +500,11 @@ let searchQuery='', searchMatches=[], searchIdx=0;
 let notifEnabled=false, notifCount=0;
 let modalAction=null;
 let acItems=[], acIdx=-1, acReqId=0;
-let tpsChart=null, ramChart=null, playersChart=null;
+let tpsChart=null, ramChart=null, playersChart=null, cpuChart=null;
 let activePanelName='console';
 let lastPlayersStructureSignature='__init__';
 let lastPlayersVisualSignature='__init__';
+let lastAnimatedPlayersSignature='';
 const panelOrder=['console','dash','players','aliases'];
 const MAX_LINES=3000;
 
@@ -476,7 +546,7 @@ function switchToPanel(name){
   if(!name) return;
   // FIX #3: aliases only load when tab is actually clicked (lazy), not on connect
   if(name==='aliases') loadAliases();
-  if(activePanelName===name){ animatePanelContent(name); return; }
+  if(activePanelName===name) return;
   const prevIdx=panelOrder.indexOf(activePanelName);
   const nextIdx=panelOrder.indexOf(name);
   const enterClass=(prevIdx!==-1&&nextIdx<prevIdx)?'enter-from-left':'enter-from-right';
@@ -501,9 +571,17 @@ function staggerAnimate(nodes,step=40){
 
 function animatePanelContent(name){
   if(name==='console'){ staggerAnimate([$('stats-bar'),$('console-wrap'),$('search-bar'),$('input-bar')],50); return; }
-  if(name==='players'){ const r=[...document.querySelectorAll('#player-tbody tr')]; staggerAnimate(r.length?r:[$('player-table'),$('no-players-msg')],26); return; }
+  if(name==='players'){ animatePlayersPanel(); return; }
   if(name==='aliases'){ staggerAnimate([$('panel-aliases').querySelector('.alias-hint'),...document.querySelectorAll('#alias-list > *')],26); return; }
-  if(name==='dash'){ staggerAnimate([...document.querySelectorAll('#kpi-grid .kpi'),...document.querySelectorAll('.chart-card')],22); }
+  if(name==='dash'){ staggerAnimate([...document.querySelectorAll('.dash-grid .kpi'),...document.querySelectorAll('.chart-card'),...document.querySelectorAll('.machine-card')],18); }
+}
+
+function animatePlayersPanel(force=false){
+  const signature=lastPlayersStructureSignature;
+  if(!force&&signature===lastAnimatedPlayersSignature) return;
+  lastAnimatedPlayersSignature=signature;
+  const rows=[...document.querySelectorAll('#player-tbody tr')];
+  staggerAnimate(rows.length?rows:[$('player-table'),$('no-players-msg')],26);
 }
 
 // ── Status ─────────────────────────────────────────────────────────────────
@@ -701,7 +779,50 @@ function handleStats(data){
   if(data.tpsHistory)     updateChart(tpsChart,    data.tpsHistory);
   if(data.ramHistory)     updateChart(ramChart,     data.ramHistory);
   if(data.playersHistory) updateChart(playersChart, data.playersHistory);
+  if(data.cpuHistory)     updateChart(cpuChart,     data.cpuHistory);
+  if(data.system)         handleSystemStats(data.system);
   if(data.playerList!==undefined) renderPlayers(data.playerList);
+}
+
+function handleSystemStats(system){
+  if(!system||!system.enabled) return;
+  const cpu=system.cpu||{}, mem=system.memory||{}, disk=system.disk||{}, jvm=system.jvm||{}, os=system.os||{};
+  const cpuLoad=Number(cpu.systemLoadPercent||0), procLoad=Number(cpu.processLoadPercent||0);
+  const ramPct=Number(mem.usedPercent||0), diskPct=Number(disk.usedPercent||0);
+
+  setText('kpi-cpu', fmtPct(cpuLoad));
+  setText('kpi-cpu-sub', `Process ${fmtPct(procLoad)}`);
+  setKpiState('kpi-cpu', cpuLoad, 70, 90);
+  setText('badge-cpu', fmtPct(cpuLoad));
+  setWidth('sys-cpu-meter', cpuLoad);
+
+  setText('kpi-host-ram', fmtPct(ramPct));
+  setText('kpi-host-ram-sub', `${fmtBytes(mem.usedBytes)} / ${fmtBytes(mem.totalBytes)}`);
+  setKpiState('kpi-host-ram', ramPct, 75, 90);
+  setWidth('sys-ram-meter', ramPct);
+
+  if(disk.totalBytes){
+    setText('kpi-disk', fmtPct(diskPct));
+    setText('kpi-disk-sub', `${fmtBytes(disk.usableBytes)} free`);
+    setKpiState('kpi-disk', diskPct, 80, 92);
+    setWidth('sys-disk-meter', diskPct);
+    setText('sys-disk-used', `${fmtBytes(disk.usedBytes)} of ${fmtBytes(disk.totalBytes)}`);
+    setText('sys-disk-free', fmtBytes(disk.usableBytes));
+    setText('sys-disk-mount', disk.mount||disk.path||'—');
+  }
+
+  setText('kpi-threads', jvm.threads??'—');
+  setText('kpi-threads-sub', `${jvm.daemonThreads??'—'} daemon`);
+  setText('sys-cpu-model', cpu.model||'—');
+  setText('sys-cpu-cores', `${cpu.physicalCores??'—'} / ${cpu.logicalCores??'—'}`);
+  setText('sys-cpu-process', fmtPct(procLoad));
+  setText('sys-ram-used', `${fmtBytes(mem.usedBytes)} of ${fmtBytes(mem.totalBytes)}`);
+  setText('sys-ram-free', fmtBytes(mem.availableBytes));
+  setText('sys-jvm-heap', `${fmtBytes(jvm.heapUsedBytes)} of ${fmtBytes(jvm.heapMaxBytes)}`);
+  setText('sys-os', `${os.family||'—'} ${os.arch||''}`.trim());
+  setText('sys-java', `${jvm.javaVersion||'—'} ${jvm.javaVendor||''}`.trim());
+  setText('sys-pid', jvm.pid??'—');
+  setText('sys-jvm-uptime', fmtDuration(jvm.uptimeSeconds));
 }
 
 function renderWorldTable(worlds){
@@ -762,6 +883,7 @@ function initCharts(){
   tpsChart     = makeChart('chart-tps',    'TPS',     '#f23987', 20);
   ramChart     = makeChart('chart-ram',    'RAM MB',  '#4fc3f7');
   playersChart = makeChart('chart-players','Players', '#d05ce3');
+  cpuChart     = makeChart('chart-cpu',    'CPU %',   '#00e676', 100);
   chartsInitialized=true;
 }
 
@@ -781,7 +903,7 @@ function renderPlayers(list){
   prevPlayerNames.forEach(n=>{ if(!newNames.has(n)) pushActivity('leave','&#9899;',`<strong>${esc(n)}</strong> left the server`); });
   prevPlayerNames=newNames;
 
-  if(!safeList.length){ tbody.innerHTML=''; tbl.style.display='none'; msg.style.display=''; if(activePanelName==='players'&&structureChanged) animatePanelContent('players'); return; }
+  if(!safeList.length){ tbody.innerHTML=''; tbl.style.display='none'; msg.style.display=''; if(activePanelName==='players'&&structureChanged) animatePlayersPanel(true); return; }
   tbl.style.display=''; msg.style.display='none'; tbody.innerHTML='';
   safeList.forEach(p=>{
     const ping=p.ping||0, pc=ping<80?'ping-good':ping<200?'ping-ok':'ping-bad';
@@ -789,7 +911,7 @@ function renderPlayers(list){
     tr.innerHTML=`<td>${esc(p.name)}${p.op?'<span class="player-op">OP</span>':''}</td><td>${esc(p.world||'\u2014')}</td><td class="${pc}">${ping}ms</td><td><button class="action-btn kick" onclick="openModal('kick','${esc(p.name)}')">Kick</button> <button class="action-btn ban" onclick="openModal('ban','${esc(p.name)}')">Ban</button></td>`;
     tbody.appendChild(tr);
   });
-  if(activePanelName==='players'&&structureChanged) animatePanelContent('players');
+  if(activePanelName==='players'&&structureChanged) animatePlayersPanel(true);
 }
 
 // ── Modal ──────────────────────────────────────────────────────────────────
@@ -947,6 +1069,29 @@ lu.addEventListener('keydown',e=>{ if(e.key==='Enter') lp.focus(); });
 // ── Utils ───────────────────────────────────────────────────────────────────
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function setText(id,value){ const el=$(id); if(el) el.textContent=value; }
+function setWidth(id,value){ const el=$(id); if(el) el.style.width=Math.max(0,Math.min(100,value||0))+'%'; }
+function fmtPct(value){ return Number.isFinite(Number(value)) ? Number(value).toFixed(1)+'%' : '—'; }
+function fmtBytes(bytes){
+  const n=Number(bytes);
+  if(!Number.isFinite(n)||n<=0) return '—';
+  const units=['B','KB','MB','GB','TB'];
+  let v=n, i=0;
+  while(v>=1024&&i<units.length-1){ v/=1024; i++; }
+  return (v>=10||i===0?v.toFixed(0):v.toFixed(1))+units[i];
+}
+function fmtDuration(seconds){
+  const s=Number(seconds);
+  if(!Number.isFinite(s)||s<0) return '—';
+  const d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60);
+  if(d>0) return `${d}d ${h}h`;
+  if(h>0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+function setKpiState(valueId,value,warnAt,critAt){
+  const el=$(valueId); if(!el||!el.parentElement) return;
+  el.parentElement.className='kpi '+(value>=critAt?'red':value>=warnAt?'warn':'green');
+}
 
 // ── Init ────────────────────────────────────────────────────────────────────
 (async()=>{
