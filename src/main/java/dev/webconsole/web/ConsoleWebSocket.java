@@ -13,7 +13,11 @@ import org.bukkit.command.CommandMap;
 import org.bukkit.entity.Player;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WriteCallback;
-import org.eclipse.jetty.websocket.api.annotations.*;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 import java.util.List;
 
@@ -21,6 +25,8 @@ import java.util.List;
 public class ConsoleWebSocket {
 
     private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
+    private static final String PLAYER_NAME_PATTERN = "[A-Za-z0-9_]{3,16}";
+    private static final int MAX_ALIAS_CHAIN = 10;
 
     private final BetterWebConsolePlugin plugin;
     private final SessionManager sessionManager;
@@ -34,12 +40,12 @@ public class ConsoleWebSocket {
     public ConsoleWebSocket(BetterWebConsolePlugin plugin, SessionManager sessionManager,
                             RateLimiter rateLimiter, WebSocketHandler wsHandler,
                             String sessionToken, SessionManager.Session authSession) {
-        this.plugin         = plugin;
+        this.plugin = plugin;
         this.sessionManager = sessionManager;
-        this.rateLimiter    = rateLimiter;
-        this.wsHandler      = wsHandler;
-        this.sessionToken   = sessionToken;
-        this.authSession    = authSession;
+        this.rateLimiter = rateLimiter;
+        this.wsHandler = wsHandler;
+        this.sessionToken = sessionToken;
+        this.authSession = authSession;
     }
 
     @OnWebSocketConnect
@@ -77,15 +83,14 @@ public class ConsoleWebSocket {
 
         String type = json.has("type") ? json.get("type").getAsString() : "";
         switch (type) {
-            case "command"    -> handleCommand(json);
-            case "complete"   -> handleTabComplete(json);
-            case "kick"       -> handleKick(json);
-            case "ban"        -> handleBan(json);
+            case "command" -> handleCommand(json);
+            case "complete" -> handleTabComplete(json);
+            case "kick" -> handleKick(json);
+            case "ban" -> handleBan(json);
             case "ping_stats" -> pushStats();
+            default -> { }
         }
     }
-
-    // ── Command handling ──────────────────────────────────────────────────────
 
     private void handleCommand(JsonObject json) {
         if (!rateLimiter.allowCommand(sessionToken)) { sendControl("RATE_LIMITED"); return; }
@@ -93,35 +98,50 @@ public class ConsoleWebSocket {
         String cmd = json.has("command") ? json.get("command").getAsString().trim() : "";
         if (cmd.isEmpty() || cmd.length() > 1024) return;
 
-        // Alias expansion: !alias → expand from config
         if (cmd.startsWith("!")) {
             String aliasKey = cmd.substring(1).toLowerCase();
             String expanded = plugin.getPluginConfig().getAliases().get(aliasKey);
             if (expanded == null) { sendLine("[BWC] Unknown alias: " + aliasKey); return; }
-            for (String part : expanded.split("&&")) executeCommand(part.trim());
-            if (plugin.getPluginConfig().isAuditLog())
+
+            String[] parts = expanded.split("&&", MAX_ALIAS_CHAIN + 1);
+            if (parts.length > MAX_ALIAS_CHAIN) {
+                sendLine("[BWC] Alias has too many chained commands: " + aliasKey);
+                return;
+            }
+            for (String part : parts) executeCommand(part.trim());
+
+            if (plugin.getPluginConfig().isAuditLog()) {
                 plugin.getAuditLog().logCommand(authSession.getUsername(), authSession.getRemoteIp(),
-                        "!" + aliasKey + " → " + expanded);
+                        "!" + aliasKey + " -> " + expanded);
+            }
             return;
         }
 
         executeCommand(cmd);
-        if (plugin.getPluginConfig().isAuditLog())
+        if (plugin.getPluginConfig().isAuditLog()) {
             plugin.getAuditLog().logCommand(authSession.getUsername(), authSession.getRemoteIp(), cmd);
+        }
     }
 
     private void executeCommand(String cmd) {
         if (cmd.isEmpty()) return;
         String toRun = cmd.startsWith("/") ? cmd.substring(1) : cmd;
 
-        if (plugin.getPluginConfig().isLogCommands())
+        if (plugin.getPluginConfig().isCommandBlocked(toRun)) {
+            sendControl("BLOCKED");
+            sendLine("[BWC] Command blocked by config: " + firstWord(toRun));
+            return;
+        }
+
+        if (plugin.getPluginConfig().isLogCommands()) {
             plugin.getLogger().info("[BWC] Command by '" + authSession.getUsername() + "': " + toRun);
+        }
 
         Bukkit.getScheduler().runTask(plugin, () -> {
             try {
                 var sender = Bukkit.createCommandSender(component -> {
                     String text = PLAIN.serialize(component);
-                    if (!text.isBlank()) sendLine("[→] " + stripColor(text));
+                    if (!text.isBlank()) sendLine("[>] " + stripColor(text));
                 });
                 boolean ok = Bukkit.dispatchCommand(sender, toRun);
                 if (!ok) sendLine("[BWC] Unknown command: " + toRun);
@@ -132,20 +152,15 @@ public class ConsoleWebSocket {
         });
     }
 
-    // ── Tab completion ────────────────────────────────────────────────────────
-
     private void handleTabComplete(JsonObject json) {
         String partial = json.has("partial") ? json.get("partial").getAsString() : "";
-        int reqId      = json.has("reqId")   ? json.get("reqId").getAsInt()      : 0;
+        int reqId = json.has("reqId") ? json.get("reqId").getAsInt() : 0;
 
         Bukkit.getScheduler().runTask(plugin, () -> {
             List<String> suggestions;
             try {
-                // Paper / Bukkit exposes CommandMap via the Server instance
                 CommandMap commandMap = Bukkit.getCommandMap();
                 String toComplete = partial.startsWith("/") ? partial.substring(1) : partial;
-
-                // tabComplete on CommandMap takes (sender, cmdLine, location=null)
                 suggestions = commandMap.tabComplete(Bukkit.getConsoleSender(), toComplete);
                 if (suggestions == null) suggestions = List.of();
             } catch (Exception e) {
@@ -162,38 +177,37 @@ public class ConsoleWebSocket {
         });
     }
 
-    // ── Player actions ────────────────────────────────────────────────────────
-
     private void handleKick(JsonObject json) {
         if (!rateLimiter.allowCommand(sessionToken)) { sendControl("RATE_LIMITED"); return; }
         String target = json.has("player") ? json.get("player").getAsString().trim() : "";
-        String reason = json.has("reason") ? json.get("reason").getAsString().trim() : "Kicked by admin";
-        if (target.isEmpty()) return;
+        String reason = cleanReason(json.has("reason") ? json.get("reason").getAsString() : "Kicked by admin");
+        if (!isValidPlayerName(target)) { sendLine("[BWC] Invalid player name: " + target); return; }
 
         Bukkit.getScheduler().runTask(plugin, () -> {
             Player p = Bukkit.getPlayerExact(target);
             if (p == null) { sendLine("[BWC] Player not found: " + target); return; }
-            // kick(Component) — modern Adventure API, not deprecated
             p.kick(Component.text(reason));
             sendLine("[BWC] Kicked " + target + ": " + reason);
-            plugin.getAuditLog().logKick(authSession.getUsername(), authSession.getRemoteIp(), target, reason);
+            if (plugin.getPluginConfig().isAuditLog()) {
+                plugin.getAuditLog().logKick(authSession.getUsername(), authSession.getRemoteIp(), target, reason);
+            }
         });
     }
 
     private void handleBan(JsonObject json) {
         if (!rateLimiter.allowCommand(sessionToken)) { sendControl("RATE_LIMITED"); return; }
         String target = json.has("player") ? json.get("player").getAsString().trim() : "";
-        String reason = json.has("reason") ? json.get("reason").getAsString().trim() : "Banned by admin";
-        if (target.isEmpty()) return;
+        String reason = cleanReason(json.has("reason") ? json.get("reason").getAsString() : "Banned by admin");
+        if (!isValidPlayerName(target)) { sendLine("[BWC] Invalid player name: " + target); return; }
 
         Bukkit.getScheduler().runTask(plugin, () -> {
             executeCommand("ban " + target + " " + reason);
             sendLine("[BWC] Banned " + target + ": " + reason);
-            plugin.getAuditLog().logBan(authSession.getUsername(), authSession.getRemoteIp(), target, reason);
+            if (plugin.getPluginConfig().isAuditLog()) {
+                plugin.getAuditLog().logBan(authSession.getUsername(), authSession.getRemoteIp(), target, reason);
+            }
         });
     }
-
-    // ── Stats push ────────────────────────────────────────────────────────────
 
     public void pushStats() {
         Bukkit.getScheduler().runTask(plugin, () -> {
@@ -202,8 +216,6 @@ public class ConsoleWebSocket {
             send(stats.toString());
         });
     }
-
-    // ── Send helpers ──────────────────────────────────────────────────────────
 
     public void sendLine(String line) {
         JsonObject msg = new JsonObject();
@@ -225,6 +237,21 @@ public class ConsoleWebSocket {
     }
 
     private String stripColor(String s) {
-        return s.replaceAll("§[0-9A-FK-ORa-fk-or]", "");
+        return s.replaceAll("\\u00A7[0-9A-FK-ORa-fk-or]", "");
+    }
+
+    private boolean isValidPlayerName(String playerName) {
+        return playerName != null && playerName.matches(PLAYER_NAME_PATTERN);
+    }
+
+    private String cleanReason(String reason) {
+        String cleaned = reason == null ? "" : reason.replaceAll("[\\p{Cntrl}&&[^\t]]", " ").trim();
+        if (cleaned.isBlank()) return "No reason given";
+        return cleaned.length() > 120 ? cleaned.substring(0, 120) : cleaned;
+    }
+
+    private String firstWord(String command) {
+        int space = command.indexOf(' ');
+        return space >= 0 ? command.substring(0, space) : command;
     }
 }

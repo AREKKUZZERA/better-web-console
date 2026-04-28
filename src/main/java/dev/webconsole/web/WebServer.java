@@ -115,4 +115,8 @@ public class WebServer {
     public int getActiveSessionCount() {
         return sessionManager != null ? sessionManager.getActiveSessionCount() : 0;
     }
+
+    public void invalidateSessions(String username) {
+        if (sessionManager != null) sessionManager.invalidateAllSessions(username);
+    }
 }

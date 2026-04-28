@@ -77,6 +77,15 @@ public class UserManager {
         saveUsers();
     }
 
+    public boolean setPassword(String username, String password) {
+        String key = username.toLowerCase();
+        if (!users.containsKey(key)) return false;
+        String hash = BCrypt.withDefaults().hashToString(BCRYPT_COST, password.toCharArray());
+        users.put(key, hash);
+        saveUsers();
+        return true;
+    }
+
     /**
      * Removes a user. Returns true if the user existed.
      */

@@ -30,15 +30,11 @@ public class BetterWebConsolePlugin extends JavaPlugin {
         instance = this;
         saveDefaultConfig();
         this.pluginConfig = new PluginConfig(getConfig());
-        this.userManager  = new UserManager(getDataFolder());
-        this.auditLog     = new AuditLog(getDataFolder());
+        this.userManager = new UserManager(getDataFolder());
+        this.auditLog = new AuditLog(getDataFolder());
 
         this.consoleLogHandler = new ConsoleLogHandler(pluginConfig.getLogBufferSize());
-
-        // System.out / System.err
         consoleLogHandler.hookSystemStreams();
-
-        // Paper / Log4j2
         consoleLogHandler.hookLog4j();
 
         this.serverStats = new ServerStats(this);
@@ -53,7 +49,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
         this.webServer = new WebServer(this);
         try {
             webServer.start();
-            getLogger().info("Better-WebConsole v2 started on port " + pluginConfig.getPort());
+            getLogger().info("Better-WebConsole started on " + pluginConfig.getBindAddress() + ":" + pluginConfig.getPort());
         } catch (Exception e) {
             getLogger().severe("Failed to start web server: " + e.getMessage());
             getServer().getPluginManager().disablePlugin(this);
@@ -63,8 +59,8 @@ public class BetterWebConsolePlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         if (serverStats != null) serverStats.stop();
-        if (webServer   != null) try { webServer.stop(); } catch (Exception ignored) {}
-        if (auditLog    != null) auditLog.shutdown();
+        if (webServer != null) try { webServer.stop(); } catch (Exception ignored) {}
+        if (auditLog != null) auditLog.shutdown();
 
         if (consoleLogHandler != null) {
             Logger.getLogger("").removeHandler(consoleLogHandler);
@@ -79,7 +75,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
                              @NotNull String label, @NotNull String[] args) {
         if (!command.getName().equalsIgnoreCase("betterwebconsole")) return false;
         if (!sender.hasPermission("betterwebconsole.admin")) {
-            sender.sendMessage("§cNo permission.");
+            sender.sendMessage(color("c", "No permission."));
             return true;
         }
         if (args.length == 0) {
@@ -87,12 +83,14 @@ public class BetterWebConsolePlugin extends JavaPlugin {
             return true;
         }
         return switch (args[0].toLowerCase()) {
-            case "reload"     -> handleReload(sender);
-            case "status"     -> handleStatus(sender);
-            case "adduser"    -> handleAddUser(sender, args);
-            case "removeuser" -> handleRemoveUser(sender, args);
-            case "listusers"  -> handleListUsers(sender);
-            default           -> {
+            case "reload" -> handleReload(sender);
+            case "status" -> handleStatus(sender);
+            case "adduser", "useradd", "createuser" -> handleAddUser(sender, args);
+            case "removeuser", "deluser", "deleteuser" -> handleRemoveUser(sender, args);
+            case "listusers", "users" -> handleListUsers(sender);
+            case "setpassword", "passwd", "password" -> handleSetPassword(sender, args);
+            case "logoutall", "killsessions" -> handleLogoutAll(sender, args);
+            default -> {
                 sendHelp(sender);
                 yield true;
             }
@@ -106,12 +104,12 @@ public class BetterWebConsolePlugin extends JavaPlugin {
         if (!sender.hasPermission("betterwebconsole.admin")) return Collections.emptyList();
 
         if (args.length == 1) {
-            return List.of("reload", "status", "adduser", "removeuser", "listusers").stream()
+            return List.of("reload", "status", "adduser", "removeuser", "listusers", "setpassword", "logoutall").stream()
                     .filter(s -> s.startsWith(args[0].toLowerCase()))
                     .toList();
         }
 
-        if (args.length == 2 && args[0].equalsIgnoreCase("removeuser")) {
+        if (args.length == 2 && List.of("removeuser", "deluser", "setpassword", "passwd", "logoutall").contains(args[0].toLowerCase())) {
             return userManager.listUsers().stream()
                     .filter(u -> u.toLowerCase().startsWith(args[1].toLowerCase()))
                     .toList();
@@ -123,85 +121,126 @@ public class BetterWebConsolePlugin extends JavaPlugin {
     private boolean handleReload(CommandSender s) {
         reloadConfig();
         pluginConfig = new PluginConfig(getConfig());
-        s.sendMessage("§aBetter-WebConsole config reloaded. Restart to apply port changes.");
+        s.sendMessage(color("a", "Config reloaded. Restart the server to apply web port, bind, IP whitelist, session timeout and rate-limit changes."));
         return true;
     }
 
     private boolean handleStatus(CommandSender s) {
-        s.sendMessage("§6=== Better-WebConsole Status ===");
-        s.sendMessage("§7Status: " + (webServer != null && webServer.isRunning() ? "§aRunning" : "§cStopped"));
-        s.sendMessage("§7Port: §f" + pluginConfig.getPort() + "  §7Bind: §f" + pluginConfig.getBindAddress());
-        s.sendMessage("§7Sessions: §f" + (webServer != null ? webServer.getActiveSessionCount() : 0)
-                + "  §7Users: §f" + userManager.getUserCount());
+        s.sendMessage(color("6", "=== Better-WebConsole Status ==="));
+        s.sendMessage(color("7", "Status: " + (webServer != null && webServer.isRunning() ? color("a", "Running") : color("c", "Stopped"))));
+        s.sendMessage(color("7", "Bind: ") + color("f", pluginConfig.getBindAddress() + ":" + pluginConfig.getPort()));
+        s.sendMessage(color("7", "Sessions: ") + color("f", String.valueOf(webServer != null ? webServer.getActiveSessionCount() : 0))
+                + color("7", "  Users: ") + color("f", String.valueOf(userManager.getUserCount())));
+        s.sendMessage(color("7", "Aliases: ") + color("f", String.valueOf(pluginConfig.getAliases().size()))
+                + color("7", "  Blocked commands: ") + color("f", String.valueOf(pluginConfig.getBlockedCommands().size())));
         return true;
     }
 
     private boolean handleAddUser(CommandSender s, String[] args) {
         if (args.length < 3) {
-            s.sendMessage("§cUsage: /bwc adduser <user> <pass>");
+            s.sendMessage(color("c", "Usage: /bwc adduser <user> <password>"));
             return true;
         }
 
-        String u = args[1];
-        String p = args[2];
-
-        if (u.length() < 3 || u.length() > 32 || !u.matches("[a-zA-Z0-9_-]+")) {
-            s.sendMessage("§cInvalid username (3-32 chars, a-z 0-9 _ -)");
+        String username = args[1];
+        String password = args[2];
+        if (!isValidUsername(username)) {
+            s.sendMessage(color("c", "Invalid username. Use 3-32 chars: a-z, A-Z, 0-9, _ or -."));
+            return true;
+        }
+        if (!isValidPassword(password)) {
+            s.sendMessage(color("c", "Password must be at least 8 characters."));
+            return true;
+        }
+        if (userManager.userExists(username)) {
+            s.sendMessage(color("c", "User already exists."));
             return true;
         }
 
-        if (p.length() < 8) {
-            s.sendMessage("§cPassword must be ≥8 chars.");
-            return true;
-        }
-
-        if (userManager.userExists(u)) {
-            s.sendMessage("§cUser already exists.");
-            return true;
-        }
-
-        userManager.addUser(u, p);
-        s.sendMessage("§aUser '" + u + "' added.");
-
-        if (pluginConfig.isLogAuth()) {
-            getLogger().info("[AUTH] User '" + u + "' created by " + s.getName());
-        }
-
+        userManager.addUser(username, password);
+        s.sendMessage(color("a", "User '" + username + "' added."));
+        if (pluginConfig.isLogAuth()) getLogger().info("[AUTH] User '" + username + "' created by " + s.getName());
         return true;
     }
 
     private boolean handleRemoveUser(CommandSender s, String[] args) {
         if (args.length < 2) {
-            s.sendMessage("§cUsage: /bwc removeuser <user>");
+            s.sendMessage(color("c", "Usage: /bwc removeuser <user>"));
             return true;
         }
 
-        if (userManager.removeUser(args[1])) {
-            s.sendMessage("§aUser '" + args[1] + "' removed.");
-            if (pluginConfig.isLogAuth()) {
-                getLogger().info("[AUTH] User '" + args[1] + "' removed by " + s.getName());
-            }
+        String username = args[1];
+        if (userManager.removeUser(username)) {
+            if (webServer != null) webServer.invalidateSessions(username);
+            s.sendMessage(color("a", "User '" + username + "' removed and sessions invalidated."));
+            if (pluginConfig.isLogAuth()) getLogger().info("[AUTH] User '" + username + "' removed by " + s.getName());
         } else {
-            s.sendMessage("§cUser not found.");
+            s.sendMessage(color("c", "User not found."));
         }
+        return true;
+    }
 
+    private boolean handleSetPassword(CommandSender s, String[] args) {
+        if (args.length < 3) {
+            s.sendMessage(color("c", "Usage: /bwc setpassword <user> <new-password>"));
+            return true;
+        }
+        if (!isValidPassword(args[2])) {
+            s.sendMessage(color("c", "Password must be at least 8 characters."));
+            return true;
+        }
+        if (!userManager.setPassword(args[1], args[2])) {
+            s.sendMessage(color("c", "User not found."));
+            return true;
+        }
+        if (webServer != null) webServer.invalidateSessions(args[1]);
+        s.sendMessage(color("a", "Password changed for '" + args[1] + "'. Existing sessions invalidated."));
+        if (pluginConfig.isLogAuth()) getLogger().info("[AUTH] Password changed for '" + args[1] + "' by " + s.getName());
+        return true;
+    }
+
+    private boolean handleLogoutAll(CommandSender s, String[] args) {
+        if (args.length < 2) {
+            s.sendMessage(color("c", "Usage: /bwc logoutall <user>"));
+            return true;
+        }
+        if (!userManager.userExists(args[1])) {
+            s.sendMessage(color("c", "User not found."));
+            return true;
+        }
+        if (webServer != null) webServer.invalidateSessions(args[1]);
+        s.sendMessage(color("a", "Sessions invalidated for '" + args[1] + "'."));
         return true;
     }
 
     private boolean handleListUsers(CommandSender s) {
         List<String> users = userManager.listUsers();
         if (users.isEmpty()) {
-            s.sendMessage("§eNo users. Add with /bwc adduser.");
+            s.sendMessage(color("e", "No users. Add one with /bwc adduser <user> <password>."));
         } else {
-            s.sendMessage("§6Users:");
-            users.forEach(u -> s.sendMessage("§7 - §f" + u));
+            s.sendMessage(color("6", "Users:"));
+            users.forEach(u -> s.sendMessage(color("7", " - ") + color("f", u)));
         }
         return true;
     }
 
     private void sendHelp(CommandSender s) {
-        s.sendMessage("§6=== Better-WebConsole ===");
-        s.sendMessage("§e/bwc status | reload | adduser <u> <p> | removeuser <u> | listusers");
+        s.sendMessage(color("6", "=== Better-WebConsole ==="));
+        s.sendMessage(color("e", "/bwc status | reload | adduser <u> <p> | removeuser <u> | listusers"));
+        s.sendMessage(color("e", "/bwc setpassword <u> <p> | logoutall <u>"));
+        s.sendMessage(color("7", "Aliases: /bwc, /webconsole, /bwconsole, /betterconsole"));
+    }
+
+    private boolean isValidUsername(String username) {
+        return username != null && username.length() >= 3 && username.length() <= 32 && username.matches("[a-zA-Z0-9_-]+");
+    }
+
+    private boolean isValidPassword(String password) {
+        return password != null && password.length() >= 8;
+    }
+
+    private String color(String code, String text) {
+        return "\u00A7" + code + text;
     }
 
     public static BetterWebConsolePlugin getInstance() { return instance; }

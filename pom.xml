@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>dev.webconsole</groupId>
     <artifactId>Better-WebConsole</artifactId>
-    <version>2.1.0</version>
+    <version>2.2.0</version>
     <packaging>jar</packaging>
     <name>Better-WebConsole</name>
     <description>Secure web-based Minecraft server console with dashboard</description>
@@ -65,12 +65,19 @@
             <version>2.10.1</version>
         </dependency>
 
-        <!-- Важно для захвата Paper/Log4j2 логов -->
+        <!-- Required for capturing Paper/Log4j2 logs. -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>2.22.1</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -83,6 +90,7 @@
                 <configuration>
                     <source>21</source>
                     <target>21</target>
+                    <proc>none</proc>
                 </configuration>
             </plugin>
 

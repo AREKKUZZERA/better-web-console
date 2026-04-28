@@ -1,168 +1,129 @@
+# Better-WebConsole
 
-Secure, browser-based server console for Paper 1.21+
+Secure browser console for Paper/Purpur/Spigot 1.21.x servers.
 
----
+## Current Features
 
-## Features
+- Embedded Jetty web server with a single built-in web UI.
+- Live console log streaming over WebSocket.
+- Console command execution, command history, filtering and log export.
+- Dashboard with TPS, RAM, uptime, worlds, loaded chunks, entities and online players.
+- Player quick actions: kick and ban.
+- Web users stored in `plugins/Better-WebConsole/users.dat` with BCrypt hashes.
+- HttpOnly + SameSite session cookies, optional Secure cookies for HTTPS reverse proxies.
+- CSRF protection for login, IP whitelist with CIDR support, login lockout and command rate limit.
+- Audit log for auth events, command execution, player actions and log exports.
+- Configurable web command aliases through `!alias`.
 
-* 🔐 **BCrypt password hashing** (cost 12)
-* 🔒 **HttpOnly, SameSite=Strict session cookies**
-* 🛡️ **CSRF protection** (HMAC-SHA256 tokens)
-* 🚫 **IP brute-force lockout** (configurable)
-* ⏱️ **Per-session command rate limiting**
-* 🌐 **IP whitelist** (supports CIDR notation)
-* 🔑 **Constant-time password comparison** (timing attack safe)
-* 📋 **Strict security HTTP headers** (CSP, X-Frame-Options, etc.)
-* 🔌 **WebSocket live console** with buffered history
-* 🎨 **Modern terminal-style UI** (dark theme, log filtering, command history)
-* 📊 **Basic server stats endpoint**
+## Build
 
----
-
-## Building
-
-Requirements: **JDK 21**, **Maven 3.8+**
+Requirements: JDK 21 and Maven 3.8+.
 
 ```bash
-git clone <repo>
-cd better-web-console-main
 mvn clean package
 ```
 
 Output:
 
+```text
+target/Better-WebConsole-2.2.0.jar
 ```
-target/Better-WebConsole-2.1.0.jar
+
+## First Setup
+
+1. Put the JAR into the server `plugins/` folder.
+2. Start the server once to generate `plugins/Better-WebConsole/config.yml`.
+3. Create a web user:
+
+```text
+/bwc adduser admin YourStrongPassword123
 ```
 
-Copy the JAR into your server's `plugins/` directory.
+4. Open:
 
----
+```text
+http://your-server-ip:4242
+```
 
-## First-time Setup
-
-1. Start the server once to generate config:
-
-   ```
-   plugins/Better-WebConsole/config.yml
-   ```
-
-2. Add a user:
-
-   ```
-   /betterwebconsole adduser admin YourStrongPassword123
-   ```
-
-3. Open in browser:
-
-   ```
-   http://your-server-ip:4242
-   ```
-
-4. Log in
-
----
+Production recommendation: bind to `127.0.0.1` and expose the panel through Nginx, Caddy, a VPN or a tunnel with HTTPS.
 
 ## Commands
 
-| Command                                   | Description        |
-| ----------------------------------------- | ------------------ |
-| `/betterwebconsole status`                | Show plugin status |
-| `/betterwebconsole adduser <user> <pass>` | Add a web user     |
-| `/betterwebconsole removeuser <user>`     | Remove a web user  |
-| `/betterwebconsole listusers`             | List users         |
-| `/betterwebconsole reload`                | Reload config      |
+Main command aliases: `/betterwebconsole`, `/bwc`, `/webconsole`, `/bwconsole`, `/betterconsole`.
 
-Aliases:
+Permission: `betterwebconsole.admin` (default: op).
 
-```
-/bwc
-/webconsole
-```
+| Command | Description |
+| --- | --- |
+| `/bwc status` | Show web server, user, session and config status |
+| `/bwc reload` | Reload config values that do not require web server restart |
+| `/bwc adduser <user> <password>` | Add a web user |
+| `/bwc removeuser <user>` | Remove a web user and invalidate sessions |
+| `/bwc listusers` | List web users |
+| `/bwc setpassword <user> <new-password>` | Change password and invalidate sessions |
+| `/bwc logoutall <user>` | Invalidate active sessions for a user |
 
-Permission:
+Extra command aliases: `useradd`, `createuser`, `deluser`, `deleteuser`, `users`, `passwd`, `password`, `killsessions`.
 
-```
-betterwebconsole.admin
-```
+## Configuration
 
----
-
-## Configuration (`plugins/Better-WebConsole/config.yml`)
+The default config is intentionally small and only contains implemented behavior.
 
 ```yaml
 web:
   port: 4242
   bind-address: "0.0.0.0"
-  log-buffer-size: 500
+  log-buffer-size: 1000
 
 security:
-  session-timeout: 60
+  session-timeout-minutes: 60
   max-login-attempts: 5
-  lockout-duration: 15
-  command-rate-limit: 30
+  lockout-duration-minutes: 15
+  command-rate-limit-per-minute: 30
   ip-whitelist: []
+  secure-cookies: false
+
+logging:
+  log-commands: true
+  log-auth: true
+  audit-log: true
+
+commands:
+  blocked: []
+  aliases:
+    tps: "tps"
+    list: "list"
+    save: "save-all"
 ```
 
----
+Use `commands.blocked` to prevent risky commands from web access, for example:
 
-## Web API (internal)
-
-| Endpoint           | Description   |
-| ------------------ | ------------- |
-| `POST /api/login`  | Login         |
-| `POST /api/logout` | Logout        |
-| `GET /api/status`  | Server status |
-| `GET /api/csrf`    | CSRF token    |
-| `WS /ws`           | Live console  |
-
----
-
-## Architecture
-
-```
-Browser ──HTTP/HTTPS──► Plugin Web Server
-                             ├── GET /           → FrontendServlet
-                             ├── POST /api/*     → ApiServlet
-                             ├── WS  /ws         → ConsoleWebSocket
-                             │                        ↕
-                             │                 ConsoleLogHandler
-                             └── Filters (IP whitelist, CSRF, sessions)
+```yaml
+commands:
+  blocked: ["stop", "restart", "op", "deop"]
 ```
 
----
+Use an alias by typing `!name` in the web console. Aliases can chain up to 10 commands with `&&`.
 
 ## Security Notes
 
-* Passwords are stored as **BCrypt hashes only**
-* Sessions use **secure random tokens**
-* Cookies are **HttpOnly + SameSite=Strict**
-* CSRF tokens are **HMAC-SHA256 signed**
-* Built-in **rate limiting and IP lockouts**
-* Supports **IP whitelist filtering**
-* Sensitive commands can be restricted in code
+- Do not expose `0.0.0.0:4242` directly to the internet unless firewall/IP whitelist/VPN rules are in place.
+- Set `secure-cookies: true` only when users access the panel through HTTPS.
+- Avoid putting destructive commands into aliases.
+- Keep `commands.blocked` empty only when every web user is trusted as a full console administrator.
 
----
+## Competitor Notes / Useful Future Features
 
-## Production Recommendations
+Compared with public WebConsole/WebPanel/RCON-style tools, useful next features are:
 
-* Bind to localhost:
+- Roles: admin vs read-only viewer, and per-user command allow/deny lists.
+- Built-in HTTPS or documented reverse-proxy templates.
+- Multi-language UI.
+- File manager and config editor with strict path sandboxing.
+- Scheduled commands/tasks.
+- Multi-server dashboard.
+- 2FA or one-time recovery tokens.
+- Discord/webhook notifications for login, errors and blocked commands.
+- Plugin/server lifecycle buttons with confirmation policies.
 
-  ```yaml
-  bind-address: "127.0.0.1"
-  ```
-
-* Use reverse proxy (Nginx / Caddy) with HTTPS
-
-* Restrict access via firewall
-
-* Use strong passwords (16+ chars)
-
-* Limit IP whitelist to admin addresses
-
----
-
-## Notes
-
-This plugin runs an embedded web server inside Minecraft and is designed with security-first principles, but **should still be deployed behind a reverse proxy in production**.
-
+Sources reviewed: Modrinth Better WebConsole, `mesacarlos/WebConsole`, Modrinth WebPanel.

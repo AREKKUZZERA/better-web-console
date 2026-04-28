@@ -1,31 +1,55 @@
-# Better-WebConsole Configuration v2.0
-# =====================================
+# Better-WebConsole configuration
+# Restart the Minecraft server after changing web.port or web.bind-address.
 
 web:
+  # Web panel port. Must be different from the Minecraft server port.
   port: 4242
+
+  # Production recommendation: use "127.0.0.1" behind Nginx/Caddy/Cloudflare Tunnel.
+  # Use "0.0.0.0" only when the panel must listen on every network interface.
   bind-address: "0.0.0.0"
+
+  # Number of recent console lines kept in memory for newly connected browsers.
   log-buffer-size: 1000
 
 security:
-  session-timeout: 60
+  # Web session lifetime after the last request/activity.
+  session-timeout-minutes: 60
+
+  # Login brute-force protection per IP address.
   max-login-attempts: 5
-  lockout-duration: 15
-  command-rate-limit: 30
+  lockout-duration-minutes: 15
+
+  # Maximum commands per logged-in browser session per minute.
+  command-rate-limit-per-minute: 30
+
+  # Empty list means any IP can reach the login page.
+  # Examples:
+  # ip-whitelist:
+  #   - "127.0.0.1"
+  #   - "192.168.1.0/24"
   ip-whitelist: []
-  csrf-secret: ""
+
+  # Set true only when the panel is opened through HTTPS.
+  # Keep false for direct http://server:4242 access.
+  secure-cookies: false
 
 logging:
   log-commands: true
   log-auth: true
   audit-log: true
 
-# Command aliases — shortcuts executed via the web console
-# Use !alias-name to trigger. Supports && to chain commands.
-aliases:
-  restart: "say Server restarting in 10 seconds && title @a times 20 100 20 && title @a title {\"text\":\"⚠ WARNING\",\"color\":\"gold\"} && title @a subtitle {\"text\":\"Restarting soon!\",\"color\":\"red\"}"
-  tps: "tps"
-  list: "list"
-  save: "save-all"
-  day: "time set day"
-  night: "time set night"
-  clear-weather: "weather clear"
+commands:
+  # Exact command labels blocked from the web console and aliases.
+  # Leave empty for full console access. Examples: ["stop", "restart", "op", "deop"]
+  blocked: []
+
+  # Web shortcuts. Type !name in the web console to run an alias.
+  # Use && to run several commands in order. Keep aliases short and auditable.
+  aliases:
+    tps: "tps"
+    list: "list"
+    save: "save-all"
+    day: "time set day"
+    night: "time set night"
+    clear-weather: "weather clear"

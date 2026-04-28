@@ -7,7 +7,6 @@ import com.google.gson.JsonParser;
 import dev.webconsole.BetterWebConsolePlugin;
 import dev.webconsole.auth.RateLimiter;
 import dev.webconsole.auth.SessionManager;
-import dev.webconsole.config.PluginConfig;
 import dev.webconsole.util.CsrfUtil;
 import dev.webconsole.util.IpWhitelistChecker;
 import jakarta.servlet.http.Cookie;
@@ -23,20 +22,19 @@ import java.util.stream.Collectors;
 
 /**
  * REST API endpoints:
- *   GET  /api/csrf        — CSRF token
- *   GET  /api/status      — session check
- *   GET  /api/stats       — server stats JSON (auth required)
- *   GET  /api/aliases     — command alias list (auth required)
- *   GET  /api/logs/export — download console log as text file (auth required)
- *   POST /api/login       — authenticate
- *   POST /api/logout      — invalidate session
+ *   GET  /api/csrf        - CSRF token
+ *   GET  /api/status      - session check
+ *   GET  /api/stats       - server stats JSON (auth required)
+ *   GET  /api/aliases     - command alias list (auth required)
+ *   GET  /api/logs/export - download console log as text file (auth required)
+ *   POST /api/login       - authenticate
+ *   POST /api/logout      - invalidate session
  */
 public class ApiServlet extends HttpServlet {
 
     private static final Gson GSON = new Gson();
 
     private final BetterWebConsolePlugin plugin;
-    private final PluginConfig config;
     private final SessionManager sessionManager;
     private final RateLimiter rateLimiter;
     private final CsrfUtil csrfUtil;
@@ -46,7 +44,6 @@ public class ApiServlet extends HttpServlet {
                       RateLimiter rateLimiter, CsrfUtil csrfUtil,
                       IpWhitelistChecker ipChecker, WebSocketHandler wsHandler) {
         this.plugin         = plugin;
-        this.config         = plugin.getPluginConfig();
         this.sessionManager = sessionManager;
         this.rateLimiter    = rateLimiter;
         this.csrfUtil       = csrfUtil;
@@ -107,7 +104,7 @@ public class ApiServlet extends HttpServlet {
         res.setContentType("application/json;charset=UTF-8");
         if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
         JsonArray arr = new JsonArray();
-        for (Map.Entry<String, String> e : config.getAliases().entrySet()) {
+        for (Map.Entry<String, String> e : plugin.getPluginConfig().getAliases().entrySet()) {
             JsonObject obj = new JsonObject();
             obj.addProperty("name", e.getKey());
             obj.addProperty("command", e.getValue());
@@ -136,7 +133,9 @@ public class ApiServlet extends HttpServlet {
         lines.forEach(w::println);
         w.flush();
 
-        plugin.getAuditLog().log(getSessionUsername(req), req.getRemoteAddr(), "EXPORT", "log export");
+        if (plugin.getPluginConfig().isAuditLog()) {
+            plugin.getAuditLog().log(getSessionUsername(req), req.getRemoteAddr(), "EXPORT", "log export");
+        }
     }
 
     private void handleLogin(HttpServletRequest req, HttpServletResponse res) throws IOException {
@@ -145,7 +144,7 @@ public class ApiServlet extends HttpServlet {
 
         if (rateLimiter.isIpLocked(ip)) {
             long rem = rateLimiter.getLockoutRemainingSeconds(ip);
-            if (config.isLogAuth()) plugin.getLogger().warning("[AUTH] Locked IP: " + ip);
+            if (plugin.getPluginConfig().isLogAuth()) plugin.getLogger().warning("[AUTH] Locked IP: " + ip);
             sendError(res, 429, "Too many attempts. Try in " + rem + "s.");
             return;
         }
@@ -166,8 +165,8 @@ public class ApiServlet extends HttpServlet {
 
         if (!plugin.getUserManager().verifyPassword(username, password)) {
             rateLimiter.recordFailedLogin(ip);
-            if (config.isLogAuth()) plugin.getLogger().warning("[AUTH] Failed: " + username + "@" + ip);
-            plugin.getAuditLog().logFailed(username, ip);
+            if (plugin.getPluginConfig().isLogAuth()) plugin.getLogger().warning("[AUTH] Failed: " + username + "@" + ip);
+            if (plugin.getPluginConfig().isAuditLog()) plugin.getAuditLog().logFailed(username, ip);
             try { Thread.sleep(600); } catch (InterruptedException ignored) {}
             sendError(res, 401, "Invalid credentials");
             return;
@@ -175,11 +174,12 @@ public class ApiServlet extends HttpServlet {
 
         rateLimiter.resetLoginFailures(ip);
         String token = sessionManager.createSession(username, ip);
+        String secure = plugin.getPluginConfig().isSecureCookies() ? "; Secure" : "";
         res.addHeader("Set-Cookie",
-                "session=" + token + "; Path=/; HttpOnly; SameSite=Strict; Max-Age=" + (config.getSessionTimeout() * 60));
+                "session=" + token + "; Path=/; HttpOnly; SameSite=Strict" + secure + "; Max-Age=" + (plugin.getPluginConfig().getSessionTimeout() * 60));
 
-        if (config.isLogAuth()) plugin.getLogger().info("[AUTH] Login: " + username + "@" + ip);
-        plugin.getAuditLog().logLogin(username, ip);
+        if (plugin.getPluginConfig().isLogAuth()) plugin.getLogger().info("[AUTH] Login: " + username + "@" + ip);
+        if (plugin.getPluginConfig().isAuditLog()) plugin.getAuditLog().logLogin(username, ip);
 
         JsonObject obj = new JsonObject();
         obj.addProperty("success", true);
@@ -193,13 +193,14 @@ public class ApiServlet extends HttpServlet {
         if (token != null) {
             SessionManager.Session s = sessionManager.validateSession(token);
             if (s != null) {
-                if (config.isLogAuth()) plugin.getLogger().info("[AUTH] Logout: " + s.getUsername());
-                plugin.getAuditLog().logLogout(s.getUsername(), s.getRemoteIp());
+                if (plugin.getPluginConfig().isLogAuth()) plugin.getLogger().info("[AUTH] Logout: " + s.getUsername());
+                if (plugin.getPluginConfig().isAuditLog()) plugin.getAuditLog().logLogout(s.getUsername(), s.getRemoteIp());
             }
             sessionManager.invalidateSession(token);
             rateLimiter.removeSession(token);
         }
-        res.addHeader("Set-Cookie", "session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0");
+        String secure = plugin.getPluginConfig().isSecureCookies() ? "; Secure" : "";
+        res.addHeader("Set-Cookie", "session=; Path=/; HttpOnly; SameSite=Strict" + secure + "; Max-Age=0");
         JsonObject obj = new JsonObject();
         obj.addProperty("success", true);
         writeJson(res, 200, obj);
