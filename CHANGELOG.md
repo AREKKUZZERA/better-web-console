@@ -11,6 +11,12 @@
 
 - Kept the Server Health tooltip reason text synchronized after changing the web UI language.
 
+### Build
+
+- Moved shared module resources into generated module-local resource directories to avoid IDE warnings about resources outside the module base directory.
+- Added Maven m2e lifecycle mapping for the shared-resource generation step to silence Java project import warnings.
+- Kept filtered `plugin.yml` generation module-aware so Paper `1.21` and `26.1` jars retain the correct API version.
+
 ## 2.4.0 - 2026-05-15
 
 ### Added
