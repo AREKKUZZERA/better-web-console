@@ -1,6 +1,11 @@
 # Better-WebConsole
 
-Secure browser console and admin dashboard for Paper/Purpur/Spigot 1.21.x servers.
+Secure browser console and admin dashboard for Paper-compatible servers.
+
+Supported server lines:
+
+- Paper/Purpur `1.21` - `1.21.11`: use the `1.21.X` jar.
+- Paper/Purpur `26.1` - `26.1.2`: use the `26.1.X` jar.
 
 ## Features
 
@@ -21,7 +26,9 @@ Secure browser console and admin dashboard for Paper/Purpur/Spigot 1.21.x server
 - Performance history charts for TPS, JVM RAM, online players and host CPU.
 - Machine details: CPU model, cores/threads, memory, disk mount, OS, Java runtime, PID and JVM uptime.
 - Analytics blocks for log levels, per-world chunks/entities and recent activity.
+- Centered dashboard panels with responsive mobile layouts.
 - Player list with quick kick/ban actions.
+- Player join/leave history and player-entered command history for the last 24 hours.
 
 ### Security
 
@@ -34,7 +41,12 @@ Secure browser console and admin dashboard for Paper/Purpur/Spigot 1.21.x server
 
 ## Build
 
-Requirements: JDK 21 and Maven 3.8+.
+Requirements:
+
+- JDK 25 for the full two-artifact build.
+- Maven 3.9+.
+
+Both produced plugin jars use Java 21 bytecode. The 26.1 build still needs a JDK that can read the current Paper 26.1 API during compilation.
 
 ```bash
 mvn clean package
@@ -47,9 +59,12 @@ target/bwc-2.4.0-paper-1.21.X.jar
 target/bwc-2.4.0-paper-26.1.X.jar
 ```
 
+Use `bwc-2.4.0-paper-1.21.X.jar` on Paper/Purpur `1.21` through `1.21.11`.
+Use `bwc-2.4.0-paper-26.1.X.jar` on Paper `26.1` through `26.1.2`.
+
 ## First Setup
 
-1. Put the JAR into the server `plugins/` folder.
+1. Put the correct `bwc-...jar` into the server `plugins/` folder.
 2. Start the server once to generate `plugins/Better-WebConsole/config.yml`.
 3. Create a web user:
 
@@ -129,6 +144,14 @@ commands:
 
 `system-stats` can be disabled if the host does not allow OS-level metrics or if you only need Minecraft/JVM data.
 
+Player activity history is stored in:
+
+```text
+plugins/Better-WebConsole/player-command-history.tsv
+```
+
+It keeps join/leave events and player-entered slash commands for 24 hours. The dashboard sends only the newest 80 join/leave events and 120 commands to the browser.
+
 Use `commands.blocked` to prevent risky commands from web access, for example:
 
 ```yaml
@@ -145,6 +168,7 @@ Use an alias by typing `!name` in the web console. Aliases can chain up to 10 co
 - Do not expose `0.0.0.0:4242` directly to the internet unless firewall/IP whitelist/VPN rules are in place.
 - Set `secure-cookies: true` only when users access the panel through HTTPS.
 - Block or avoid destructive commands such as `stop`, `restart`, `op`, `deop`, `ban-ip` and `whitelist`.
+- Player command history can include sensitive commands from other plugins. Restrict panel access to trusted administrators.
 - Keep aliases short and auditable.
 - Keep `commands.blocked` empty only when every web user is trusted as a full console administrator.
 - Treat machine metrics as operational data: expose the panel only to trusted administrators.
