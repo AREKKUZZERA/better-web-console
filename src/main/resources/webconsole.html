@@ -922,9 +922,9 @@ function updateLevelBars(){
 }
 
 // ── Activity feed ──────────────────────────────────────────────────────────
-function pushActivity(type,icon,text){
+function pushActivity(type,icon,text,html=false){
   const t=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  activityLog.unshift({type,icon,text,t});
+  activityLog.unshift({type,icon,text,html,t});
   if(activityLog.length>MAX_ACTIVITY) activityLog.pop();
   renderActivity();
 }
@@ -932,7 +932,7 @@ function pushActivity(type,icon,text){
 function renderActivity(){
   const feed=$('activity-feed'); if(!feed) return;
   if(!activityLog.length){ feed.innerHTML='<div class="activity-item"><span class="activity-icon">&#128564;</span><span class="activity-text" style="color:var(--text-muted)">Waiting for activity\u2026</span></div>'; return; }
-  feed.innerHTML=activityLog.slice(0,18).map(a=>`<div class="activity-item ${a.type}"><span class="activity-icon">${a.icon}</span><span class="activity-text">${a.text}</span><span class="activity-time">${a.t}</span></div>`).join('');
+  feed.innerHTML=activityLog.slice(0,18).map(a=>`<div class="activity-item ${a.type}"><span class="activity-icon">${a.icon}</span><span class="activity-text">${a.html?a.text:esc(a.text)}</span><span class="activity-time">${a.t}</span></div>`).join('');
 }
 
 // ── Charts ─────────────────────────────────────────────────────────────────
@@ -969,8 +969,8 @@ function renderPlayers(list){
   lastPlayersVisualSignature=visualSig;
 
   const newNames=new Set(safeList.map(p=>p.name));
-  newNames.forEach(n=>{ if(!prevPlayerNames.has(n)) pushActivity('join','&#128994;',`<strong>${esc(n)}</strong> joined the server`); });
-  prevPlayerNames.forEach(n=>{ if(!newNames.has(n)) pushActivity('leave','&#9899;',`<strong>${esc(n)}</strong> left the server`); });
+  newNames.forEach(n=>{ if(!prevPlayerNames.has(n)) pushActivity('join','&#128994;',`<strong>${esc(n)}</strong> joined the server`,true); });
+  prevPlayerNames.forEach(n=>{ if(!newNames.has(n)) pushActivity('leave','&#9899;',`<strong>${esc(n)}</strong> left the server`,true); });
   prevPlayerNames=newNames;
 
   if(!safeList.length){ tbody.innerHTML=''; tbl.style.display='none'; msg.style.display=''; if(activePanelName==='players'&&structureChanged) animatePlayersPanel(true); return; }
@@ -1024,7 +1024,7 @@ modalConfirm.addEventListener('click',()=>{
   modal.classList.remove('show');
   const act=modalAction==='kick'?'Kicked':'Banned';
   showToast(`${act} ${modalPlayer.value}`,'warn');
-  pushActivity('cmd','&#9889;',`<strong>${act}</strong> ${esc(modalPlayer.value)}: ${esc(modalReason.value||'No reason given')}`);
+  pushActivity('cmd','&#9889;',`<strong>${act}</strong> ${esc(modalPlayer.value)}: ${esc(modalReason.value||'No reason given')}`,true);
 });
 modalReason.addEventListener('keydown',e=>{ if(e.key==='Enter') modalConfirm.click(); });
 
@@ -1083,7 +1083,7 @@ function sendCommand(cmd){
   cmd=cmd.trim();
   if(!cmd||!ws||ws.readyState!==WebSocket.OPEN) return;
   ws.send(JSON.stringify({type:'command',command:cmd}));
-  pushActivity('cmd','&#9000;',`<strong>CMD:</strong> ${esc(cmd)}`);
+  pushActivity('cmd','&#9000;',`<strong>CMD:</strong> ${esc(cmd)}`,true);
   hideAc();
   if(cmdHistory[cmdHistory.length-1]!==cmd){
     cmdHistory.push(cmd);
