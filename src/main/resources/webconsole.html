@@ -143,7 +143,7 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .dash-section{margin-bottom:4px}
 .dash-section-title{font-size:10px;text-transform:uppercase;letter-spacing:.10em;color:var(--text-muted);margin-bottom:8px;padding-left:2px;display:flex;align-items:center;gap:8px}
 .dash-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
-.dash-layout{width:min(100%,1760px);display:grid;grid-template-columns:minmax(0,1.36fr) minmax(360px,.64fr);gap:14px;align-items:start}
+.dash-layout{width:min(100%,1760px);margin:0 auto;display:grid;grid-template-columns:minmax(0,1.36fr) minmax(360px,.64fr);gap:14px;align-items:start}
 .dash-main,.dash-side{display:flex;flex-direction:column;gap:14px;min-width:0}
 .dash-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .dash-grid.primary{grid-template-columns:repeat(6,minmax(0,1fr))}
@@ -267,7 +267,7 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .notif-badge.show{display:block}
 @media (max-width:1350px){.dash-layout{grid-template-columns:1fr}.dash-grid.primary,.dash-grid.machine{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}.dash-side .dash-charts{grid-template-columns:repeat(auto-fit,minmax(295px,1fr))}}
 @media (max-width:920px){#panel-players{align-items:stretch}.players-layout{grid-template-columns:1fr}.history-list{max-height:220px}}
-@media (max-width:760px){#panel-dash{padding:12px}.dash-charts,.machine-grid{grid-template-columns:1fr}.dash-grid,.dash-grid.primary,.dash-grid.machine{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.kpi-value{font-size:23px}}
+@media (max-width:760px){#panel-dash{padding:12px;align-items:stretch}.dash-layout{width:100%}.dash-charts,.machine-grid{grid-template-columns:1fr}.dash-grid,.dash-grid.primary,.dash-grid.machine{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}.kpi{padding:12px}.kpi-value{font-size:22px;overflow-wrap:anywhere}.metric-v{white-space:normal;word-break:break-word}}
 @media (max-width:620px){header{gap:7px;padding:0 8px}.hlogo{font-size:12px}.huser,.hsep{display:none}.hbtn{padding:4px 7px;font-size:10px}#tabs{padding:0 6px}.tab{padding:7px 10px;font-size:11px;min-width:max-content}}
 @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}.panel{transform:none !important}.log-line{clip-path:none !important}}
 </style>
@@ -352,6 +352,15 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
   <div class="panel" id="panel-dash">
     <div class="dash-layout">
       <div class="dash-main">
+        <div class="dash-section">
+          <div class="dash-section-title">Overview</div>
+          <div class="dash-grid machine">
+            <div class="kpi green" id="kpi-health-card"><div class="kpi-label">Server Health</div><div class="kpi-value" id="kpi-health">--</div><div class="kpi-sub" id="kpi-health-sub">Waiting for stats</div></div>
+            <div class="kpi purple"><div class="kpi-label">Player Capacity</div><div class="kpi-value" id="kpi-capacity">--</div><div class="kpi-sub" id="kpi-capacity-sub">Online slots used</div></div>
+            <div class="kpi blue"><div class="kpi-label">Plugin Uptime</div><div class="kpi-value" id="kpi-uptime">--</div><div class="kpi-sub">Since plugin enable</div></div>
+            <div class="kpi warn"><div class="kpi-label">Recent Commands</div><div class="kpi-value" id="kpi-player-cmds">0</div><div class="kpi-sub">Player commands / 24h</div></div>
+          </div>
+        </div>
         <div class="dash-section">
           <div class="dash-section-title">Server Health</div>
           <div class="dash-grid primary" id="kpi-grid">
@@ -792,6 +801,17 @@ function handleControl(event){
 function handleStats(data){
   const tps=data.tps||0, ramUsed=data.ramUsed||0, ramMax=data.ramMax||0;
   const players=data.players||0, maxPlayers=data.maxPlayers||0;
+  const capacity=Math.round(players/(maxPlayers||1)*100);
+  setText('kpi-capacity', capacity+'%');
+  setText('kpi-capacity-sub', players+' of '+maxPlayers+' slots');
+  setText('kpi-uptime', fmtDuration(data.uptimeSeconds));
+  setText('kpi-player-cmds', Array.isArray(data.playerCommands)?data.playerCommands.length:0);
+  const healthBad=tps<15||sessionErrors>0;
+  const healthWarn=!healthBad&&(tps<18||capacity>=90);
+  setText('kpi-health', healthBad?'Critical':healthWarn?'Watch':'Good');
+  setText('kpi-health-sub', healthBad?'Needs attention':healthWarn?'Monitor server':'All core signals normal');
+  const healthCard=$('kpi-health-card');
+  if(healthCard) healthCard.className='kpi '+(healthBad?'red':healthWarn?'warn':'green');
 
   svTps.textContent=tps.toFixed(1);
   statTpsEl.className='stat '+(tps>=18?'tps-good':tps>=15?'tps-ok':'tps-bad');
