@@ -548,6 +548,8 @@ let tpsChart=null, ramChart=null, playersChart=null, cpuChart=null;
 let activePanelName='console';
 let lastPlayersStructureSignature='__init__';
 let lastPlayersVisualSignature='__init__';
+let lastPlayerEventsSignature='__init__';
+let lastPlayerCommandsSignature='__init__';
 let lastAnimatedPlayersSignature='';
 const panelOrder=['console','dash','players','aliases'];
 const MAX_LINES=3000;
@@ -826,6 +828,8 @@ function handleStats(data){
   if(data.cpuHistory)     updateChart(cpuChart,     data.cpuHistory);
   if(data.system)         handleSystemStats(data.system);
   if(data.playerList!==undefined) renderPlayers(data.playerList);
+  renderPlayerEvents(data.playerEvents||[]);
+  renderPlayerCommands(data.playerCommands||[]);
 }
 
 function handleSystemStats(system){
@@ -935,6 +939,7 @@ function initCharts(){
 function renderPlayers(list){
   const tbody=$('player-tbody'), tbl=$('player-table'), msg=$('no-players-msg');
   const safeList=Array.isArray(list)?list:[];
+  setText('players-online-badge', safeList.length+' online');
   const structureSig=JSON.stringify(safeList.map(p=>({n:p.name||'',w:p.world||'',o:!!p.op})));
   const visualSig=JSON.stringify(safeList.map(p=>({n:p.name||'',w:p.world||'',o:!!p.op,p:p.ping||0})));
   const structureChanged=structureSig!==lastPlayersStructureSignature;
@@ -956,6 +961,30 @@ function renderPlayers(list){
     tbody.appendChild(tr);
   });
   if(activePanelName==='players'&&structureChanged) animatePlayersPanel(true);
+}
+
+function renderPlayerEvents(events){
+  const box=$('player-event-history'); if(!box) return;
+  const safe=Array.isArray(events)?events.slice(-80).reverse():[];
+  const sig=JSON.stringify(safe);
+  if(sig===lastPlayerEventsSignature) return;
+  lastPlayerEventsSignature=sig;
+  if(!safe.length){ box.innerHTML='<div class="history-empty">No join history in the last 24 hours.</div>'; return; }
+  box.innerHTML=safe.map(e=>{
+    const type=e.type==='leave'?'leave':'join';
+    const label=type==='leave'?'Left':'Joined';
+    return `<div class="history-item ${type}"><span class="history-kind">${label}</span><span class="history-main"><strong>${esc(e.player||'Unknown')}</strong></span><span class="history-time">${fmtTime(e.timestamp)}</span></div>`;
+  }).join('');
+}
+
+function renderPlayerCommands(commands){
+  const box=$('player-command-history'); if(!box) return;
+  const safe=Array.isArray(commands)?commands.slice(-120).reverse():[];
+  const sig=JSON.stringify(safe);
+  if(sig===lastPlayerCommandsSignature) return;
+  lastPlayerCommandsSignature=sig;
+  if(!safe.length){ box.innerHTML='<div class="history-empty">No player commands in the last 24 hours.</div>'; return; }
+  box.innerHTML=safe.map(c=>`<div class="history-item command"><span class="history-kind">CMD</span><span class="history-main"><strong>${esc(c.player||'Unknown')}</strong><span class="history-command">${esc(c.command||'')}</span></span><span class="history-time">${fmtTime(c.timestamp)}</span></div>`).join('');
 }
 
 // ── Modal ──────────────────────────────────────────────────────────────────
@@ -1079,6 +1108,7 @@ async function doLogout(){
   sessionUser=''; cmdInput.disabled=true; btnSend.disabled=true;
   output.innerHTML=''; lineCount=0; aliasesLoaded=false;
   lastPlayersStructureSignature='__init__'; lastPlayersVisualSignature='__init__';
+  lastPlayerEventsSignature='__init__'; lastPlayerCommandsSignature='__init__';
   activePanelName=''; switchToPanel('console');
 }
 
@@ -1131,6 +1161,11 @@ function fmtDuration(seconds){
   if(d>0) return `${d}d ${h}h`;
   if(h>0) return `${h}h ${m}m`;
   return `${m}m`;
+}
+function fmtTime(timestamp){
+  const d=new Date(Number(timestamp)||0);
+  if(Number.isNaN(d.getTime())) return '--:--';
+  return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
 function setKpiState(valueId,value,warnAt,critAt){
   const el=$(valueId); if(!el||!el.parentElement) return;
