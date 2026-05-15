@@ -1,7 +1,7 @@
 name: Better-WebConsole
-version: '2.3.0'
+version: '${project.version}'
 main: dev.webconsole.BetterWebConsolePlugin
-api-version: '1.21'
+api-version: '${plugin.api.version}'
 description: Secure web-based Minecraft server console with dashboard
 authors: [ Better-WebConsole ]
 load: STARTUP
