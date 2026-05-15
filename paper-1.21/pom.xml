@@ -21,7 +21,7 @@
     </properties>
 
     <build>
-        <finalName>Better-WebConsole-${project.version}-paper-1.21</finalName>
+        <finalName>bwc-${project.version}-paper-1.21.X</finalName>
         <sourceDirectory>${project.basedir}/../src/main/java</sourceDirectory>
         <testSourceDirectory>${project.basedir}/../src/test/java</testSourceDirectory>
 

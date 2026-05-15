@@ -43,8 +43,8 @@ mvn clean package
 Output:
 
 ```text
-target/Better-WebConsole-2.4.0-paper-1.21.jar
-target/Better-WebConsole-2.4.0-paper-26.1.jar
+target/bwc-2.4.0-paper-1.21.X.jar
+target/bwc-2.4.0-paper-26.1.X.jar
 ```
 
 ## First Setup
