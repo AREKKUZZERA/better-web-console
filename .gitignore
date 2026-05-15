@@ -39,5 +39,8 @@ logs/
 .env
 *.env
 
-# Jar (если не хочешь коммитить сборку)
+# Jar
 *.jar
+
+# Dosc
+docs/
