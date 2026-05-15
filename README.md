@@ -80,6 +80,71 @@ http://your-server-ip:4242
 
 Production recommendation: bind to `127.0.0.1` and expose the panel through Nginx, Caddy, a VPN or a tunnel with HTTPS.
 
+## Reverse Proxy / HTTPS
+
+Recommended production settings:
+
+```yaml
+web:
+  bind-address: "127.0.0.1"
+
+security:
+  secure-cookies: true
+```
+
+Use `secure-cookies: true` only when admins open the panel through HTTPS.
+
+### Nginx
+
+```nginx
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name bwc.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/bwc.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/bwc.example.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:4242;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 1h;
+    }
+}
+```
+
+### Caddy
+
+```caddyfile
+bwc.example.com {
+    reverse_proxy 127.0.0.1:4242
+}
+```
+
+### Cloudflare Tunnel
+
+```yaml
+tunnel: <tunnel-uuid>
+credentials-file: /etc/cloudflared/<tunnel-uuid>.json
+
+ingress:
+  - hostname: bwc.example.com
+    service: http://127.0.0.1:4242
+  - service: http_status:404
+```
+
+Reference docs: [Nginx WebSocket proxying](https://nginx.org/en/docs/http/websocket.html), [Caddy reverse_proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy), [Cloudflare Tunnel routing](https://developers.cloudflare.com/tunnel/routing/).
+
 ## Commands
 
 Main command aliases: `/betterwebconsole`, `/bwc`, `/webconsole`, `/bwconsole`, `/betterconsole`.
@@ -178,8 +243,6 @@ Use an alias by typing `!name` in the web console. Aliases can chain up to 10 co
 Compared with public WebConsole/WebPanel/RCON-style tools, useful next features are:
 
 - Roles: admin vs read-only viewer, and per-user command allow/deny lists.
-- Built-in HTTPS or documented reverse-proxy templates.
-- Multi-language UI.
 - File manager and config editor with strict path sandboxing.
 - Scheduled commands/tasks.
 - Multi-server dashboard.

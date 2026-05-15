@@ -46,6 +46,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .field input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:var(--font);font-size:13px;padding:9px 11px;outline:none;transition:border-color var(--fast),box-shadow var(--fast),transform var(--fast),background var(--fast)}
 .field input:focus{border-color:var(--accent);background:var(--bg4);box-shadow:0 0 0 4px var(--accent-dim);transform:translateY(-1px)}
 .field input::placeholder{color:var(--text-muted)}
+.lang-select{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text-dim);font-family:var(--font);font-size:11px;padding:4px 8px;outline:none;cursor:pointer;transition:border-color var(--fast),color var(--fast),background var(--fast)}
+.lang-select:hover,.lang-select:focus{border-color:var(--accent);color:var(--accent2);background:var(--bg4)}
+.login-lang{margin:0 0 14px}
+.login-lang .lang-select{width:100%;padding:7px 10px}
 .btn-login{width:100%;margin-top:4px;padding:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:var(--r-sm);font-family:var(--ui);font-size:14px;font-weight:700;cursor:pointer;transition:transform var(--fast) var(--ease),box-shadow var(--fast),filter var(--fast);box-shadow:var(--shadow-accent);position:relative;overflow:hidden}
 .btn-login:hover{transform:translateY(-2px) scale(1.01);filter:brightness(1.06)}
 .btn-login::after{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent 20%,rgba(255,255,255,.18) 50%,transparent 80%);transform:translateX(-130%)}
@@ -268,7 +272,7 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 @media (max-width:1350px){.dash-layout{grid-template-columns:1fr}.dash-grid.primary,.dash-grid.machine{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}.dash-side .dash-charts{grid-template-columns:repeat(auto-fit,minmax(295px,1fr))}}
 @media (max-width:920px){#panel-players{align-items:stretch}.players-layout{grid-template-columns:1fr}.history-list{max-height:220px}}
 @media (max-width:760px){#panel-dash{padding:12px;align-items:stretch}.dash-layout{width:100%}.dash-charts,.machine-grid{grid-template-columns:1fr}.dash-grid,.dash-grid.primary,.dash-grid.machine{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}.kpi{padding:12px}.kpi-value{font-size:22px;overflow-wrap:anywhere}.metric-v{white-space:normal;word-break:break-word}}
-@media (max-width:620px){header{gap:7px;padding:0 8px}.hlogo{font-size:12px}.huser,.hsep{display:none}.hbtn{padding:4px 7px;font-size:10px}#tabs{padding:0 6px}.tab{padding:7px 10px;font-size:11px;min-width:max-content}}
+@media (max-width:620px){header{gap:7px;padding:0 8px}.hlogo{font-size:12px}.huser,.hsep{display:none}.hbtn{padding:4px 7px;font-size:10px}.lang-select{font-size:10px;max-width:84px;padding:4px 6px}#tabs{padding:0 6px}.tab{padding:7px 10px;font-size:11px;min-width:max-content}}
 @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}.panel{transform:none !important}.log-line{clip-path:none !important}}
 </style>
 </head>
@@ -279,17 +283,27 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 <div id="login-screen">
   <div class="lcard">
     <div class="llogo">&#x2B21; B-WebConsole <small>V2</small></div>
-    <h2>Sign in</h2>
+    <h2 data-i18n="login.title">Sign in</h2>
+    <div class="login-lang">
+      <select class="lang-select" id="login-lang" aria-label="Language">
+        <option value="en">English</option>
+        <option value="ru">Русский</option>
+        <option value="zh">中文</option>
+        <option value="pl">Polski</option>
+        <option value="de">Deutsch</option>
+        <option value="fr">Français</option>
+      </select>
+    </div>
     <form id="login-form" action="#" onsubmit="return false;">
       <div class="field">
-        <label for="lu">Username</label>
+        <label for="lu" data-i18n="login.username">Username</label>
         <input id="lu" type="text" autocomplete="username" placeholder="admin" spellcheck="false">
       </div>
       <div class="field">
-        <label for="lp">Password</label>
+        <label for="lp" data-i18n="login.password">Password</label>
         <input id="lp" type="password" autocomplete="current-password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;">
       </div>
-      <button class="btn-login" id="btn-login" type="submit">Sign In</button>
+      <button class="btn-login" id="btn-login" type="submit" data-i18n="login.button">Sign In</button>
     </form>
     <div id="login-error" role="alert"></div>
   </div>
@@ -303,19 +317,27 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
     <div class="status-dot connecting" id="sdot"></div>
     <span id="status-text">Connecting&#8230;</span>
     <div class="hsep"></div>
-    <div class="huser">as <strong id="ulabel"></strong></div>
+    <div class="huser"><span data-i18n="header.as">as</span> <strong id="ulabel"></strong></div>
     <div class="spacer"></div>
-    <button class="hbtn" id="notif-btn" title="Toggle error notifications">&#128276; <span class="notif-badge" id="nbadge"></span></button>
-    <button class="hbtn" id="btn-export">Export Log</button>
-    <button class="hbtn" id="btn-clear">Clear</button>
-    <button class="hbtn danger" id="btn-logout">Logout</button>
+    <select class="lang-select" id="app-lang" aria-label="Language">
+      <option value="en">English</option>
+      <option value="ru">Русский</option>
+      <option value="zh">中文</option>
+      <option value="pl">Polski</option>
+      <option value="de">Deutsch</option>
+      <option value="fr">Français</option>
+    </select>
+    <button class="hbtn" id="notif-btn" title="Toggle error notifications" data-i18n-title="header.notifications">&#128276; <span class="notif-badge" id="nbadge"></span></button>
+    <button class="hbtn" id="btn-export" data-i18n="header.export">Export Log</button>
+    <button class="hbtn" id="btn-clear" data-i18n="header.clear">Clear</button>
+    <button class="hbtn danger" id="btn-logout" data-i18n="header.logout">Logout</button>
   </header>
 
   <div id="tabs">
-    <div class="tab active" data-panel="console">Console</div>
-    <div class="tab" data-panel="dash">Dashboard</div>
-    <div class="tab" data-panel="players">Players <span id="player-count-tab">(0)</span></div>
-    <div class="tab" data-panel="aliases">Aliases</div>
+    <div class="tab active" data-panel="console" data-i18n="tab.console">Console</div>
+    <div class="tab" data-panel="dash" data-i18n="tab.dashboard">Dashboard</div>
+    <div class="tab" data-panel="players"><span data-i18n="tab.players">Players</span> <span id="player-count-tab">(0)</span></div>
+    <div class="tab" data-panel="aliases" data-i18n="tab.aliases">Aliases</div>
   </div>
 
   <!-- Console Panel -->
@@ -323,28 +345,28 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
     <div id="stats-bar">
       <div class="stat" id="stat-tps"><span>TPS</span><span class="v" id="sv-tps">&#8212;</span></div>
       <div class="stat"><span>RAM</span><span class="v" id="sv-ram">&#8212;</span></div>
-      <div class="stat"><span>Players</span><span class="v" id="sv-players">&#8212;</span></div>
-      <div class="stat"><span>Lines</span><span class="v" id="sv-lines">0</span></div>
-      <div class="stat"><span>Session</span><span class="v" id="sv-session">&#8212;</span></div>
+      <div class="stat"><span data-i18n="stat.players">Players</span><span class="v" id="sv-players">&#8212;</span></div>
+      <div class="stat"><span data-i18n="stat.lines">Lines</span><span class="v" id="sv-lines">0</span></div>
+      <div class="stat"><span data-i18n="stat.session">Session</span><span class="v" id="sv-session">&#8212;</span></div>
     </div>
     <div id="console-wrap">
       <div id="console-output"></div>
-      <button id="scroll-anchor">&#8595; Bottom</button>
+      <button id="scroll-anchor">&#8595; <span data-i18n="console.bottom">Bottom</span></button>
     </div>
     <div id="search-bar">
-      <span class="slbl">Filter</span>
-      <input id="search-input" type="text" placeholder="Search logs&#8230; (Ctrl+F)" spellcheck="false">
+      <span class="slbl" data-i18n="console.filter">Filter</span>
+      <input id="search-input" type="text" placeholder="Search logs&#8230; (Ctrl+F)" data-i18n-placeholder="console.searchPlaceholder" spellcheck="false">
       <span id="search-count"></span>
       <button class="ftog INFO active" data-lv="INFO">Info</button>
       <button class="ftog WARN active" data-lv="WARN">Warn</button>
-      <button class="ftog SEVERE active" data-lv="SEVERE">Error</button>
+      <button class="ftog SEVERE active" data-lv="SEVERE" data-i18n="console.error">Error</button>
       <button class="ftog DEBUG" data-lv="DEBUG">Debug</button>
     </div>
     <div id="input-bar">
       <span class="prompt">&#10095;</span>
-      <input id="cmd-input" type="text" placeholder="Type command or !alias&#8230; (Tab to complete)" autocomplete="off" spellcheck="false" disabled>
+      <input id="cmd-input" type="text" placeholder="Type command or !alias&#8230; (Tab to complete)" data-i18n-placeholder="console.commandPlaceholder" autocomplete="off" spellcheck="false" disabled>
       <div id="autocomplete"></div>
-      <button class="btn-send" id="btn-send" disabled>Run</button>
+      <button class="btn-send" id="btn-send" disabled data-i18n="console.run">Run</button>
     </div>
   </div>
 
@@ -353,36 +375,36 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
     <div class="dash-layout">
       <div class="dash-main">
         <div class="dash-section">
-          <div class="dash-section-title">Overview</div>
+          <div class="dash-section-title" data-i18n="dash.overview">Overview</div>
           <div class="dash-grid machine">
-            <div class="kpi green" id="kpi-health-card"><div class="kpi-label">Server Health</div><div class="kpi-value" id="kpi-health">--</div><div class="kpi-sub" id="kpi-health-sub">Waiting for stats</div></div>
-            <div class="kpi purple"><div class="kpi-label">Player Capacity</div><div class="kpi-value" id="kpi-capacity">--</div><div class="kpi-sub" id="kpi-capacity-sub">Online slots used</div></div>
-            <div class="kpi blue"><div class="kpi-label">Plugin Uptime</div><div class="kpi-value" id="kpi-uptime">--</div><div class="kpi-sub">Since plugin enable</div></div>
-            <div class="kpi warn"><div class="kpi-label">Recent Commands</div><div class="kpi-value" id="kpi-player-cmds">0</div><div class="kpi-sub">Player commands / 24h</div></div>
+            <div class="kpi green" id="kpi-health-card"><div class="kpi-label" data-i18n="dash.serverHealth">Server Health</div><div class="kpi-value" id="kpi-health">--</div><div class="kpi-sub" id="kpi-health-sub" data-i18n="dash.waitingStats">Waiting for stats</div></div>
+            <div class="kpi purple"><div class="kpi-label" data-i18n="dash.playerCapacity">Player Capacity</div><div class="kpi-value" id="kpi-capacity">--</div><div class="kpi-sub" id="kpi-capacity-sub" data-i18n="dash.onlineSlotsUsed">Online slots used</div></div>
+            <div class="kpi blue"><div class="kpi-label" data-i18n="dash.pluginUptime">Plugin Uptime</div><div class="kpi-value" id="kpi-uptime">--</div><div class="kpi-sub" data-i18n="dash.sincePluginEnable">Since plugin enable</div></div>
+            <div class="kpi warn"><div class="kpi-label" data-i18n="dash.recentCommands">Recent Commands</div><div class="kpi-value" id="kpi-player-cmds">0</div><div class="kpi-sub" data-i18n="dash.playerCommands24h">Player commands / 24h</div></div>
           </div>
         </div>
         <div class="dash-section">
-          <div class="dash-section-title">Server Health</div>
+          <div class="dash-section-title" data-i18n="dash.serverHealth">Server Health</div>
           <div class="dash-grid primary" id="kpi-grid">
-            <div class="kpi green"><div class="kpi-label">TPS (1 min)</div><div class="kpi-value" id="kpi-tps">&#8212;</div><div class="kpi-sub" id="kpi-tps-sub">Server tick rate</div></div>
-            <div class="kpi blue"><div class="kpi-label">RAM Used</div><div class="kpi-value" id="kpi-ram">&#8212;</div><div class="kpi-sub" id="kpi-ram-sub">Heap memory</div></div>
-            <div class="kpi purple"><div class="kpi-label">Players Online</div><div class="kpi-value" id="kpi-players">&#8212;</div><div class="kpi-sub" id="kpi-players-sub">of &#8212; max</div></div>
-            <div class="kpi warn"><div class="kpi-label">Worlds</div><div class="kpi-value" id="kpi-worlds">&#8212;</div><div class="kpi-sub" id="kpi-worlds-sub">Loaded chunks: &#8212;</div></div>
-            <div class="kpi teal"><div class="kpi-label">Total Entities</div><div class="kpi-value" id="kpi-entities">&#8212;</div><div class="kpi-sub">Across all worlds</div></div>
-            <div class="kpi red"><div class="kpi-label">Errors (session)</div><div class="kpi-value" id="kpi-errors">0</div><div class="kpi-sub" id="kpi-errors-sub">SEVERE / ERROR lines</div></div>
+            <div class="kpi green"><div class="kpi-label">TPS (1 min)</div><div class="kpi-value" id="kpi-tps">&#8212;</div><div class="kpi-sub" id="kpi-tps-sub" data-i18n="dash.tickRate">Server tick rate</div></div>
+            <div class="kpi blue"><div class="kpi-label" data-i18n="dash.ramUsed">RAM Used</div><div class="kpi-value" id="kpi-ram">&#8212;</div><div class="kpi-sub" id="kpi-ram-sub" data-i18n="dash.heapMemory">Heap memory</div></div>
+            <div class="kpi purple"><div class="kpi-label" data-i18n="dash.playersOnline">Players Online</div><div class="kpi-value" id="kpi-players">&#8212;</div><div class="kpi-sub" id="kpi-players-sub">of &#8212; max</div></div>
+            <div class="kpi warn"><div class="kpi-label" data-i18n="dash.worlds">Worlds</div><div class="kpi-value" id="kpi-worlds">&#8212;</div><div class="kpi-sub" id="kpi-worlds-sub">Loaded chunks: &#8212;</div></div>
+            <div class="kpi teal"><div class="kpi-label" data-i18n="dash.totalEntities">Total Entities</div><div class="kpi-value" id="kpi-entities">&#8212;</div><div class="kpi-sub" data-i18n="dash.acrossWorlds">Across all worlds</div></div>
+            <div class="kpi red"><div class="kpi-label" data-i18n="dash.sessionErrors">Errors (session)</div><div class="kpi-value" id="kpi-errors">0</div><div class="kpi-sub" id="kpi-errors-sub" data-i18n="dash.errorLines">SEVERE / ERROR lines</div></div>
           </div>
         </div>
         <div class="dash-section">
-          <div class="dash-section-title">Machine Health</div>
+          <div class="dash-section-title" data-i18n="dash.machineHealth">Machine Health</div>
           <div class="dash-grid machine">
-            <div class="kpi green"><div class="kpi-label">Host CPU</div><div class="kpi-value" id="kpi-cpu">&#8212;</div><div class="kpi-sub" id="kpi-cpu-sub">System load</div></div>
-            <div class="kpi blue"><div class="kpi-label">Machine RAM</div><div class="kpi-value" id="kpi-host-ram">&#8212;</div><div class="kpi-sub" id="kpi-host-ram-sub">Physical memory</div></div>
-            <div class="kpi warn"><div class="kpi-label">Server Disk</div><div class="kpi-value" id="kpi-disk">&#8212;</div><div class="kpi-sub" id="kpi-disk-sub">World container</div></div>
-            <div class="kpi purple"><div class="kpi-label">JVM Threads</div><div class="kpi-value" id="kpi-threads">&#8212;</div><div class="kpi-sub" id="kpi-threads-sub">Java process</div></div>
+            <div class="kpi green"><div class="kpi-label" data-i18n="dash.hostCpu">Host CPU</div><div class="kpi-value" id="kpi-cpu">&#8212;</div><div class="kpi-sub" id="kpi-cpu-sub" data-i18n="dash.systemLoad">System load</div></div>
+            <div class="kpi blue"><div class="kpi-label" data-i18n="dash.machineRam">Machine RAM</div><div class="kpi-value" id="kpi-host-ram">&#8212;</div><div class="kpi-sub" id="kpi-host-ram-sub" data-i18n="dash.physicalMemory">Physical memory</div></div>
+            <div class="kpi warn"><div class="kpi-label" data-i18n="dash.serverDisk">Server Disk</div><div class="kpi-value" id="kpi-disk">&#8212;</div><div class="kpi-sub" id="kpi-disk-sub" data-i18n="dash.worldContainer">World container</div></div>
+            <div class="kpi purple"><div class="kpi-label" data-i18n="dash.jvmThreads">JVM Threads</div><div class="kpi-value" id="kpi-threads">&#8212;</div><div class="kpi-sub" id="kpi-threads-sub" data-i18n="dash.javaProcess">Java process</div></div>
           </div>
         </div>
         <div class="dash-section">
-          <div class="dash-section-title">Performance History (5 min)</div>
+          <div class="dash-section-title" data-i18n="dash.performanceHistory">Performance History (5 min)</div>
           <div class="dash-charts">
             <div class="chart-card">
               <div class="chart-card-header"><h3>TPS</h3><span class="chart-badge" id="badge-tps">&#8212;</span></div>
@@ -397,37 +419,37 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
               <div class="chart-wrap"><canvas id="chart-ram"></canvas></div>
             </div>
             <div class="chart-card">
-              <div class="chart-card-header"><h3>Players</h3><span class="chart-badge" id="badge-players">&#8212;</span></div>
+              <div class="chart-card-header"><h3 data-i18n="stat.players">Players</h3><span class="chart-badge" id="badge-players">&#8212;</span></div>
               <div class="chart-wrap"><canvas id="chart-players"></canvas></div>
             </div>
           </div>
         </div>
         <div class="dash-section">
-          <div class="dash-section-title">Machine Details</div>
+          <div class="dash-section-title" data-i18n="dash.machineDetails">Machine Details</div>
           <div class="machine-grid">
             <div class="machine-card">
               <h3>CPU</h3>
-              <div class="metric-row"><span class="metric-k">Model</span><span class="metric-v" id="sys-cpu-model">&#8212;</span></div>
-              <div class="metric-row"><span class="metric-k">Cores / Threads</span><span class="metric-v" id="sys-cpu-cores">&#8212;</span></div>
-              <div class="metric-row"><span class="metric-k">Process Load</span><span class="metric-v" id="sys-cpu-process">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k" data-i18n="metric.model">Model</span><span class="metric-v" id="sys-cpu-model">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k" data-i18n="metric.coresThreads">Cores / Threads</span><span class="metric-v" id="sys-cpu-cores">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k" data-i18n="metric.processLoad">Process Load</span><span class="metric-v" id="sys-cpu-process">&#8212;</span></div>
               <div class="meter"><div class="meter-fill" id="sys-cpu-meter"></div></div>
             </div>
             <div class="machine-card">
-              <h3>Memory</h3>
-              <div class="metric-row"><span class="metric-k">Machine Used</span><span class="metric-v" id="sys-ram-used">&#8212;</span></div>
-              <div class="metric-row"><span class="metric-k">Machine Free</span><span class="metric-v" id="sys-ram-free">&#8212;</span></div>
+              <h3 data-i18n="metric.memory">Memory</h3>
+              <div class="metric-row"><span class="metric-k" data-i18n="metric.machineUsed">Machine Used</span><span class="metric-v" id="sys-ram-used">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k" data-i18n="metric.machineFree">Machine Free</span><span class="metric-v" id="sys-ram-free">&#8212;</span></div>
               <div class="metric-row"><span class="metric-k">JVM Heap</span><span class="metric-v" id="sys-jvm-heap">&#8212;</span></div>
               <div class="meter"><div class="meter-fill" id="sys-ram-meter"></div></div>
             </div>
             <div class="machine-card">
-              <h3>Disk</h3>
-              <div class="metric-row"><span class="metric-k">Used</span><span class="metric-v" id="sys-disk-used">&#8212;</span></div>
-              <div class="metric-row"><span class="metric-k">Free</span><span class="metric-v" id="sys-disk-free">&#8212;</span></div>
-              <div class="metric-row"><span class="metric-k">Mount</span><span class="metric-v" id="sys-disk-mount">&#8212;</span></div>
+              <h3 data-i18n="metric.disk">Disk</h3>
+              <div class="metric-row"><span class="metric-k" data-i18n="metric.used">Used</span><span class="metric-v" id="sys-disk-used">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k" data-i18n="metric.free">Free</span><span class="metric-v" id="sys-disk-free">&#8212;</span></div>
+              <div class="metric-row"><span class="metric-k" data-i18n="metric.mount">Mount</span><span class="metric-v" id="sys-disk-mount">&#8212;</span></div>
               <div class="meter"><div class="meter-fill" id="sys-disk-meter"></div></div>
             </div>
             <div class="machine-card">
-              <h3>Runtime</h3>
+              <h3 data-i18n="metric.runtime">Runtime</h3>
               <div class="metric-row"><span class="metric-k">OS</span><span class="metric-v" id="sys-os">&#8212;</span></div>
               <div class="metric-row"><span class="metric-k">Java</span><span class="metric-v" id="sys-java">&#8212;</span></div>
               <div class="metric-row"><span class="metric-k">PID</span><span class="metric-v" id="sys-pid">&#8212;</span></div>
@@ -438,10 +460,10 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
       </div>
       <div class="dash-side">
         <div class="dash-section">
-          <div class="dash-section-title">Analytics</div>
+          <div class="dash-section-title" data-i18n="dash.analytics">Analytics</div>
           <div class="dash-charts">
             <div class="chart-card">
-              <div class="chart-card-header"><h3>Log Level Breakdown</h3><span class="chart-badge" id="badge-logcount">0 lines</span></div>
+              <div class="chart-card-header"><h3 data-i18n="dash.logBreakdown">Log Level Breakdown</h3><span class="chart-badge" id="badge-logcount">0 lines</span></div>
               <div style="padding-top:6px">
                 <div class="level-bar-row"><span class="level-bar-label" style="color:var(--danger)">ERROR</span><div class="level-bar-track"><div class="level-bar-fill" id="bar-error" style="background:var(--danger);width:0%"></div></div><span class="level-bar-count" id="cnt-error">0</span></div>
                 <div class="level-bar-row"><span class="level-bar-label" style="color:var(--warn)">WARN</span><div class="level-bar-track"><div class="level-bar-fill" id="bar-warn" style="background:var(--warn);width:0%"></div></div><span class="level-bar-count" id="cnt-warn">0</span></div>
@@ -450,20 +472,20 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
               </div>
             </div>
             <div class="chart-card">
-              <div class="chart-card-header"><h3>World Breakdown</h3></div>
+              <div class="chart-card-header"><h3 data-i18n="dash.worldBreakdown">World Breakdown</h3></div>
               <div style="overflow-y:auto;max-height:150px;scrollbar-width:thin">
                 <table class="world-table">
-                  <thead><tr><th>World</th><th>Chunks</th><th>Entities</th></tr></thead>
-                  <tbody id="world-tbody"><tr><td colspan="3" style="color:var(--text-muted);text-align:center;padding:12px 0">No data yet</td></tr></tbody>
+                  <thead><tr><th data-i18n="dash.world">World</th><th data-i18n="dash.chunks">Chunks</th><th data-i18n="dash.entities">Entities</th></tr></thead>
+                  <tbody id="world-tbody"><tr><td colspan="3" style="color:var(--text-muted);text-align:center;padding:12px 0" data-i18n="dash.noData">No data yet</td></tr></tbody>
                 </table>
               </div>
             </div>
             <div class="chart-card">
-              <div class="chart-card-header"><h3>Activity Feed</h3><span class="chart-badge" style="color:var(--success)">live</span></div>
+              <div class="chart-card-header"><h3 data-i18n="dash.activityFeed">Activity Feed</h3><span class="chart-badge" style="color:var(--success)" data-i18n="dash.live">live</span></div>
               <div class="activity-feed" id="activity-feed">
                 <div class="activity-item">
                   <span class="activity-icon">&#128564;</span>
-                  <span class="activity-text" style="color:var(--text-muted)">Waiting for activity&#8230;</span>
+                  <span class="activity-text" style="color:var(--text-muted)" data-i18n="dash.waitingActivity">Waiting for activity&#8230;</span>
                 </div>
               </div>
             </div>
@@ -478,13 +500,13 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
     <div class="players-layout">
       <section class="players-card players-list-card">
         <div class="players-card-header">
-          <div class="players-card-title">Online Players</div>
+          <div class="players-card-title" data-i18n="players.onlinePlayers">Online Players</div>
           <span class="players-card-badge" id="players-online-badge">0 online</span>
         </div>
-        <p class="no-players" id="no-players-msg">No players online.</p>
+        <p class="no-players" id="no-players-msg" data-i18n="players.noneOnline">No players online.</p>
         <div class="player-table-wrap">
           <table class="player-table" id="player-table" style="display:none">
-            <thead><tr><th>Name</th><th>World</th><th>Ping</th><th>Actions</th></tr></thead>
+            <thead><tr><th data-i18n="players.name">Name</th><th data-i18n="players.world">World</th><th data-i18n="players.ping">Ping</th><th data-i18n="players.actions">Actions</th></tr></thead>
             <tbody id="player-tbody"></tbody>
           </table>
         </div>
@@ -492,14 +514,14 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
       <aside class="players-history">
         <section class="players-card">
           <div class="players-card-header">
-            <div class="players-card-title">Join History</div>
+            <div class="players-card-title" data-i18n="players.joinHistory">Join History</div>
             <span class="players-card-badge">24h</span>
           </div>
           <div class="history-list" id="player-event-history"></div>
         </section>
         <section class="players-card">
           <div class="players-card-header">
-            <div class="players-card-title">Player Commands</div>
+            <div class="players-card-title" data-i18n="players.playerCommands">Player Commands</div>
             <span class="players-card-badge">24h</span>
           </div>
           <div class="history-list" id="player-command-history"></div>
@@ -510,7 +532,7 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 
   <!-- Aliases Panel -->
   <div class="panel" id="panel-aliases">
-    <p class="alias-hint">Click an alias to insert it into the console, or press Run to execute immediately.</p>
+    <p class="alias-hint" data-i18n="aliases.hint">Click an alias to insert it into the console, or press Run to execute immediately.</p>
     <div class="alias-list" id="alias-list"></div>
   </div>
 </div>
@@ -518,18 +540,18 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 <!-- Action Modal -->
 <div class="modal-bg" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <div class="modal">
-    <h3 id="modal-title">Action</h3>
+    <h3 id="modal-title" data-i18n="modal.action">Action</h3>
     <div class="modal-field">
-      <label for="modal-player">Player</label>
+      <label for="modal-player" data-i18n="modal.player">Player</label>
       <input id="modal-player" type="text" readonly>
     </div>
     <div class="modal-field">
-      <label for="modal-reason">Reason</label>
-      <input id="modal-reason" type="text" placeholder="Enter reason&#8230;">
+      <label for="modal-reason" data-i18n="modal.reason">Reason</label>
+      <input id="modal-reason" type="text" placeholder="Enter reason&#8230;" data-i18n-placeholder="modal.reasonPlaceholder">
     </div>
     <div class="modal-actions">
-      <button class="mbtn cancel" id="modal-cancel">Cancel</button>
-      <button class="mbtn confirm" id="modal-confirm">Confirm</button>
+      <button class="mbtn cancel" id="modal-cancel" data-i18n="modal.cancel">Cancel</button>
+      <button class="mbtn confirm" id="modal-confirm" data-i18n="modal.confirm">Confirm</button>
     </div>
   </div>
 </div>
@@ -582,7 +604,61 @@ const ulabel=$('ulabel'), svLines=$('sv-lines'), svSession=$('sv-session');
 const svTps=$('sv-tps'), svRam=$('sv-ram'), svPlayers=$('sv-players'), statTpsEl=$('stat-tps');
 const modal=$('modal'), modalTitle=$('modal-title'), modalPlayer=$('modal-player');
 const modalReason=$('modal-reason'), modalCancel=$('modal-cancel'), modalConfirm=$('modal-confirm');
-const toast=$('toast'), nbadge=$('nbadge');
+const toast=$('toast'), nbadge=$('nbadge'), loginLang=$('login-lang'), appLang=$('app-lang');
+
+const I18N={
+  en:{
+    'login.title':'Sign in','login.username':'Username','login.password':'Password','login.button':'Sign In','login.signing':'Signing in...','login.missing':'Enter username and password.','login.invalid':'Invalid credentials.','login.unreachable':'Server unreachable.',
+    'header.as':'as','header.notifications':'Toggle error notifications','header.export':'Export Log','header.clear':'Clear','header.logout':'Logout',
+    'tab.console':'Console','tab.dashboard':'Dashboard','tab.players':'Players','tab.aliases':'Aliases',
+    'stat.players':'Players','stat.lines':'Lines','stat.session':'Session',
+    'status.connected':'Connected','status.disconnected':'Disconnected','status.connecting':'Connecting...',
+    'console.bottom':'Bottom','console.filter':'Filter','console.searchPlaceholder':'Search logs... (Ctrl+F)','console.commandPlaceholder':'Type command or !alias... (Tab to complete)','console.run':'Run','console.error':'Error','console.matches':'{count} matches','console.match':'{count} match','console.acHint':'Tab / ↑↓ to navigate, Enter to select',
+    'dash.overview':'Overview','dash.serverHealth':'Server Health','dash.waitingStats':'Waiting for stats','dash.playerCapacity':'Player Capacity','dash.onlineSlotsUsed':'Online slots used','dash.pluginUptime':'Plugin Uptime','dash.sincePluginEnable':'Since plugin enable','dash.recentCommands':'Recent Commands','dash.playerCommands24h':'Player commands / 24h','dash.tickRate':'Server tick rate','dash.ramUsed':'RAM Used','dash.heapMemory':'Heap memory','dash.playersOnline':'Players Online','dash.worlds':'Worlds','dash.totalEntities':'Total Entities','dash.acrossWorlds':'Across all worlds','dash.sessionErrors':'Errors (session)','dash.errorLines':'SEVERE / ERROR lines','dash.machineHealth':'Machine Health','dash.hostCpu':'Host CPU','dash.systemLoad':'System load','dash.machineRam':'Machine RAM','dash.physicalMemory':'Physical memory','dash.serverDisk':'Server Disk','dash.worldContainer':'World container','dash.jvmThreads':'JVM Threads','dash.javaProcess':'Java process','dash.performanceHistory':'Performance History (5 min)','dash.machineDetails':'Machine Details','dash.analytics':'Analytics','dash.logBreakdown':'Log Level Breakdown','dash.worldBreakdown':'World Breakdown','dash.world':'World','dash.chunks':'Chunks','dash.entities':'Entities','dash.noData':'No data yet','dash.activityFeed':'Activity Feed','dash.live':'live','dash.waitingActivity':'Waiting for activity...',
+    'metric.model':'Model','metric.coresThreads':'Cores / Threads','metric.processLoad':'Process Load','metric.memory':'Memory','metric.machineUsed':'Machine Used','metric.machineFree':'Machine Free','metric.disk':'Disk','metric.used':'Used','metric.free':'Free','metric.mount':'Mount','metric.runtime':'Runtime',
+    'players.onlinePlayers':'Online Players','players.noneOnline':'No players online.','players.name':'Name','players.world':'World','players.ping':'Ping','players.actions':'Actions','players.joinHistory':'Join History','players.playerCommands':'Player Commands','players.online':'{count} online','players.joined':'Joined','players.left':'Left','players.unknown':'Unknown','players.noJoinHistory':'No join history in the last 24 hours.','players.noCommands':'No player commands in the last 24 hours.','players.kick':'Kick','players.ban':'Ban','players.kickPlayer':'Kick Player','players.banPlayer':'Ban Player','players.kicked':'Kicked','players.banned':'Banned','players.noReason':'No reason given',
+    'aliases.hint':'Click an alias to insert it into the console, or press Run to execute immediately.','aliases.empty':'No aliases configured. Add them to config.yml.',
+    'modal.action':'Action','modal.player':'Player','modal.reason':'Reason','modal.reasonPlaceholder':'Enter reason...','modal.cancel':'Cancel','modal.confirm':'Confirm',
+    'toast.connected':'Console connected','toast.lost':'Connection lost - reconnecting...','toast.sessionExpired':'Session expired','toast.rateLimited':'Rate limited - slow down','toast.blocked':'Command blocked','toast.notificationsEnabled':'Notifications enabled','toast.notificationsDenied':'Notifications denied','toast.notificationsDisabled':'Notifications disabled','toast.cleared':'Console cleared',
+    'health.critical':'Critical','health.watch':'Watch','health.good':'Good','health.needsAttention':'Needs attention','health.monitor':'Monitor server','health.normal':'All core signals normal','health.excellent':'Excellent ✓','health.degraded':'Degraded',
+    'fmt.ofSlots':'{players} of {max} slots','fmt.maxUnknown':'{players} online, max unknown','fmt.ofMax':'of {max} max','fmt.loadedChunks':'Loaded chunks: {count}','fmt.chunksLoaded':'Chunks loaded: {count}','fmt.ofRam':'of {max}MB ({pct}%)','fmt.process':'Process {value}','fmt.free':'{value} free','fmt.daemon':'{value} daemon','fmt.lines':'{count} lines'
+  },
+  ru:{'login.title':'Вход','login.username':'Логин','login.password':'Пароль','login.button':'Войти','login.signing':'Вход...','login.missing':'Введите логин и пароль.','login.invalid':'Неверные данные.','login.unreachable':'Сервер недоступен.','header.as':'как','header.notifications':'Переключить уведомления об ошибках','header.export':'Экспорт логов','header.clear':'Очистить','header.logout':'Выйти','tab.console':'Консоль','tab.dashboard':'Панель','tab.players':'Игроки','tab.aliases':'Алиасы','stat.players':'Игроки','stat.lines':'Строки','stat.session':'Сессия','status.connected':'Подключено','status.disconnected':'Отключено','status.connecting':'Подключение...','console.bottom':'Вниз','console.filter':'Фильтр','console.searchPlaceholder':'Поиск логов... (Ctrl+F)','console.commandPlaceholder':'Введите команду или !алиас... (Tab для подсказок)','console.run':'Выполнить','console.error':'Ошибка','console.matches':'{count} совпадений','console.match':'{count} совпадение','console.acHint':'Tab / ↑↓ навигация, Enter выбрать','dash.overview':'Обзор','dash.serverHealth':'Состояние сервера','dash.waitingStats':'Ожидание статистики','dash.playerCapacity':'Заполненность','dash.onlineSlotsUsed':'Использовано слотов','dash.pluginUptime':'Аптайм плагина','dash.sincePluginEnable':'С момента запуска плагина','dash.recentCommands':'Недавние команды','dash.playerCommands24h':'Команды игроков / 24ч','dash.tickRate':'Скорость тиков','dash.ramUsed':'RAM использовано','dash.heapMemory':'Память heap','dash.playersOnline':'Игроки онлайн','dash.worlds':'Миры','dash.totalEntities':'Всего сущностей','dash.acrossWorlds':'Во всех мирах','dash.sessionErrors':'Ошибки сессии','dash.errorLines':'Строки SEVERE / ERROR','dash.machineHealth':'Состояние машины','dash.hostCpu':'CPU хоста','dash.systemLoad':'Нагрузка системы','dash.machineRam':'RAM машины','dash.physicalMemory':'Физическая память','dash.serverDisk':'Диск сервера','dash.worldContainer':'Папка миров','dash.jvmThreads':'Потоки JVM','dash.javaProcess':'Процесс Java','dash.performanceHistory':'История производительности (5 мин)','dash.machineDetails':'Детали машины','dash.analytics':'Аналитика','dash.logBreakdown':'Уровни логов','dash.worldBreakdown':'Миры','dash.world':'Мир','dash.chunks':'Чанки','dash.entities':'Сущности','dash.noData':'Данных пока нет','dash.activityFeed':'Активность','dash.live':'live','dash.waitingActivity':'Ожидание активности...','metric.model':'Модель','metric.coresThreads':'Ядра / Потоки','metric.processLoad':'Нагрузка процесса','metric.memory':'Память','metric.machineUsed':'Использовано','metric.machineFree':'Свободно','metric.disk':'Диск','metric.used':'Использовано','metric.free':'Свободно','metric.mount':'Точка','metric.runtime':'Runtime','players.onlinePlayers':'Игроки онлайн','players.noneOnline':'Нет игроков онлайн.','players.name':'Имя','players.world':'Мир','players.ping':'Пинг','players.actions':'Действия','players.joinHistory':'История входов','players.playerCommands':'Команды игроков','players.online':'{count} онлайн','players.joined':'Вошел','players.left':'Вышел','players.unknown':'Неизвестно','players.noJoinHistory':'Нет истории входов за 24 часа.','players.noCommands':'Нет команд игроков за 24 часа.','players.kick':'Кик','players.ban':'Бан','players.kickPlayer':'Кик игрока','players.banPlayer':'Бан игрока','players.kicked':'Кикнут','players.banned':'Забанен','players.noReason':'Причина не указана','aliases.hint':'Нажмите алиас, чтобы вставить его в консоль, или Run для запуска.','aliases.empty':'Алиасы не настроены. Добавьте их в config.yml.','modal.action':'Действие','modal.player':'Игрок','modal.reason':'Причина','modal.reasonPlaceholder':'Введите причину...','modal.cancel':'Отмена','modal.confirm':'Подтвердить','toast.connected':'Консоль подключена','toast.lost':'Соединение потеряно - переподключение...','toast.sessionExpired':'Сессия истекла','toast.rateLimited':'Лимит - медленнее','toast.blocked':'Команда заблокирована','toast.notificationsEnabled':'Уведомления включены','toast.notificationsDenied':'Уведомления запрещены','toast.notificationsDisabled':'Уведомления выключены','toast.cleared':'Консоль очищена','health.critical':'Критично','health.watch':'Следить','health.good':'Хорошо','health.needsAttention':'Требует внимания','health.monitor':'Наблюдайте за сервером','health.normal':'Основные показатели в норме','health.excellent':'Отлично ✓','health.degraded':'Просадка','fmt.ofSlots':'{players} из {max} слотов','fmt.maxUnknown':'{players} онлайн, максимум неизвестен','fmt.ofMax':'из {max} максимум','fmt.loadedChunks':'Загружено чанков: {count}','fmt.chunksLoaded':'Чанков загружено: {count}','fmt.ofRam':'из {max}MB ({pct}%)','fmt.process':'Процесс {value}','fmt.free':'{value} свободно','fmt.daemon':'{value} daemon','fmt.lines':'{count} строк'},
+  zh:{'login.title':'登录','login.username':'用户名','login.password':'密码','login.button':'登录','login.signing':'正在登录...','login.missing':'请输入用户名和密码。','login.invalid':'凭据无效。','login.unreachable':'服务器不可达。','header.as':'身份','header.notifications':'切换错误通知','header.export':'导出日志','header.clear':'清空','header.logout':'退出','tab.console':'控制台','tab.dashboard':'仪表盘','tab.players':'玩家','tab.aliases':'别名','stat.players':'玩家','stat.lines':'行','stat.session':'会话','status.connected':'已连接','status.disconnected':'已断开','status.connecting':'连接中...','console.bottom':'底部','console.filter':'筛选','console.searchPlaceholder':'搜索日志... (Ctrl+F)','console.commandPlaceholder':'输入命令或 !别名... (Tab 补全)','console.run':'运行','console.error':'错误','console.matches':'{count} 个匹配','console.match':'{count} 个匹配','console.acHint':'Tab / ↑↓ 导航，Enter 选择','dash.overview':'概览','dash.serverHealth':'服务器健康','dash.waitingStats':'等待统计','dash.playerCapacity':'玩家容量','dash.onlineSlotsUsed':'在线槽位使用','dash.pluginUptime':'插件运行时间','dash.sincePluginEnable':'自插件启用以来','dash.recentCommands':'最近命令','dash.playerCommands24h':'玩家命令 / 24小时','dash.tickRate':'服务器 tick 率','dash.ramUsed':'RAM 使用','dash.heapMemory':'堆内存','dash.playersOnline':'在线玩家','dash.worlds':'世界','dash.totalEntities':'实体总数','dash.acrossWorlds':'所有世界','dash.sessionErrors':'会话错误','dash.errorLines':'SEVERE / ERROR 行','dash.machineHealth':'机器健康','dash.hostCpu':'主机 CPU','dash.systemLoad':'系统负载','dash.machineRam':'机器 RAM','dash.physicalMemory':'物理内存','dash.serverDisk':'服务器磁盘','dash.worldContainer':'世界目录','dash.jvmThreads':'JVM 线程','dash.javaProcess':'Java 进程','dash.performanceHistory':'性能历史 (5 分钟)','dash.machineDetails':'机器详情','dash.analytics':'分析','dash.logBreakdown':'日志级别','dash.worldBreakdown':'世界统计','dash.world':'世界','dash.chunks':'区块','dash.entities':'实体','dash.noData':'暂无数据','dash.activityFeed':'活动','dash.live':'实时','dash.waitingActivity':'等待活动...','metric.model':'型号','metric.coresThreads':'核心 / 线程','metric.processLoad':'进程负载','metric.memory':'内存','metric.machineUsed':'已用','metric.machineFree':'可用','metric.disk':'磁盘','metric.used':'已用','metric.free':'可用','metric.mount':'挂载','metric.runtime':'运行时','players.onlinePlayers':'在线玩家','players.noneOnline':'没有玩家在线。','players.name':'名称','players.world':'世界','players.ping':'延迟','players.actions':'操作','players.joinHistory':'加入历史','players.playerCommands':'玩家命令','players.online':'{count} 在线','players.joined':'加入','players.left':'离开','players.unknown':'未知','players.noJoinHistory':'过去 24 小时没有加入历史。','players.noCommands':'过去 24 小时没有玩家命令。','players.kick':'踢出','players.ban':'封禁','players.kickPlayer':'踢出玩家','players.banPlayer':'封禁玩家','players.kicked':'已踢出','players.banned':'已封禁','players.noReason':'未提供原因','aliases.hint':'点击别名插入控制台，或按运行立即执行。','aliases.empty':'未配置别名。请添加到 config.yml。','modal.action':'操作','modal.player':'玩家','modal.reason':'原因','modal.reasonPlaceholder':'输入原因...','modal.cancel':'取消','modal.confirm':'确认','toast.connected':'控制台已连接','toast.lost':'连接丢失 - 正在重连...','toast.sessionExpired':'会话已过期','toast.rateLimited':'频率受限 - 请慢一点','toast.blocked':'命令已阻止','toast.notificationsEnabled':'通知已启用','toast.notificationsDenied':'通知被拒绝','toast.notificationsDisabled':'通知已禁用','toast.cleared':'控制台已清空','health.critical':'严重','health.watch':'关注','health.good':'良好','health.needsAttention':'需要关注','health.monitor':'监控服务器','health.normal':'核心指标正常','health.excellent':'优秀 ✓','health.degraded':'下降','fmt.ofSlots':'{players} / {max} 槽位','fmt.maxUnknown':'{players} 在线，最大未知','fmt.ofMax':'最大 {max}','fmt.loadedChunks':'已加载区块：{count}','fmt.chunksLoaded':'已加载区块：{count}','fmt.ofRam':'共 {max}MB ({pct}%)','fmt.process':'进程 {value}','fmt.free':'{value} 可用','fmt.daemon':'{value} daemon','fmt.lines':'{count} 行'},
+  pl:{},de:{},fr:{}
+};
+Object.assign(I18N.pl,I18N.en,{'login.title':'Logowanie','login.username':'Użytkownik','login.password':'Hasło','login.button':'Zaloguj','header.export':'Eksport logu','header.clear':'Wyczyść','header.logout':'Wyloguj','tab.console':'Konsola','tab.dashboard':'Panel','tab.players':'Gracze','tab.aliases':'Aliasy','status.connected':'Połączono','status.disconnected':'Rozłączono','status.connecting':'Łączenie...','console.run':'Uruchom','console.filter':'Filtr','console.error':'Błąd','dash.overview':'Przegląd','dash.serverHealth':'Stan serwera','dash.machineHealth':'Stan maszyny','dash.analytics':'Analityka','players.onlinePlayers':'Gracze online','players.noneOnline':'Brak graczy online.','players.joinHistory':'Historia wejść','players.playerCommands':'Komendy graczy','players.kick':'Wyrzuć','players.ban':'Zbanuj','modal.cancel':'Anuluj','modal.confirm':'Potwierdź','toast.connected':'Konsola połączona','toast.cleared':'Konsola wyczyszczona'});
+Object.assign(I18N.de,I18N.en,{'login.title':'Anmelden','login.username':'Benutzername','login.password':'Passwort','login.button':'Anmelden','header.export':'Log exportieren','header.clear':'Leeren','header.logout':'Abmelden','tab.console':'Konsole','tab.dashboard':'Dashboard','tab.players':'Spieler','tab.aliases':'Aliase','status.connected':'Verbunden','status.disconnected':'Getrennt','status.connecting':'Verbinden...','console.run':'Ausführen','console.filter':'Filter','console.error':'Fehler','dash.overview':'Übersicht','dash.serverHealth':'Serverzustand','dash.machineHealth':'Systemzustand','dash.analytics':'Analyse','players.onlinePlayers':'Spieler online','players.noneOnline':'Keine Spieler online.','players.joinHistory':'Login-Verlauf','players.playerCommands':'Spielerbefehle','players.kick':'Kicken','players.ban':'Bannen','modal.cancel':'Abbrechen','modal.confirm':'Bestätigen','toast.connected':'Konsole verbunden','toast.cleared':'Konsole geleert'});
+Object.assign(I18N.fr,I18N.en,{'login.title':'Connexion','login.username':'Utilisateur','login.password':'Mot de passe','login.button':'Se connecter','header.export':'Exporter le log','header.clear':'Effacer','header.logout':'Déconnexion','tab.console':'Console','tab.dashboard':'Tableau de bord','tab.players':'Joueurs','tab.aliases':'Alias','status.connected':'Connecté','status.disconnected':'Déconnecté','status.connecting':'Connexion...','console.run':'Exécuter','console.filter':'Filtre','console.error':'Erreur','dash.overview':'Vue générale','dash.serverHealth':'Santé du serveur','dash.machineHealth':'Santé machine','dash.analytics':'Analyse','players.onlinePlayers':'Joueurs en ligne','players.noneOnline':'Aucun joueur en ligne.','players.joinHistory':'Historique des connexions','players.playerCommands':'Commandes des joueurs','players.kick':'Expulser','players.ban':'Bannir','modal.cancel':'Annuler','modal.confirm':'Confirmer','toast.connected':'Console connectée','toast.cleared':'Console effacée'});
+Object.assign(I18N.pl,{'login.signing':'Logowanie...','login.missing':'Podaj użytkownika i hasło.','login.invalid':'Nieprawidłowe dane.','login.unreachable':'Serwer niedostępny.','header.as':'jako','header.notifications':'Przełącz powiadomienia o błędach','stat.players':'Gracze','stat.lines':'Linie','stat.session':'Sesja','console.bottom':'Dół','console.searchPlaceholder':'Szukaj w logach... (Ctrl+F)','console.commandPlaceholder':'Wpisz komendę lub !alias... (Tab uzupełnia)','console.matches':'{count} trafień','console.match':'{count} trafienie','console.acHint':'Tab / ↑↓ nawigacja, Enter wybór','dash.waitingStats':'Oczekiwanie na statystyki','dash.playerCapacity':'Pojemność graczy','dash.onlineSlotsUsed':'Użyte sloty','dash.pluginUptime':'Czas pracy pluginu','dash.sincePluginEnable':'Od włączenia pluginu','dash.recentCommands':'Ostatnie komendy','dash.playerCommands24h':'Komendy graczy / 24h','dash.tickRate':'Tempo ticków','dash.ramUsed':'Użycie RAM','dash.heapMemory':'Pamięć heap','dash.playersOnline':'Gracze online','dash.worlds':'Światy','dash.totalEntities':'Wszystkie encje','dash.acrossWorlds':'We wszystkich światach','dash.sessionErrors':'Błędy sesji','dash.errorLines':'Linie SEVERE / ERROR','dash.hostCpu':'CPU hosta','dash.systemLoad':'Obciążenie systemu','dash.machineRam':'RAM maszyny','dash.physicalMemory':'Pamięć fizyczna','dash.serverDisk':'Dysk serwera','dash.worldContainer':'Folder światów','dash.jvmThreads':'Wątki JVM','dash.javaProcess':'Proces Java','dash.performanceHistory':'Historia wydajności (5 min)','dash.machineDetails':'Szczegóły maszyny','dash.logBreakdown':'Poziomy logów','dash.worldBreakdown':'Światy','dash.world':'Świat','dash.chunks':'Chunki','dash.entities':'Encje','dash.noData':'Brak danych','dash.activityFeed':'Aktywność','dash.live':'live','dash.waitingActivity':'Oczekiwanie na aktywność...','metric.model':'Model','metric.coresThreads':'Rdzenie / Wątki','metric.processLoad':'Obciążenie procesu','metric.memory':'Pamięć','metric.machineUsed':'Użyte','metric.machineFree':'Wolne','metric.disk':'Dysk','metric.used':'Użyte','metric.free':'Wolne','metric.mount':'Montowanie','metric.runtime':'Runtime','players.name':'Nazwa','players.world':'Świat','players.ping':'Ping','players.actions':'Akcje','players.online':'{count} online','players.joined':'Dołączył','players.left':'Wyszedł','players.unknown':'Nieznany','players.noJoinHistory':'Brak historii wejść z 24 godzin.','players.noCommands':'Brak komend graczy z 24 godzin.','players.kickPlayer':'Wyrzuć gracza','players.banPlayer':'Zbanuj gracza','players.kicked':'Wyrzucono','players.banned':'Zbanowano','players.noReason':'Brak powodu','aliases.hint':'Kliknij alias, aby wstawić go do konsoli, albo Run, aby wykonać.','aliases.empty':'Brak aliasów. Dodaj je w config.yml.','modal.action':'Akcja','modal.player':'Gracz','modal.reason':'Powód','modal.reasonPlaceholder':'Podaj powód...','toast.lost':'Utracono połączenie - ponawianie...','toast.sessionExpired':'Sesja wygasła','toast.rateLimited':'Limit - zwolnij','toast.blocked':'Komenda zablokowana','toast.notificationsEnabled':'Powiadomienia włączone','toast.notificationsDenied':'Powiadomienia odrzucone','toast.notificationsDisabled':'Powiadomienia wyłączone','health.critical':'Krytyczny','health.watch':'Obserwuj','health.good':'Dobry','health.needsAttention':'Wymaga uwagi','health.monitor':'Monitoruj serwer','health.normal':'Główne sygnały w normie','health.excellent':'Świetnie ✓','health.degraded':'Pogorszone','fmt.ofSlots':'{players} z {max} slotów','fmt.maxUnknown':'{players} online, maksimum nieznane','fmt.ofMax':'z {max} max','fmt.chunksLoaded':'Załadowane chunki: {count}','fmt.ofRam':'z {max}MB ({pct}%)','fmt.process':'Proces {value}','fmt.free':'{value} wolne','fmt.daemon':'{value} daemon','fmt.lines':'{count} linii'});
+Object.assign(I18N.de,{'login.signing':'Anmelden...','login.missing':'Benutzername und Passwort eingeben.','login.invalid':'Ungültige Zugangsdaten.','login.unreachable':'Server nicht erreichbar.','header.as':'als','header.notifications':'Fehlerbenachrichtigungen umschalten','stat.players':'Spieler','stat.lines':'Zeilen','stat.session':'Sitzung','console.bottom':'Unten','console.searchPlaceholder':'Logs suchen... (Ctrl+F)','console.commandPlaceholder':'Befehl oder !Alias eingeben... (Tab vervollständigt)','console.matches':'{count} Treffer','console.match':'{count} Treffer','console.acHint':'Tab / ↑↓ navigieren, Enter auswählen','dash.waitingStats':'Warte auf Statistiken','dash.playerCapacity':'Spielerkapazität','dash.onlineSlotsUsed':'Genutzte Slots','dash.pluginUptime':'Plugin-Laufzeit','dash.sincePluginEnable':'Seit Plugin-Aktivierung','dash.recentCommands':'Letzte Befehle','dash.playerCommands24h':'Spielerbefehle / 24h','dash.tickRate':'Tickrate','dash.ramUsed':'RAM genutzt','dash.heapMemory':'Heap-Speicher','dash.playersOnline':'Spieler online','dash.worlds':'Welten','dash.totalEntities':'Entitäten gesamt','dash.acrossWorlds':'Über alle Welten','dash.sessionErrors':'Sitzungsfehler','dash.errorLines':'SEVERE / ERROR Zeilen','dash.hostCpu':'Host-CPU','dash.systemLoad':'Systemlast','dash.machineRam':'Maschinen-RAM','dash.physicalMemory':'Physischer Speicher','dash.serverDisk':'Server-Datenträger','dash.worldContainer':'Weltordner','dash.jvmThreads':'JVM-Threads','dash.javaProcess':'Java-Prozess','dash.performanceHistory':'Leistungsverlauf (5 min)','dash.machineDetails':'Maschinendetails','dash.logBreakdown':'Log-Level','dash.worldBreakdown':'Welten','dash.world':'Welt','dash.chunks':'Chunks','dash.entities':'Entitäten','dash.noData':'Noch keine Daten','dash.activityFeed':'Aktivität','dash.live':'live','dash.waitingActivity':'Warte auf Aktivität...','metric.model':'Modell','metric.coresThreads':'Kerne / Threads','metric.processLoad':'Prozesslast','metric.memory':'Speicher','metric.machineUsed':'Genutzt','metric.machineFree':'Frei','metric.disk':'Datenträger','metric.used':'Genutzt','metric.free':'Frei','metric.mount':'Mount','metric.runtime':'Runtime','players.name':'Name','players.world':'Welt','players.ping':'Ping','players.actions':'Aktionen','players.online':'{count} online','players.joined':'Beigetreten','players.left':'Verlassen','players.unknown':'Unbekannt','players.noJoinHistory':'Kein Login-Verlauf der letzten 24 Stunden.','players.noCommands':'Keine Spielerbefehle der letzten 24 Stunden.','players.kickPlayer':'Spieler kicken','players.banPlayer':'Spieler bannen','players.kicked':'Gekickt','players.banned':'Gebannt','players.noReason':'Kein Grund angegeben','aliases.hint':'Alias anklicken zum Einfügen oder Run zum Ausführen.','aliases.empty':'Keine Aliase konfiguriert. In config.yml hinzufügen.','modal.action':'Aktion','modal.player':'Spieler','modal.reason':'Grund','modal.reasonPlaceholder':'Grund eingeben...','toast.lost':'Verbindung verloren - verbinde neu...','toast.sessionExpired':'Sitzung abgelaufen','toast.rateLimited':'Rate limit - langsamer','toast.blocked':'Befehl blockiert','toast.notificationsEnabled':'Benachrichtigungen aktiviert','toast.notificationsDenied':'Benachrichtigungen verweigert','toast.notificationsDisabled':'Benachrichtigungen deaktiviert','health.critical':'Kritisch','health.watch':'Beobachten','health.good':'Gut','health.needsAttention':'Benötigt Aufmerksamkeit','health.monitor':'Server überwachen','health.normal':'Kernsignale normal','health.excellent':'Ausgezeichnet ✓','health.degraded':'Verschlechtert','fmt.ofSlots':'{players} von {max} Slots','fmt.maxUnknown':'{players} online, Maximum unbekannt','fmt.ofMax':'von {max} max','fmt.chunksLoaded':'Geladene Chunks: {count}','fmt.ofRam':'von {max}MB ({pct}%)','fmt.process':'Prozess {value}','fmt.free':'{value} frei','fmt.daemon':'{value} daemon','fmt.lines':'{count} Zeilen'});
+Object.assign(I18N.fr,{'login.signing':'Connexion...','login.missing':'Saisir utilisateur et mot de passe.','login.invalid':'Identifiants invalides.','login.unreachable':'Serveur inaccessible.','header.as':'en tant que','header.notifications':'Basculer les notifications erreur','stat.players':'Joueurs','stat.lines':'Lignes','stat.session':'Session','console.bottom':'Bas','console.searchPlaceholder':'Rechercher les logs... (Ctrl+F)','console.commandPlaceholder':'Commande ou !alias... (Tab complète)','console.matches':'{count} résultats','console.match':'{count} résultat','console.acHint':'Tab / ↑↓ naviguer, Enter choisir','dash.waitingStats':'En attente des stats','dash.playerCapacity':'Capacité joueurs','dash.onlineSlotsUsed':'Slots utilisés','dash.pluginUptime':'Temps plugin','dash.sincePluginEnable':'Depuis activation du plugin','dash.recentCommands':'Commandes récentes','dash.playerCommands24h':'Commandes joueurs / 24h','dash.tickRate':'Rythme tick','dash.ramUsed':'RAM utilisée','dash.heapMemory':'Mémoire heap','dash.playersOnline':'Joueurs en ligne','dash.worlds':'Mondes','dash.totalEntities':'Entités totales','dash.acrossWorlds':'Tous les mondes','dash.sessionErrors':'Erreurs session','dash.errorLines':'Lignes SEVERE / ERROR','dash.hostCpu':'CPU hôte','dash.systemLoad':'Charge système','dash.machineRam':'RAM machine','dash.physicalMemory':'Mémoire physique','dash.serverDisk':'Disque serveur','dash.worldContainer':'Dossier mondes','dash.jvmThreads':'Threads JVM','dash.javaProcess':'Processus Java','dash.performanceHistory':'Historique perf (5 min)','dash.machineDetails':'Détails machine','dash.logBreakdown':'Niveaux de log','dash.worldBreakdown':'Mondes','dash.world':'Monde','dash.chunks':'Chunks','dash.entities':'Entités','dash.noData':'Pas encore de données','dash.activityFeed':'Activité','dash.live':'live','dash.waitingActivity':'En attente activité...','metric.model':'Modèle','metric.coresThreads':'Cœurs / Threads','metric.processLoad':'Charge processus','metric.memory':'Mémoire','metric.machineUsed':'Utilisée','metric.machineFree':'Libre','metric.disk':'Disque','metric.used':'Utilisé','metric.free':'Libre','metric.mount':'Montage','metric.runtime':'Runtime','players.name':'Nom','players.world':'Monde','players.ping':'Ping','players.actions':'Actions','players.online':'{count} en ligne','players.joined':'Connecté','players.left':'Parti','players.unknown':'Inconnu','players.noJoinHistory':'Aucun historique de connexion sur 24 h.','players.noCommands':'Aucune commande joueur sur 24 h.','players.kickPlayer':'Expulser joueur','players.banPlayer':'Bannir joueur','players.kicked':'Expulsé','players.banned':'Banni','players.noReason':'Aucune raison','aliases.hint':'Cliquez un alias pour l’insérer, ou Run pour exécuter.','aliases.empty':'Aucun alias configuré. Ajoutez-les dans config.yml.','modal.action':'Action','modal.player':'Joueur','modal.reason':'Raison','modal.reasonPlaceholder':'Entrer une raison...','toast.lost':'Connexion perdue - reconnexion...','toast.sessionExpired':'Session expirée','toast.rateLimited':'Limite atteinte - ralentir','toast.blocked':'Commande bloquée','toast.notificationsEnabled':'Notifications activées','toast.notificationsDenied':'Notifications refusées','toast.notificationsDisabled':'Notifications désactivées','health.critical':'Critique','health.watch':'Surveiller','health.good':'Bon','health.needsAttention':'Attention requise','health.monitor':'Surveiller le serveur','health.normal':'Signaux principaux normaux','health.excellent':'Excellent ✓','health.degraded':'Dégradé','fmt.ofSlots':'{players} sur {max} slots','fmt.maxUnknown':'{players} en ligne, max inconnu','fmt.ofMax':'sur {max} max','fmt.chunksLoaded':'Chunks chargés : {count}','fmt.ofRam':'sur {max}MB ({pct}%)','fmt.process':'Processus {value}','fmt.free':'{value} libre','fmt.daemon':'{value} daemon','fmt.lines':'{count} lignes'});
+const LANGS=['en','ru','zh','pl','de','fr'];
+const LANG_KEY='bwc_lang';
+let savedLang='en';
+try{ const rawLang=localStorage.getItem(LANG_KEY); if(LANGS.includes(rawLang)) savedLang=rawLang; }catch(_){}
+let currentLang=savedLang;
+function t(key,vars={}){
+  const text=(I18N[currentLang]&&I18N[currentLang][key])||I18N.en[key]||key;
+  return text.replace(/\{(\w+)\}/g,(_,k)=>vars[k] ?? '');
+}
+function applyTranslations(){
+  document.documentElement.lang=currentLang;
+  [loginLang,appLang].filter(Boolean).forEach(sel=>{ sel.value=currentLang; });
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent=t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{ el.placeholder=t(el.dataset.i18nPlaceholder); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title=t(el.dataset.i18nTitle); });
+  const state=['connected','disconnected','connecting'].find(s=>sdot.classList.contains(s));
+  if(state) statusText.textContent=t('status.'+state);
+}
+function setLanguage(lang){
+  if(!LANGS.includes(lang)) lang='en';
+  currentLang=lang;
+  try{ localStorage.setItem(LANG_KEY,lang); }catch(_){}
+  applyTranslations();
+}
+[loginLang,appLang].filter(Boolean).forEach(sel=>sel.addEventListener('change',()=>setLanguage(sel.value)));
+applyTranslations();
 
 // ── Toast ──────────────────────────────────────────────────────────────────
 let toastT;
@@ -642,7 +718,7 @@ function animatePlayersPanel(force=false){
 // ── Status ─────────────────────────────────────────────────────────────────
 function setStatus(state){
   sdot.className='status-dot '+state;
-  statusText.textContent={connected:'Connected',disconnected:'Disconnected',connecting:'Connecting\u2026'}[state]||state;
+  statusText.textContent=t('status.'+state);
   const ok=state==='connected';
   cmdInput.disabled=!ok; btnSend.disabled=!ok;
 }
@@ -718,7 +794,7 @@ function doSearch(){
     div.innerHTML=html;
   });
   searchMatches=Array.from(output.querySelectorAll('.hl'));
-  searchCount.textContent=searchMatches.length?`${searchMatches.length} match${searchMatches.length>1?'es':''}` :'';
+  searchCount.textContent=searchMatches.length?t(searchMatches.length>1?'console.matches':'console.match',{count:searchMatches.length}):'';
   if(searchMatches.length){ searchIdx=0; searchMatches[0].scrollIntoView({block:'center'}); }
 }
 
@@ -757,7 +833,7 @@ function connectWs(force=false){
   const proto=location.protocol==='https:'?'wss:':'ws:';
   // Always use the same host+port the page was loaded from
   ws=new WebSocket(proto+'//'+location.host+'/ws');
-  ws.onopen=()=>{ reconnectAttempt=0; reconnectDelay=1000; setStatus('connected'); showToast('Console connected','success'); };
+  ws.onopen=()=>{ reconnectAttempt=0; reconnectDelay=1000; setStatus('connected'); showToast(t('toast.connected'),'success'); };
   ws.onmessage=e=>{
     try{
       const msg=JSON.parse(e.data);
@@ -772,7 +848,7 @@ function connectWs(force=false){
     setStatus('disconnected');
     const authed=await isStillAuthenticated();
     if(!authed){ handleControl('SESSION_EXPIRED'); return; }
-    showToast('Connection lost \u2013 reconnecting\u2026','error');
+    showToast(t('toast.lost'),'error');
     scheduleReconnect();
   };
   ws.onerror=()=>ws.close();
@@ -792,9 +868,9 @@ async function isStillAuthenticated(){
 }
 
 function handleControl(event){
-  if(event==='SESSION_EXPIRED'){ showToast('Session expired','error'); setTimeout(doLogout,1500); }
-  else if(event==='RATE_LIMITED') showToast('Rate limited \u2013 slow down','warn');
-  else if(event==='BLOCKED')      showToast('Command blocked','warn');
+  if(event==='SESSION_EXPIRED'){ showToast(t('toast.sessionExpired'),'error'); setTimeout(doLogout,1500); }
+  else if(event==='RATE_LIMITED') showToast(t('toast.rateLimited'),'warn');
+  else if(event==='BLOCKED')      showToast(t('toast.blocked'),'warn');
 }
 
 // ── Stats ──────────────────────────────────────────────────────────────────
@@ -804,13 +880,13 @@ function handleStats(data){
   const hasMaxPlayers=Number(maxPlayers)>0;
   const capacity=hasMaxPlayers ? Math.round(players/maxPlayers*100) : 0;
   setText('kpi-capacity', hasMaxPlayers ? capacity+'%' : '--');
-  setText('kpi-capacity-sub', hasMaxPlayers ? players+' of '+maxPlayers+' slots' : players+' online, max unknown');
+  setText('kpi-capacity-sub', hasMaxPlayers ? t('fmt.ofSlots',{players,max:maxPlayers}) : t('fmt.maxUnknown',{players}));
   setText('kpi-uptime', fmtDuration(data.uptimeSeconds));
   setText('kpi-player-cmds', Array.isArray(data.playerCommands)?data.playerCommands.length:0);
   const healthBad=tps<15||sessionErrors>0;
   const healthWarn=!healthBad&&(tps<18||(hasMaxPlayers&&capacity>=90));
-  setText('kpi-health', healthBad?'Critical':healthWarn?'Watch':'Good');
-  setText('kpi-health-sub', healthBad?'Needs attention':healthWarn?'Monitor server':'All core signals normal');
+  setText('kpi-health', healthBad?t('health.critical'):healthWarn?t('health.watch'):t('health.good'));
+  setText('kpi-health-sub', healthBad?t('health.needsAttention'):healthWarn?t('health.monitor'):t('health.normal'));
   const healthCard=$('kpi-health-card');
   if(healthCard) healthCard.className='kpi '+(healthBad?'red':healthWarn?'warn':'green');
 
@@ -822,18 +898,18 @@ function handleStats(data){
   const kpiTps=$('kpi-tps');
   if(kpiTps){
     kpiTps.textContent=tps.toFixed(1);
-    $('kpi-tps-sub').textContent=tps>=18?'Excellent \u2713':tps>=15?'Degraded':'Critical \u26a0';
+    $('kpi-tps-sub').textContent=tps>=18?t('health.excellent'):tps>=15?t('health.degraded'):t('health.critical')+' \u26a0';
     kpiTps.parentElement.className='kpi '+(tps>=18?'green':tps>=15?'warn':'red');
   }
   const kpiRam=$('kpi-ram');
-  if(kpiRam){ kpiRam.textContent=ramUsed+'MB'; $('kpi-ram-sub').textContent='of '+ramMax+'MB ('+Math.round(ramUsed/(ramMax||1)*100)+'%)'; }
+  if(kpiRam){ kpiRam.textContent=ramUsed+'MB'; $('kpi-ram-sub').textContent=t('fmt.ofRam',{max:ramMax,pct:Math.round(ramUsed/(ramMax||1)*100)}); }
   const kpiPlayers=$('kpi-players');
-  if(kpiPlayers){ kpiPlayers.textContent=players; $('kpi-players-sub').textContent='of '+maxPlayers+' max'; $('player-count-tab').textContent='('+players+')'; }
+  if(kpiPlayers){ kpiPlayers.textContent=players; $('kpi-players-sub').textContent=t('fmt.ofMax',{max:maxPlayers}); $('player-count-tab').textContent='('+players+')'; }
 
   if(data.worlds){
     $('kpi-worlds').textContent=data.worlds.length;
     const chunks=data.worlds.reduce((a,w)=>a+(w.chunks||0),0);
-    $('kpi-worlds-sub').textContent='Chunks loaded: '+chunks;
+    $('kpi-worlds-sub').textContent=t('fmt.chunksLoaded',{count:chunks});
     const entities=data.worlds.reduce((a,w)=>a+(w.entities||0),0);
     $('kpi-entities').textContent=entities;
     renderWorldTable(data.worlds);
@@ -841,7 +917,7 @@ function handleStats(data){
 
   const bt=$('badge-tps'); if(bt) bt.textContent=tps.toFixed(1)+' TPS';
   const br=$('badge-ram'); if(br) br.textContent=ramUsed+'MB';
-  const bp=$('badge-players'); if(bp) bp.textContent=players+' online';
+  const bp=$('badge-players'); if(bp) bp.textContent=t('players.online',{count:players});
 
   if(data.tpsHistory)     updateChart(tpsChart,    data.tpsHistory);
   if(data.ramHistory)     updateChart(ramChart,     data.ramHistory);
@@ -860,7 +936,7 @@ function handleSystemStats(system){
   const ramPct=Number(mem.usedPercent||0), diskPct=Number(disk.usedPercent||0);
 
   setText('kpi-cpu', fmtPct(cpuLoad));
-  setText('kpi-cpu-sub', `Process ${fmtPct(procLoad)}`);
+  setText('kpi-cpu-sub', t('fmt.process',{value:fmtPct(procLoad)}));
   setKpiState('kpi-cpu', cpuLoad, 70, 90);
   setText('badge-cpu', fmtPct(cpuLoad));
   setWidth('sys-cpu-meter', cpuLoad);
@@ -872,7 +948,7 @@ function handleSystemStats(system){
 
   if(disk.totalBytes){
     setText('kpi-disk', fmtPct(diskPct));
-    setText('kpi-disk-sub', `${fmtBytes(disk.usableBytes)} free`);
+    setText('kpi-disk-sub', t('fmt.free',{value:fmtBytes(disk.usableBytes)}));
     setKpiState('kpi-disk', diskPct, 80, 92);
     setWidth('sys-disk-meter', diskPct);
     setText('sys-disk-used', `${fmtBytes(disk.usedBytes)} of ${fmtBytes(disk.totalBytes)}`);
@@ -881,7 +957,7 @@ function handleSystemStats(system){
   }
 
   setText('kpi-threads', jvm.threads??'—');
-  setText('kpi-threads-sub', `${jvm.daemonThreads??'—'} daemon`);
+  setText('kpi-threads-sub', t('fmt.daemon',{value:jvm.daemonThreads??'—'}));
   setText('sys-cpu-model', cpu.model||'—');
   setText('sys-cpu-cores', `${cpu.physicalCores??'—'} / ${cpu.logicalCores??'—'}`);
   setText('sys-cpu-process', fmtPct(procLoad));
@@ -918,7 +994,7 @@ function updateLevelBars(){
   set('bar-info','cnt-info',levelCounts.INFO);
   set('bar-debug','cnt-debug',levelCounts.DEBUG);
   const badge=$('badge-logcount');
-  if(badge) badge.textContent=(levelCounts.INFO+levelCounts.WARN+levelCounts.SEVERE+levelCounts.DEBUG)+' lines';
+  if(badge) badge.textContent=t('fmt.lines',{count:levelCounts.INFO+levelCounts.WARN+levelCounts.SEVERE+levelCounts.DEBUG});
 }
 
 // ── Activity feed ──────────────────────────────────────────────────────────
@@ -931,7 +1007,7 @@ function pushActivity(type,icon,text,html=false){
 
 function renderActivity(){
   const feed=$('activity-feed'); if(!feed) return;
-  if(!activityLog.length){ feed.innerHTML='<div class="activity-item"><span class="activity-icon">&#128564;</span><span class="activity-text" style="color:var(--text-muted)">Waiting for activity\u2026</span></div>'; return; }
+  if(!activityLog.length){ feed.innerHTML=`<div class="activity-item"><span class="activity-icon">&#128564;</span><span class="activity-text" style="color:var(--text-muted)">${t('dash.waitingActivity')}</span></div>`; return; }
   feed.innerHTML=activityLog.slice(0,18).map(a=>`<div class="activity-item ${a.type}"><span class="activity-icon">${a.icon}</span><span class="activity-text">${a.html?a.text:esc(a.text)}</span><span class="activity-time">${a.t}</span></div>`).join('');
 }
 
@@ -960,7 +1036,7 @@ function initCharts(){
 function renderPlayers(list){
   const tbody=$('player-tbody'), tbl=$('player-table'), msg=$('no-players-msg');
   const safeList=Array.isArray(list)?list:[];
-  setText('players-online-badge', safeList.length+' online');
+  setText('players-online-badge', t('players.online',{count:safeList.length}));
   const structureSig=JSON.stringify(safeList.map(p=>({n:p.name||'',w:p.world||'',o:!!p.op})));
   const visualSig=JSON.stringify(safeList.map(p=>({n:p.name||'',w:p.world||'',o:!!p.op,p:p.ping||0})));
   const structureChanged=structureSig!==lastPlayersStructureSignature;
@@ -969,8 +1045,8 @@ function renderPlayers(list){
   lastPlayersVisualSignature=visualSig;
 
   const newNames=new Set(safeList.map(p=>p.name));
-  newNames.forEach(n=>{ if(!prevPlayerNames.has(n)) pushActivity('join','&#128994;',`<strong>${esc(n)}</strong> joined the server`,true); });
-  prevPlayerNames.forEach(n=>{ if(!newNames.has(n)) pushActivity('leave','&#9899;',`<strong>${esc(n)}</strong> left the server`,true); });
+  newNames.forEach(n=>{ if(!prevPlayerNames.has(n)) pushActivity('join','&#128994;',`<strong>${esc(n)}</strong> ${t('players.joined').toLowerCase()}`,true); });
+  prevPlayerNames.forEach(n=>{ if(!newNames.has(n)) pushActivity('leave','&#9899;',`<strong>${esc(n)}</strong> ${t('players.left').toLowerCase()}`,true); });
   prevPlayerNames=newNames;
 
   if(!safeList.length){ tbody.innerHTML=''; tbl.style.display='none'; msg.style.display=''; if(activePanelName==='players'&&structureChanged) animatePlayersPanel(true); return; }
@@ -978,7 +1054,7 @@ function renderPlayers(list){
   safeList.forEach(p=>{
     const ping=p.ping||0, pc=ping<80?'ping-good':ping<200?'ping-ok':'ping-bad';
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${esc(p.name)}${p.op?'<span class="player-op">OP</span>':''}</td><td>${esc(p.world||'\u2014')}</td><td class="${pc}">${ping}ms</td><td><button class="action-btn kick" onclick="openModal('kick','${esc(p.name)}')">Kick</button> <button class="action-btn ban" onclick="openModal('ban','${esc(p.name)}')">Ban</button></td>`;
+    tr.innerHTML=`<td>${esc(p.name)}${p.op?'<span class="player-op">OP</span>':''}</td><td>${esc(p.world||'\u2014')}</td><td class="${pc}">${ping}ms</td><td><button class="action-btn kick" onclick="openModal('kick','${esc(p.name)}')">${t('players.kick')}</button> <button class="action-btn ban" onclick="openModal('ban','${esc(p.name)}')">${t('players.ban')}</button></td>`;
     tbody.appendChild(tr);
   });
   if(activePanelName==='players'&&structureChanged) animatePlayersPanel(true);
@@ -990,11 +1066,11 @@ function renderPlayerEvents(events){
   const sig=JSON.stringify(safe);
   if(sig===lastPlayerEventsSignature) return;
   lastPlayerEventsSignature=sig;
-  if(!safe.length){ box.innerHTML='<div class="history-empty">No join history in the last 24 hours.</div>'; return; }
+  if(!safe.length){ box.innerHTML=`<div class="history-empty">${t('players.noJoinHistory')}</div>`; return; }
   box.innerHTML=safe.map(e=>{
     const type=e.type==='leave'?'leave':'join';
-    const label=type==='leave'?'Left':'Joined';
-    return `<div class="history-item ${type}"><span class="history-kind">${label}</span><span class="history-main"><strong>${esc(e.player||'Unknown')}</strong></span><span class="history-time">${fmtTime(e.timestamp)}</span></div>`;
+    const label=type==='leave'?t('players.left'):t('players.joined');
+    return `<div class="history-item ${type}"><span class="history-kind">${label}</span><span class="history-main"><strong>${esc(e.player||t('players.unknown'))}</strong></span><span class="history-time">${fmtTime(e.timestamp)}</span></div>`;
   }).join('');
 }
 
@@ -1004,27 +1080,28 @@ function renderPlayerCommands(commands){
   const sig=JSON.stringify(safe);
   if(sig===lastPlayerCommandsSignature) return;
   lastPlayerCommandsSignature=sig;
-  if(!safe.length){ box.innerHTML='<div class="history-empty">No player commands in the last 24 hours.</div>'; return; }
-  box.innerHTML=safe.map(c=>`<div class="history-item command"><span class="history-kind">CMD</span><span class="history-main"><strong>${esc(c.player||'Unknown')}</strong><span class="history-command">${esc(c.command||'')}</span></span><span class="history-time">${fmtTime(c.timestamp)}</span></div>`).join('');
+  if(!safe.length){ box.innerHTML=`<div class="history-empty">${t('players.noCommands')}</div>`; return; }
+  box.innerHTML=safe.map(c=>`<div class="history-item command"><span class="history-kind">CMD</span><span class="history-main"><strong>${esc(c.player||t('players.unknown'))}</strong><span class="history-command">${esc(c.command||'')}</span></span><span class="history-time">${fmtTime(c.timestamp)}</span></div>`).join('');
 }
 
 // ── Modal ──────────────────────────────────────────────────────────────────
 window.openModal=function(action,player){
   modalAction=action; modalPlayer.value=player; modalReason.value='';
-  modalTitle.textContent=action==='kick'?'Kick Player':'Ban Player';
+  modalTitle.textContent=action==='kick'?t('players.kickPlayer'):t('players.banPlayer');
   modalConfirm.className='mbtn confirm '+(action==='kick'?'kick-mode':'');
-  modalConfirm.textContent=action==='kick'?'Kick':'Ban';
+  modalConfirm.textContent=action==='kick'?t('players.kick'):t('players.ban');
   modal.classList.add('show'); modalReason.focus();
 };
 modalCancel.addEventListener('click',()=>modal.classList.remove('show'));
 modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.remove('show'); });
 modalConfirm.addEventListener('click',()=>{
   if(!ws||ws.readyState!==WebSocket.OPEN) return;
-  ws.send(JSON.stringify({type:modalAction,player:modalPlayer.value,reason:modalReason.value||'No reason given'}));
+  const reason=modalReason.value||t('players.noReason');
+  ws.send(JSON.stringify({type:modalAction,player:modalPlayer.value,reason}));
   modal.classList.remove('show');
-  const act=modalAction==='kick'?'Kicked':'Banned';
+  const act=modalAction==='kick'?t('players.kicked'):t('players.banned');
   showToast(`${act} ${modalPlayer.value}`,'warn');
-  pushActivity('cmd','&#9889;',`<strong>${act}</strong> ${esc(modalPlayer.value)}: ${esc(modalReason.value||'No reason given')}`,true);
+  pushActivity('cmd','&#9889;',`<strong>${act}</strong> ${esc(modalPlayer.value)}: ${esc(reason)}`,true);
 });
 modalReason.addEventListener('keydown',e=>{ if(e.key==='Enter') modalConfirm.click(); });
 
@@ -1040,12 +1117,12 @@ async function loadAliases(){
     const list=$('alias-list'); list.innerHTML='';
     (d.aliases||[]).forEach(a=>{
       const card=document.createElement('div'); card.className='alias-card';
-      card.innerHTML=`<span class="alias-name">!${esc(a.name)}</span><span class="alias-sep">\u2192</span><span class="alias-cmd" title="${esc(a.command)}">${esc(a.command)}</span><button class="alias-run">Run</button>`;
+      card.innerHTML=`<span class="alias-name">!${esc(a.name)}</span><span class="alias-sep">\u2192</span><span class="alias-cmd" title="${esc(a.command)}">${esc(a.command)}</span><button class="alias-run">${t('console.run')}</button>`;
       card.querySelector('.alias-run').addEventListener('click',e=>{ e.stopPropagation(); sendCommand('!'+a.name); switchToPanel('console'); });
       card.addEventListener('click',()=>{ cmdInput.value='!'+a.name; switchToPanel('console'); cmdInput.focus(); });
       list.appendChild(card);
     });
-    if(!d.aliases||!d.aliases.length) list.innerHTML='<p style="color:var(--text-muted);padding:20px 0">No aliases configured. Add them to config.yml.</p>';
+    if(!d.aliases||!d.aliases.length) list.innerHTML=`<p style="color:var(--text-muted);padding:20px 0">${t('aliases.empty')}</p>`;
     aliasesLoaded=true;
     if(activePanelName==='aliases') requestAnimationFrame(()=>animatePanelContent('aliases'));
   }catch(_){}
@@ -1070,7 +1147,7 @@ function requestComplete(partial){ if(!ws||ws.readyState!==WebSocket.OPEN) retur
 function handleCompletions(msg){ if(msg.reqId!==acReqId) return; acItems=msg.suggestions||[]; acIdx=-1; renderAc(); }
 function renderAc(){
   if(!acItems.length){ hideAc(); return; }
-  acDropdown.innerHTML='<div class="ac-hint">Tab / \u2191\u2193 to navigate, Enter to select</div>'+acItems.map((s,i)=>`<div class="ac-item${i===acIdx?' sel':''}" data-i="${i}">${esc(s)}</div>`).join('');
+  acDropdown.innerHTML=`<div class="ac-hint">${t('console.acHint')}</div>`+acItems.map((s,i)=>`<div class="ac-item${i===acIdx?' sel':''}" data-i="${i}">${esc(s)}</div>`).join('');
   acDropdown.querySelectorAll('.ac-item').forEach(el=>el.addEventListener('mousedown',e=>{ e.preventDefault(); applyAc(acItems[+el.dataset.i]); }));
   acDropdown.style.display='block';
 }
@@ -1096,8 +1173,8 @@ btnSend.addEventListener('click',()=>sendCommand(cmdInput.value));
 
 // ── Notifications ───────────────────────────────────────────────────────────
 $('notif-btn').addEventListener('click',()=>{
-  if(!notifEnabled){ Notification.requestPermission().then(p=>{ notifEnabled=p==='granted'; showToast(notifEnabled?'Notifications enabled':'Notifications denied',notifEnabled?'success':'error'); }); }
-  else{ notifEnabled=false; showToast('Notifications disabled'); }
+  if(!notifEnabled){ Notification.requestPermission().then(p=>{ notifEnabled=p==='granted'; showToast(notifEnabled?t('toast.notificationsEnabled'):t('toast.notificationsDenied'),notifEnabled?'success':'error'); }); }
+  else{ notifEnabled=false; showToast(t('toast.notificationsDisabled')); }
   notifCount=0; nbadge.classList.remove('show');
 });
 
@@ -1117,7 +1194,7 @@ $('btn-export').addEventListener('click',()=>window.open('/api/logs/export','_bl
 $('btn-clear').addEventListener('click',()=>{
   output.innerHTML=''; lineCount=0; svLines.textContent='0';
   levelCounts.INFO=0; levelCounts.WARN=0; levelCounts.SEVERE=0; levelCounts.DEBUG=0;
-  updateLevelBars(); showToast('Console cleared');
+  updateLevelBars(); showToast(t('toast.cleared'));
 });
 $('btn-logout').addEventListener('click',doLogout);
 async function doLogout(){
@@ -1139,8 +1216,8 @@ async function doLogout(){
 async function doLogin(){
   const username=lu.value.trim(), password=lp.value;
   loginErr.textContent='';
-  if(!username||!password){ loginErr.textContent='Enter username and password.'; return; }
-  btnLogin.disabled=true; btnLogin.textContent='Signing in\u2026';
+  if(!username||!password){ loginErr.textContent=t('login.missing'); return; }
+  btnLogin.disabled=true; btnLogin.textContent=t('login.signing');
   try{
     const cr=await fetch('/api/csrf'), {token:csrf}=await cr.json();
     const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,csrf})});
@@ -1152,11 +1229,11 @@ async function doLogin(){
       switchToPanel('console'); initCharts(); animatePanelContent('console');
       manualDisconnect=false; connectWs(true);
     } else {
-      loginErr.textContent=data.error||'Invalid credentials.';
+      loginErr.textContent=data.error||t('login.invalid');
       lp.value=''; lp.focus();
     }
-  }catch(_){ loginErr.textContent='Server unreachable.'; }
-  finally{ btnLogin.disabled=false; btnLogin.textContent='Sign In'; }
+  }catch(_){ loginErr.textContent=t('login.unreachable'); }
+  finally{ btnLogin.disabled=false; btnLogin.textContent=t('login.button'); }
 }
 
 // Bind login form — handles both button click and Enter key via form submit
