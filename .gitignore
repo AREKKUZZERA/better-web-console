@@ -1,5 +1,6 @@
 # Maven build
 /target/
+target/
 *.log
 
 # IntelliJ IDEA
