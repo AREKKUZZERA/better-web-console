@@ -801,13 +801,14 @@ function handleControl(event){
 function handleStats(data){
   const tps=data.tps||0, ramUsed=data.ramUsed||0, ramMax=data.ramMax||0;
   const players=data.players||0, maxPlayers=data.maxPlayers||0;
-  const capacity=Math.round(players/(maxPlayers||1)*100);
-  setText('kpi-capacity', capacity+'%');
-  setText('kpi-capacity-sub', players+' of '+maxPlayers+' slots');
+  const hasMaxPlayers=Number(maxPlayers)>0;
+  const capacity=hasMaxPlayers ? Math.round(players/maxPlayers*100) : 0;
+  setText('kpi-capacity', hasMaxPlayers ? capacity+'%' : '--');
+  setText('kpi-capacity-sub', hasMaxPlayers ? players+' of '+maxPlayers+' slots' : players+' online, max unknown');
   setText('kpi-uptime', fmtDuration(data.uptimeSeconds));
   setText('kpi-player-cmds', Array.isArray(data.playerCommands)?data.playerCommands.length:0);
   const healthBad=tps<15||sessionErrors>0;
-  const healthWarn=!healthBad&&(tps<18||capacity>=90);
+  const healthWarn=!healthBad&&(tps<18||(hasMaxPlayers&&capacity>=90));
   setText('kpi-health', healthBad?'Critical':healthWarn?'Watch':'Good');
   setText('kpi-health-sub', healthBad?'Needs attention':healthWarn?'Monitor server':'All core signals normal');
   const healthCard=$('kpi-health-card');
