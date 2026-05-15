@@ -18,6 +18,8 @@ import java.util.logging.Logger;
 
 public class PlayerActivityStore {
     private static final long RETENTION_MS = Duration.ofHours(24).toMillis();
+    private static final int MAX_EVENT_JSON = 80;
+    private static final int MAX_COMMAND_JSON = 120;
     private static final String TYPE_COMMAND = "command";
     private static final String TYPE_JOIN = "join";
     private static final String TYPE_LEAVE = "leave";
@@ -51,21 +53,32 @@ public class PlayerActivityStore {
 
     public synchronized JsonArray recentEventsJson() {
         pruneExpired(true);
-        JsonArray array = new JsonArray();
-        for (Entry entry : entries) {
-            if (!TYPE_JOIN.equals(entry.type) && !TYPE_LEAVE.equals(entry.type)) continue;
-            array.add(entry.toJson());
-        }
-        return array;
+        return recentJson(MAX_EVENT_JSON, TYPE_JOIN, TYPE_LEAVE);
     }
 
     public synchronized JsonArray recentCommandsJson() {
         pruneExpired(true);
+        return recentJson(MAX_COMMAND_JSON, TYPE_COMMAND);
+    }
+
+    private JsonArray recentJson(int limit, String... types) {
+        List<Entry> selected = new ArrayList<>(Math.min(limit, entries.size()));
+        for (int i = entries.size() - 1; i >= 0 && selected.size() < limit; i--) {
+            Entry entry = entries.get(i);
+            if (matchesType(entry, types)) selected.add(entry);
+        }
         JsonArray array = new JsonArray();
-        for (Entry entry : entries) {
-            if (TYPE_COMMAND.equals(entry.type)) array.add(entry.toJson());
+        for (int i = selected.size() - 1; i >= 0; i--) {
+            array.add(selected.get(i).toJson());
         }
         return array;
+    }
+
+    private boolean matchesType(Entry entry, String[] types) {
+        for (String type : types) {
+            if (type.equals(entry.type)) return true;
+        }
+        return false;
     }
 
     private void record(String type, long timestamp, UUID uuid, String playerName, String detail) {
