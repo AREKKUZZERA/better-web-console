@@ -1165,8 +1165,9 @@ function fmtDuration(seconds){
   return `${m}m`;
 }
 function fmtTime(timestamp){
+  if(timestamp===null||timestamp===undefined||timestamp==='') return '--:--';
   const n=Number(timestamp);
-  if(!Number.isFinite(n)) return '--:--';
+  if(!Number.isFinite(n)||n<=0) return '--:--';
   const d=new Date(n);
   if(Number.isNaN(d.getTime())) return '--:--';
   return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
