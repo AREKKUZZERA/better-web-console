@@ -304,6 +304,14 @@ public class ServerStats {
         }
         obj.add("playerList", players);
 
+        if (plugin.getPlayerActivityStore() != null) {
+            obj.add("playerEvents", plugin.getPlayerActivityStore().recentEventsJson());
+            obj.add("playerCommands", plugin.getPlayerActivityStore().recentCommandsJson());
+        } else {
+            obj.add("playerEvents", new JsonArray());
+            obj.add("playerCommands", new JsonArray());
+        }
+
         return obj;
     }
 
