@@ -4,10 +4,16 @@ import dev.webconsole.audit.AuditLog;
 import dev.webconsole.auth.UserManager;
 import dev.webconsole.config.PluginConfig;
 import dev.webconsole.console.ConsoleLogHandler;
+import dev.webconsole.stats.PlayerActivityStore;
 import dev.webconsole.stats.ServerStats;
 import dev.webconsole.web.WebServer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -24,6 +30,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
     private ConsoleLogHandler consoleLogHandler;
     private AuditLog auditLog;
     private ServerStats serverStats;
+    private PlayerActivityStore playerActivityStore;
 
     @Override
     public void onEnable() {
@@ -32,6 +39,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
         this.pluginConfig = new PluginConfig(getConfig());
         this.userManager = new UserManager(getDataFolder());
         this.auditLog = new AuditLog(getDataFolder());
+        this.playerActivityStore = new PlayerActivityStore(getDataFolder(), getLogger());
 
         this.consoleLogHandler = new ConsoleLogHandler(pluginConfig.getLogBufferSize());
         consoleLogHandler.hookSystemStreams();
@@ -39,6 +47,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
 
         this.serverStats = new ServerStats(this);
         this.serverStats.start();
+        getServer().getPluginManager().registerEvents(new PlayerActivityListener(), this);
 
         var cmd = getCommand("betterwebconsole");
         if (cmd != null) {
@@ -249,4 +258,22 @@ public class BetterWebConsolePlugin extends JavaPlugin {
     public ConsoleLogHandler getConsoleLogHandler() { return consoleLogHandler; }
     public AuditLog getAuditLog() { return auditLog; }
     public ServerStats getServerStats() { return serverStats; }
+    public PlayerActivityStore getPlayerActivityStore() { return playerActivityStore; }
+
+    private final class PlayerActivityListener implements Listener {
+        @EventHandler
+        public void onPlayerJoin(PlayerJoinEvent event) {
+            playerActivityStore.recordJoin(event.getPlayer().getUniqueId(), event.getPlayer().getName());
+        }
+
+        @EventHandler
+        public void onPlayerQuit(PlayerQuitEvent event) {
+            playerActivityStore.recordLeave(event.getPlayer().getUniqueId(), event.getPlayer().getName());
+        }
+
+        @EventHandler
+        public void onPlayerCommand(PlayerCommandPreprocessEvent event) {
+            playerActivityStore.recordCommand(event.getPlayer().getUniqueId(), event.getPlayer().getName(), event.getMessage());
+        }
+    }
 }
