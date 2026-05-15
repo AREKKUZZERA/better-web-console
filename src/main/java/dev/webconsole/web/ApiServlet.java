@@ -13,11 +13,15 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.bukkit.Bukkit;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 /**
@@ -97,7 +101,24 @@ public class ApiServlet extends HttpServlet {
     private void handleStats(HttpServletRequest req, HttpServletResponse res) throws IOException {
         res.setContentType("application/json;charset=UTF-8");
         if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
-        writeJson(res, 200, plugin.getServerStats().toJson());
+        JsonObject stats = statsOnMainThread();
+        if (stats == null) { sendError(res, 503, "Stats unavailable"); return; }
+        writeJson(res, 200, stats);
+    }
+
+    private JsonObject statsOnMainThread() {
+        if (Bukkit.isPrimaryThread()) return plugin.getServerStats().toJson();
+        try {
+            return Bukkit.getScheduler()
+                    .callSyncMethod(plugin, () -> plugin.getServerStats().toJson())
+                    .get(3, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } catch (ExecutionException | TimeoutException e) {
+            plugin.getLogger().warning("[BWC] Failed to collect stats for API: " + e.getMessage());
+            return null;
+        }
     }
 
     private void handleAliases(HttpServletRequest req, HttpServletResponse res) throws IOException {
