@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>dev.webconsole</groupId>
+        <artifactId>Better-WebConsole</artifactId>
+        <version>2.4.1</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>Better-WebConsole-paper-1.21</artifactId>
+    <packaging>jar</packaging>
+
+    <properties>
+        <paper.api.version>1.21.11-R0.1-SNAPSHOT</paper.api.version>
+        <plugin.api.version>1.21</plugin.api.version>
+        <java.release>21</java.release>
+    </properties>
+
+    <build>
+        <finalName>bwc-${project.version}-paper-1.21.X</finalName>
+        <sourceDirectory>${project.basedir}/../src/main/java</sourceDirectory>
+        <testSourceDirectory>${project.basedir}/../src/test/java</testSourceDirectory>
+
+        <resources>
+            <resource>
+                <directory>${project.build.directory}/generated-resources/shared</directory>
+            </resource>
+        </resources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>prepare-shared-resources</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <delete dir="${project.build.directory}/generated-resources/shared"/>
+                                <mkdir dir="${project.build.directory}/generated-resources/shared"/>
+                                <copy todir="${project.build.directory}/generated-resources/shared">
+                                    <fileset dir="${maven.multiModuleProjectDirectory}/src/main/resources">
+                                        <exclude name="plugin.yml"/>
+                                    </fileset>
+                                </copy>
+                                <copy file="${maven.multiModuleProjectDirectory}/src/main/resources/plugin.yml"
+                                      tofile="${project.build.directory}/generated-resources/shared/plugin.yml"/>
+                                <replace file="${project.build.directory}/generated-resources/shared/plugin.yml">
+                                    <replacefilter token="@project.version@" value="${project.version}"/>
+                                    <replacefilter token="@plugin.api.version@" value="${plugin.api.version}"/>
+                                </replace>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-root-artifact</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${maven.multiModuleProjectDirectory}/target"/>
+                                <copy file="${project.build.directory}/${project.build.finalName}.jar"
+                                      todir="${maven.multiModuleProjectDirectory}/target"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
