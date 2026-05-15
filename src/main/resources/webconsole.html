@@ -159,6 +159,11 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:6px}
 .kpi-value{font-size:28px;font-weight:700;font-family:var(--ui);color:var(--text);line-height:1}
 .kpi-sub{font-size:11px;color:var(--text-dim);margin-top:4px}
+.health-reasons{display:none;flex-wrap:wrap;gap:5px;margin-top:8px}
+.health-reasons.show{display:flex}
+.health-badge{font-size:10px;line-height:1;padding:4px 6px;border-radius:999px;border:1px solid var(--border2);background:var(--bg3);color:var(--text-dim);white-space:nowrap}
+.health-badge.warn{border-color:rgba(255,176,32,.35);color:var(--warn);background:rgba(255,176,32,.09)}
+.health-badge.red{border-color:rgba(255,68,85,.35);color:var(--danger);background:rgba(255,68,85,.09)}
 .dash-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .dash-side .dash-charts{grid-template-columns:1fr}
 .chart-card{background:linear-gradient(180deg,rgba(255,255,255,.018),transparent 28%),var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:14px 16px;transition:transform var(--slow) var(--ease),border-color var(--fast),box-shadow var(--slow);animation:riseIn .48s var(--ease)}
@@ -200,6 +205,14 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .activity-text{font-size:11px;color:var(--text-dim);flex:1;word-break:break-word}
 .activity-text strong{color:var(--text)}
 .activity-time{font-size:10px;color:var(--text-muted);flex-shrink:0;white-space:nowrap}
+.health-history{display:flex;flex-direction:column;gap:6px;max-height:178px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.health-event{padding:7px 8px;background:var(--bg3);border-radius:var(--r-sm);border-left:2px solid var(--border)}
+.health-event.warn{border-left-color:var(--warn)}.health-event.red{border-left-color:var(--danger)}
+.health-event-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.health-event-state{font-size:11px;font-weight:700;color:var(--text)}
+.health-event-time{font-size:10px;color:var(--text-muted);white-space:nowrap}
+.health-event-reasons{font-size:11px;color:var(--text-dim);word-break:break-word}
+.health-event-empty{font-size:11px;color:var(--text-muted);padding:8px}
 
 /* Players */
 #panel-players{overflow-y:auto;padding:12px;align-items:center}
@@ -377,7 +390,7 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
         <div class="dash-section">
           <div class="dash-section-title" data-i18n="dash.overview">Overview</div>
           <div class="dash-grid machine">
-            <div class="kpi green" id="kpi-health-card"><div class="kpi-label" data-i18n="dash.serverHealth">Server Health</div><div class="kpi-value" id="kpi-health">--</div><div class="kpi-sub" id="kpi-health-sub" data-i18n="dash.waitingStats">Waiting for stats</div></div>
+            <div class="kpi green" id="kpi-health-card"><div class="kpi-label" data-i18n="dash.serverHealth">Server Health</div><div class="kpi-value" id="kpi-health">--</div><div class="kpi-sub" id="kpi-health-sub" data-i18n="dash.waitingStats">Waiting for stats</div><div class="health-reasons" id="kpi-health-reasons"></div></div>
             <div class="kpi purple"><div class="kpi-label" data-i18n="dash.playerCapacity">Player Capacity</div><div class="kpi-value" id="kpi-capacity">--</div><div class="kpi-sub" id="kpi-capacity-sub" data-i18n="dash.onlineSlotsUsed">Online slots used</div></div>
             <div class="kpi blue"><div class="kpi-label" data-i18n="dash.pluginUptime">Plugin Uptime</div><div class="kpi-value" id="kpi-uptime">--</div><div class="kpi-sub" data-i18n="dash.sincePluginEnable">Since plugin enable</div></div>
             <div class="kpi warn"><div class="kpi-label" data-i18n="dash.recentCommands">Recent Commands</div><div class="kpi-value" id="kpi-player-cmds">0</div><div class="kpi-sub" data-i18n="dash.playerCommands24h">Player commands / 24h</div></div>
@@ -489,6 +502,12 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
                 </div>
               </div>
             </div>
+            <div class="chart-card">
+              <div class="chart-card-header"><h3 data-i18n="dash.healthHistory">Health History</h3><span class="chart-badge" id="health-history-count">0</span></div>
+              <div class="health-history" id="health-history">
+                <div class="health-event-empty" data-i18n="dash.noHealthEvents">No health events yet</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -590,6 +609,10 @@ const levelCounts={INFO:0,WARN:0,SEVERE:0,DEBUG:0};
 let sessionErrors=0;
 const activityLog=[];
 const MAX_ACTIVITY=40;
+const healthHistory=[];
+const MAX_HEALTH_HISTORY=12;
+let lastHealthSnapshot=null;
+let currentHealthEvent=null;
 let prevPlayerNames=new Set();
 
 // ── DOM ────────────────────────────────────────────────────────────────────
@@ -633,6 +656,12 @@ Object.assign(I18N.fr,I18N.en,{'login.title':'Connexion','login.username':'Utili
 Object.assign(I18N.pl,{'login.signing':'Logowanie...','login.missing':'Podaj użytkownika i hasło.','login.invalid':'Nieprawidłowe dane.','login.unreachable':'Serwer niedostępny.','header.as':'jako','header.notifications':'Przełącz powiadomienia o błędach','stat.players':'Gracze','stat.lines':'Linie','stat.session':'Sesja','console.bottom':'Dół','console.searchPlaceholder':'Szukaj w logach... (Ctrl+F)','console.commandPlaceholder':'Wpisz komendę lub !alias... (Tab uzupełnia)','console.matches':'{count} trafień','console.match':'{count} trafienie','console.acHint':'Tab / ↑↓ nawigacja, Enter wybór','dash.waitingStats':'Oczekiwanie na statystyki','dash.playerCapacity':'Pojemność graczy','dash.onlineSlotsUsed':'Użyte sloty','dash.pluginUptime':'Czas pracy pluginu','dash.sincePluginEnable':'Od włączenia pluginu','dash.recentCommands':'Ostatnie komendy','dash.playerCommands24h':'Komendy graczy / 24h','dash.tickRate':'Tempo ticków','dash.ramUsed':'Użycie RAM','dash.heapMemory':'Pamięć heap','dash.playersOnline':'Gracze online','dash.worlds':'Światy','dash.totalEntities':'Wszystkie encje','dash.acrossWorlds':'We wszystkich światach','dash.sessionErrors':'Błędy sesji','dash.errorLines':'Linie SEVERE / ERROR','dash.hostCpu':'CPU hosta','dash.systemLoad':'Obciążenie systemu','dash.machineRam':'RAM maszyny','dash.physicalMemory':'Pamięć fizyczna','dash.serverDisk':'Dysk serwera','dash.worldContainer':'Folder światów','dash.jvmThreads':'Wątki JVM','dash.javaProcess':'Proces Java','dash.performanceHistory':'Historia wydajności (5 min)','dash.machineDetails':'Szczegóły maszyny','dash.logBreakdown':'Poziomy logów','dash.worldBreakdown':'Światy','dash.world':'Świat','dash.chunks':'Chunki','dash.entities':'Encje','dash.noData':'Brak danych','dash.activityFeed':'Aktywność','dash.live':'live','dash.waitingActivity':'Oczekiwanie na aktywność...','metric.model':'Model','metric.coresThreads':'Rdzenie / Wątki','metric.processLoad':'Obciążenie procesu','metric.memory':'Pamięć','metric.machineUsed':'Użyte','metric.machineFree':'Wolne','metric.disk':'Dysk','metric.used':'Użyte','metric.free':'Wolne','metric.mount':'Montowanie','metric.runtime':'Runtime','players.name':'Nazwa','players.world':'Świat','players.ping':'Ping','players.actions':'Akcje','players.online':'{count} online','players.joined':'Dołączył','players.left':'Wyszedł','players.unknown':'Nieznany','players.noJoinHistory':'Brak historii wejść z 24 godzin.','players.noCommands':'Brak komend graczy z 24 godzin.','players.kickPlayer':'Wyrzuć gracza','players.banPlayer':'Zbanuj gracza','players.kicked':'Wyrzucono','players.banned':'Zbanowano','players.noReason':'Brak powodu','aliases.hint':'Kliknij alias, aby wstawić go do konsoli, albo Run, aby wykonać.','aliases.empty':'Brak aliasów. Dodaj je w config.yml.','modal.action':'Akcja','modal.player':'Gracz','modal.reason':'Powód','modal.reasonPlaceholder':'Podaj powód...','toast.lost':'Utracono połączenie - ponawianie...','toast.sessionExpired':'Sesja wygasła','toast.rateLimited':'Limit - zwolnij','toast.blocked':'Komenda zablokowana','toast.notificationsEnabled':'Powiadomienia włączone','toast.notificationsDenied':'Powiadomienia odrzucone','toast.notificationsDisabled':'Powiadomienia wyłączone','health.critical':'Krytyczny','health.watch':'Obserwuj','health.good':'Dobry','health.needsAttention':'Wymaga uwagi','health.monitor':'Monitoruj serwer','health.normal':'Główne sygnały w normie','health.excellent':'Świetnie ✓','health.degraded':'Pogorszone','fmt.ofSlots':'{players} z {max} slotów','fmt.maxUnknown':'{players} online, maksimum nieznane','fmt.ofMax':'z {max} max','fmt.chunksLoaded':'Załadowane chunki: {count}','fmt.ofRam':'z {max}MB ({pct}%)','fmt.process':'Proces {value}','fmt.free':'{value} wolne','fmt.daemon':'{value} daemon','fmt.lines':'{count} linii'});
 Object.assign(I18N.de,{'login.signing':'Anmelden...','login.missing':'Benutzername und Passwort eingeben.','login.invalid':'Ungültige Zugangsdaten.','login.unreachable':'Server nicht erreichbar.','header.as':'als','header.notifications':'Fehlerbenachrichtigungen umschalten','stat.players':'Spieler','stat.lines':'Zeilen','stat.session':'Sitzung','console.bottom':'Unten','console.searchPlaceholder':'Logs suchen... (Ctrl+F)','console.commandPlaceholder':'Befehl oder !Alias eingeben... (Tab vervollständigt)','console.matches':'{count} Treffer','console.match':'{count} Treffer','console.acHint':'Tab / ↑↓ navigieren, Enter auswählen','dash.waitingStats':'Warte auf Statistiken','dash.playerCapacity':'Spielerkapazität','dash.onlineSlotsUsed':'Genutzte Slots','dash.pluginUptime':'Plugin-Laufzeit','dash.sincePluginEnable':'Seit Plugin-Aktivierung','dash.recentCommands':'Letzte Befehle','dash.playerCommands24h':'Spielerbefehle / 24h','dash.tickRate':'Tickrate','dash.ramUsed':'RAM genutzt','dash.heapMemory':'Heap-Speicher','dash.playersOnline':'Spieler online','dash.worlds':'Welten','dash.totalEntities':'Entitäten gesamt','dash.acrossWorlds':'Über alle Welten','dash.sessionErrors':'Sitzungsfehler','dash.errorLines':'SEVERE / ERROR Zeilen','dash.hostCpu':'Host-CPU','dash.systemLoad':'Systemlast','dash.machineRam':'Maschinen-RAM','dash.physicalMemory':'Physischer Speicher','dash.serverDisk':'Server-Datenträger','dash.worldContainer':'Weltordner','dash.jvmThreads':'JVM-Threads','dash.javaProcess':'Java-Prozess','dash.performanceHistory':'Leistungsverlauf (5 min)','dash.machineDetails':'Maschinendetails','dash.logBreakdown':'Log-Level','dash.worldBreakdown':'Welten','dash.world':'Welt','dash.chunks':'Chunks','dash.entities':'Entitäten','dash.noData':'Noch keine Daten','dash.activityFeed':'Aktivität','dash.live':'live','dash.waitingActivity':'Warte auf Aktivität...','metric.model':'Modell','metric.coresThreads':'Kerne / Threads','metric.processLoad':'Prozesslast','metric.memory':'Speicher','metric.machineUsed':'Genutzt','metric.machineFree':'Frei','metric.disk':'Datenträger','metric.used':'Genutzt','metric.free':'Frei','metric.mount':'Mount','metric.runtime':'Runtime','players.name':'Name','players.world':'Welt','players.ping':'Ping','players.actions':'Aktionen','players.online':'{count} online','players.joined':'Beigetreten','players.left':'Verlassen','players.unknown':'Unbekannt','players.noJoinHistory':'Kein Login-Verlauf der letzten 24 Stunden.','players.noCommands':'Keine Spielerbefehle der letzten 24 Stunden.','players.kickPlayer':'Spieler kicken','players.banPlayer':'Spieler bannen','players.kicked':'Gekickt','players.banned':'Gebannt','players.noReason':'Kein Grund angegeben','aliases.hint':'Alias anklicken zum Einfügen oder Run zum Ausführen.','aliases.empty':'Keine Aliase konfiguriert. In config.yml hinzufügen.','modal.action':'Aktion','modal.player':'Spieler','modal.reason':'Grund','modal.reasonPlaceholder':'Grund eingeben...','toast.lost':'Verbindung verloren - verbinde neu...','toast.sessionExpired':'Sitzung abgelaufen','toast.rateLimited':'Rate limit - langsamer','toast.blocked':'Befehl blockiert','toast.notificationsEnabled':'Benachrichtigungen aktiviert','toast.notificationsDenied':'Benachrichtigungen verweigert','toast.notificationsDisabled':'Benachrichtigungen deaktiviert','health.critical':'Kritisch','health.watch':'Beobachten','health.good':'Gut','health.needsAttention':'Benötigt Aufmerksamkeit','health.monitor':'Server überwachen','health.normal':'Kernsignale normal','health.excellent':'Ausgezeichnet ✓','health.degraded':'Verschlechtert','fmt.ofSlots':'{players} von {max} Slots','fmt.maxUnknown':'{players} online, Maximum unbekannt','fmt.ofMax':'von {max} max','fmt.chunksLoaded':'Geladene Chunks: {count}','fmt.ofRam':'von {max}MB ({pct}%)','fmt.process':'Prozess {value}','fmt.free':'{value} frei','fmt.daemon':'{value} daemon','fmt.lines':'{count} Zeilen'});
 Object.assign(I18N.fr,{'login.signing':'Connexion...','login.missing':'Saisir utilisateur et mot de passe.','login.invalid':'Identifiants invalides.','login.unreachable':'Serveur inaccessible.','header.as':'en tant que','header.notifications':'Basculer les notifications erreur','stat.players':'Joueurs','stat.lines':'Lignes','stat.session':'Session','console.bottom':'Bas','console.searchPlaceholder':'Rechercher les logs... (Ctrl+F)','console.commandPlaceholder':'Commande ou !alias... (Tab complète)','console.matches':'{count} résultats','console.match':'{count} résultat','console.acHint':'Tab / ↑↓ naviguer, Enter choisir','dash.waitingStats':'En attente des stats','dash.playerCapacity':'Capacité joueurs','dash.onlineSlotsUsed':'Slots utilisés','dash.pluginUptime':'Temps plugin','dash.sincePluginEnable':'Depuis activation du plugin','dash.recentCommands':'Commandes récentes','dash.playerCommands24h':'Commandes joueurs / 24h','dash.tickRate':'Rythme tick','dash.ramUsed':'RAM utilisée','dash.heapMemory':'Mémoire heap','dash.playersOnline':'Joueurs en ligne','dash.worlds':'Mondes','dash.totalEntities':'Entités totales','dash.acrossWorlds':'Tous les mondes','dash.sessionErrors':'Erreurs session','dash.errorLines':'Lignes SEVERE / ERROR','dash.hostCpu':'CPU hôte','dash.systemLoad':'Charge système','dash.machineRam':'RAM machine','dash.physicalMemory':'Mémoire physique','dash.serverDisk':'Disque serveur','dash.worldContainer':'Dossier mondes','dash.jvmThreads':'Threads JVM','dash.javaProcess':'Processus Java','dash.performanceHistory':'Historique perf (5 min)','dash.machineDetails':'Détails machine','dash.logBreakdown':'Niveaux de log','dash.worldBreakdown':'Mondes','dash.world':'Monde','dash.chunks':'Chunks','dash.entities':'Entités','dash.noData':'Pas encore de données','dash.activityFeed':'Activité','dash.live':'live','dash.waitingActivity':'En attente activité...','metric.model':'Modèle','metric.coresThreads':'Cœurs / Threads','metric.processLoad':'Charge processus','metric.memory':'Mémoire','metric.machineUsed':'Utilisée','metric.machineFree':'Libre','metric.disk':'Disque','metric.used':'Utilisé','metric.free':'Libre','metric.mount':'Montage','metric.runtime':'Runtime','players.name':'Nom','players.world':'Monde','players.ping':'Ping','players.actions':'Actions','players.online':'{count} en ligne','players.joined':'Connecté','players.left':'Parti','players.unknown':'Inconnu','players.noJoinHistory':'Aucun historique de connexion sur 24 h.','players.noCommands':'Aucune commande joueur sur 24 h.','players.kickPlayer':'Expulser joueur','players.banPlayer':'Bannir joueur','players.kicked':'Expulsé','players.banned':'Banni','players.noReason':'Aucune raison','aliases.hint':'Cliquez un alias pour l’insérer, ou Run pour exécuter.','aliases.empty':'Aucun alias configuré. Ajoutez-les dans config.yml.','modal.action':'Action','modal.player':'Joueur','modal.reason':'Raison','modal.reasonPlaceholder':'Entrer une raison...','toast.lost':'Connexion perdue - reconnexion...','toast.sessionExpired':'Session expirée','toast.rateLimited':'Limite atteinte - ralentir','toast.blocked':'Commande bloquée','toast.notificationsEnabled':'Notifications activées','toast.notificationsDenied':'Notifications refusées','toast.notificationsDisabled':'Notifications désactivées','health.critical':'Critique','health.watch':'Surveiller','health.good':'Bon','health.needsAttention':'Attention requise','health.monitor':'Surveiller le serveur','health.normal':'Signaux principaux normaux','health.excellent':'Excellent ✓','health.degraded':'Dégradé','fmt.ofSlots':'{players} sur {max} slots','fmt.maxUnknown':'{players} en ligne, max inconnu','fmt.ofMax':'sur {max} max','fmt.chunksLoaded':'Chunks chargés : {count}','fmt.ofRam':'sur {max}MB ({pct}%)','fmt.process':'Processus {value}','fmt.free':'{value} libre','fmt.daemon':'{value} daemon','fmt.lines':'{count} lignes'});
+Object.assign(I18N.en,{'dash.healthHistory':'Health History','dash.noHealthEvents':'No health events yet','health.noReason':'No reason','health.tpsLow':'TPS low','health.tpsDegraded':'TPS degraded','health.errors':'Errors','health.capacity':'Capacity'});
+Object.assign(I18N.ru,{'dash.healthHistory':'История состояния','dash.noHealthEvents':'Событий состояния пока нет','health.noReason':'Причина не указана','health.tpsLow':'TPS низкий','health.tpsDegraded':'TPS просел','health.errors':'Ошибки','health.capacity':'Заполненность'});
+Object.assign(I18N.zh,{'dash.healthHistory':'健康历史','dash.noHealthEvents':'暂无健康事件','health.noReason':'无原因','health.tpsLow':'TPS 过低','health.tpsDegraded':'TPS 下降','health.errors':'错误','health.capacity':'容量'});
+Object.assign(I18N.pl,{'dash.healthHistory':'Historia stanu','dash.noHealthEvents':'Brak zdarzeń stanu','health.noReason':'Brak powodu','health.tpsLow':'Niski TPS','health.tpsDegraded':'Spadek TPS','health.errors':'Błędy','health.capacity':'Zapełnienie'});
+Object.assign(I18N.de,{'dash.healthHistory':'Zustandsverlauf','dash.noHealthEvents':'Noch keine Zustandsereignisse','health.noReason':'Kein Grund','health.tpsLow':'TPS niedrig','health.tpsDegraded':'TPS verschlechtert','health.errors':'Fehler','health.capacity':'Kapazität'});
+Object.assign(I18N.fr,{'dash.healthHistory':'Historique santé','dash.noHealthEvents':'Aucun événement santé','health.noReason':'Aucune raison','health.tpsLow':'TPS bas','health.tpsDegraded':'TPS dégradé','health.errors':'Erreurs','health.capacity':'Capacité'});
 const LANGS=['en','ru','zh','pl','de','fr'];
 const LANG_KEY='bwc_lang';
 let savedLang='en';
@@ -650,6 +679,8 @@ function applyTranslations(){
   document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title=t(el.dataset.i18nTitle); });
   const state=['connected','disconnected','connecting'].find(s=>sdot.classList.contains(s));
   if(state) statusText.textContent=t('status.'+state);
+  renderHealthState();
+  renderHealthHistory();
 }
 function setLanguage(lang){
   if(!LANGS.includes(lang)) lang='en';
@@ -874,6 +905,86 @@ function handleControl(event){
 }
 
 // ── Stats ──────────────────────────────────────────────────────────────────
+function getHealthStatus(snapshot){
+  if(!snapshot) return 'good';
+  if(snapshot.tps<15||snapshot.sessionErrors>0) return 'critical';
+  if(snapshot.tps<18||(snapshot.hasMaxPlayers&&snapshot.capacity>=90)) return 'watch';
+  return 'good';
+}
+
+function getHealthReasons(snapshot){
+  if(!snapshot) return [];
+  const reasons=[];
+  if(snapshot.tps<15) reasons.push({code:'tps',level:'red',label:t('health.tpsLow'),title:'TPS: '+snapshot.tps.toFixed(1)+' < 15'});
+  else if(snapshot.tps<18) reasons.push({code:'tps',level:'warn',label:t('health.tpsDegraded'),title:'TPS: '+snapshot.tps.toFixed(1)+' < 18'});
+  if(snapshot.sessionErrors>0) reasons.push({code:'errors',level:'red',label:t('health.errors')+': '+snapshot.sessionErrors,title:t('dash.sessionErrors')+': '+snapshot.sessionErrors});
+  if(snapshot.hasMaxPlayers&&snapshot.capacity>=90) reasons.push({code:'capacity',level:'warn',label:t('health.capacity')+': '+snapshot.capacity+'%',title:t('dash.playerCapacity')+': '+snapshot.capacity+'%'});
+  return reasons;
+}
+
+function renderHealthState(){
+  const snapshot=lastHealthSnapshot;
+  if(!snapshot){
+    const healthCard=$('kpi-health-card');
+    if(healthCard) healthCard.removeAttribute('title');
+    const badges=$('kpi-health-reasons');
+    if(badges){ badges.className='health-reasons'; badges.innerHTML=''; }
+    return;
+  }
+  const status=getHealthStatus(snapshot);
+  const reasons=getHealthReasons(snapshot);
+  setText('kpi-health', status==='critical'?t('health.critical'):status==='watch'?t('health.watch'):t('health.good'));
+  setText('kpi-health-sub', status==='critical'?t('health.needsAttention'):status==='watch'?t('health.monitor'):t('health.normal'));
+  const healthCard=$('kpi-health-card');
+  if(healthCard){
+    healthCard.className='kpi '+(status==='critical'?'red':status==='watch'?'warn':'green');
+    if(status==='good') healthCard.removeAttribute('title');
+    else healthCard.title=reasons.map(r=>r.title).join('\n');
+  }
+  const badges=$('kpi-health-reasons');
+  if(!badges) return;
+  if(status==='good'||!reasons.length){ badges.className='health-reasons'; badges.innerHTML=''; return; }
+  badges.className='health-reasons show';
+  badges.innerHTML=reasons.map(r=>`<span class="health-badge ${r.level}">${esc(r.label)}</span>`).join('');
+}
+
+function updateHealthHistory(status,snapshot){
+  const now=Date.now();
+  const reasonKey=getHealthReasons(snapshot).map(r=>r.code).join('|');
+  if(status==='good'){
+    if(currentHealthEvent){
+      currentHealthEvent.end=now;
+      healthHistory.unshift(currentHealthEvent);
+      currentHealthEvent=null;
+    }
+  }else if(currentHealthEvent&&currentHealthEvent.status===status&&currentHealthEvent.reasonKey===reasonKey){
+    currentHealthEvent.snapshot={...snapshot};
+  }else{
+    if(currentHealthEvent){
+      currentHealthEvent.end=now;
+      healthHistory.unshift(currentHealthEvent);
+    }
+    currentHealthEvent={status,reasonKey,start:now,end:null,snapshot:{...snapshot}};
+  }
+  while(healthHistory.length>MAX_HEALTH_HISTORY) healthHistory.pop();
+  renderHealthHistory();
+}
+
+function renderHealthHistory(){
+  const box=$('health-history'); if(!box) return;
+  const events=[currentHealthEvent,...healthHistory].filter(Boolean).slice(0,8);
+  setText('health-history-count', events.length);
+  if(!events.length){ box.innerHTML=`<div class="health-event-empty">${t('dash.noHealthEvents')}</div>`; return; }
+  box.innerHTML=events.map(ev=>{
+    const reasons=getHealthReasons(ev.snapshot).map(r=>r.title).join('; ')||t('health.noReason');
+    const start=new Date(ev.start).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const duration=fmtShortDuration((ev.end||Date.now())-ev.start);
+    const state=ev.status==='critical'?t('health.critical'):t('health.watch');
+    const cls=ev.status==='critical'?'red':'warn';
+    return `<div class="health-event ${cls}"><div class="health-event-top"><span class="health-event-state">${esc(state)}</span><span class="health-event-time">${start} - ${duration}</span></div><div class="health-event-reasons">${esc(reasons)}</div></div>`;
+  }).join('');
+}
+
 function handleStats(data){
   const tps=data.tps||0, ramUsed=data.ramUsed||0, ramMax=data.ramMax||0;
   const players=data.players||0, maxPlayers=data.maxPlayers||0;
@@ -883,12 +994,10 @@ function handleStats(data){
   setText('kpi-capacity-sub', hasMaxPlayers ? t('fmt.ofSlots',{players,max:maxPlayers}) : t('fmt.maxUnknown',{players}));
   setText('kpi-uptime', fmtDuration(data.uptimeSeconds));
   setText('kpi-player-cmds', Array.isArray(data.playerCommands)?data.playerCommands.length:0);
-  const healthBad=tps<15||sessionErrors>0;
-  const healthWarn=!healthBad&&(tps<18||(hasMaxPlayers&&capacity>=90));
-  setText('kpi-health', healthBad?t('health.critical'):healthWarn?t('health.watch'):t('health.good'));
-  setText('kpi-health-sub', healthBad?t('health.needsAttention'):healthWarn?t('health.monitor'):t('health.normal'));
-  const healthCard=$('kpi-health-card');
-  if(healthCard) healthCard.className='kpi '+(healthBad?'red':healthWarn?'warn':'green');
+  lastHealthSnapshot={tps,sessionErrors,hasMaxPlayers,capacity};
+  const healthStatus=getHealthStatus(lastHealthSnapshot);
+  updateHealthHistory(healthStatus,lastHealthSnapshot);
+  renderHealthState();
 
   svTps.textContent=tps.toFixed(1);
   statTpsEl.className='stat '+(tps>=18?'tps-good':tps>=15?'tps-ok':'tps-bad');
@@ -1261,6 +1370,13 @@ function fmtDuration(seconds){
   if(d>0) return `${d}d ${h}h`;
   if(h>0) return `${h}h ${m}m`;
   return `${m}m`;
+}
+function fmtShortDuration(ms){
+  const s=Math.max(0,Math.floor(Number(ms||0)/1000));
+  const h=Math.floor(s/3600), m=Math.floor(s%3600/60), sec=s%60;
+  if(h>0) return `${h}h ${m}m`;
+  if(m>0) return `${m}m ${sec}s`;
+  return `${sec}s`;
 }
 function fmtTime(timestamp){
   if(timestamp===null||timestamp===undefined||timestamp==='') return '--:--';

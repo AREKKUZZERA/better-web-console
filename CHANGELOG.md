@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.4.1 - 2026-05-16
+
+### Added
+
+- Added visible Server Health reason badges for low TPS, session errors and high player capacity.
+- Added dashboard Health History for Watch/Critical state transitions with start time, duration and reasons.
+
+### Fixed
+
+- Kept the Server Health tooltip reason text synchronized after changing the web UI language.
+
 ## 2.4.0 - 2026-05-15
 
 ### Added
