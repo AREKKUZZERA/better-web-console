@@ -1,5 +1,41 @@
 # Changelog
 
+## 2.4.0 - 2026-05-15
+
+### Added
+
+- Added a persistent 24-hour player activity history store for join, leave and player command events.
+- Added player activity history to the stats API and Players tab.
+- Added recent player command count and activity feed updates to the dashboard overview.
+- Added web UI localization with language selection for English, Russian, Chinese, Polish, German and French.
+
+### Changed
+
+- Improved dashboard overview layout and centering.
+- Improved Players tab responsive layout for smaller screens.
+- Updated README installation guidance for the new Paper build matrix.
+
+### Build
+
+- Added separate Paper build artifacts for Minecraft/Paper `1.21` - `1.21.11` and `26.1` - `26.1.2`.
+- Shortened generated jar names to `bwc-<version>-paper-1.21.X.jar` and `bwc-<version>-paper-26.1.X.jar`.
+- Ignored module `target` directories.
+
+### Fixed
+
+- Protected player activity history compaction from recursive pruning.
+- Cleared stale activity history UI while stats are unavailable or reset.
+- Handled empty activity history timestamps in the web UI.
+- Handled unknown player capacity values in dashboard cards.
+- Escaped activity feed text before rendering user/server-provided content.
+- Limited activity history payload size returned by the stats API.
+- Collected API stats on the main server thread.
+
+### Docs
+
+- Added reverse proxy / HTTPS examples for Nginx, Caddy and Cloudflare Tunnel.
+- Documented player command history storage and the related security note.
+
 ## 2.3.0 - 2026-04-28
 
 ### Added
