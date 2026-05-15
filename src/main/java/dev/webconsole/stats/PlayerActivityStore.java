@@ -32,8 +32,9 @@ public class PlayerActivityStore {
         if (!dataFolder.exists() && !dataFolder.mkdirs()) {
             logger.warning("[BWC] Failed to create data folder for player activity history");
         }
-        load();
-        compact();
+        if (load()) {
+            compact();
+        }
     }
 
     public synchronized void recordJoin(UUID uuid, String playerName) {
@@ -49,7 +50,7 @@ public class PlayerActivityStore {
     }
 
     public synchronized JsonArray recentEventsJson() {
-        pruneExpired(false);
+        pruneExpired(true);
         JsonArray array = new JsonArray();
         for (Entry entry : entries) {
             if (!TYPE_JOIN.equals(entry.type) && !TYPE_LEAVE.equals(entry.type)) continue;
@@ -59,7 +60,7 @@ public class PlayerActivityStore {
     }
 
     public synchronized JsonArray recentCommandsJson() {
-        pruneExpired(false);
+        pruneExpired(true);
         JsonArray array = new JsonArray();
         for (Entry entry : entries) {
             if (TYPE_COMMAND.equals(entry.type)) array.add(entry.toJson());
@@ -74,8 +75,8 @@ public class PlayerActivityStore {
         append(entry);
     }
 
-    private void load() {
-        if (!file.isFile()) return;
+    private boolean load() {
+        if (!file.isFile()) return true;
         long cutoff = System.currentTimeMillis() - RETENTION_MS;
         try (BufferedReader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
             String line;
@@ -83,8 +84,10 @@ public class PlayerActivityStore {
                 Entry entry = parse(line);
                 if (entry != null && entry.timestamp >= cutoff) entries.add(entry);
             }
+            return true;
         } catch (IOException e) {
             logger.warning("[BWC] Failed to read player activity history: " + e.getMessage());
+            return false;
         }
     }
 
