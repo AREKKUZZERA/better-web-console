@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.4.2 - 2026-05-21
+
+### Performance
+
+- Reduced shaded jar size by excluding unused JNA native binaries and Maven/package metadata.
+- Reduced WebSocket broadcast overhead by preparing stats and log payloads once per broadcast.
+- Reduced small runtime allocations in stats collection, API body parsing, log export filtering and validation helpers.
+
 ## 2.4.1 - 2026-05-16
 
 ### Added

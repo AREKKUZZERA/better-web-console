@@ -55,12 +55,12 @@ mvn clean package
 Output:
 
 ```text
-target/bwc-2.4.1-paper-1.21.X.jar
-target/bwc-2.4.1-paper-26.1.X.jar
+target/bwc-2.4.2-paper-1.21.X.jar
+target/bwc-2.4.2-paper-26.1.X.jar
 ```
 
-Use `bwc-2.4.1-paper-1.21.X.jar` on Paper/Purpur `1.21` through `1.21.11`.
-Use `bwc-2.4.1-paper-26.1.X.jar` on Paper `26.1` through `26.1.2`.
+Use `bwc-2.4.2-paper-1.21.X.jar` on Paper/Purpur `1.21` through `1.21.11`.
+Use `bwc-2.4.2-paper-26.1.X.jar` on Paper `26.1` through `26.1.2`.
 
 ## First Setup
 
