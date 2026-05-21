@@ -142,7 +142,22 @@
                                             <exclude>META-INF/*.DSA</exclude>
                                             <exclude>META-INF/*.RSA</exclude>
                                             <exclude>META-INF/INDEX.LIST</exclude>
+                                            <exclude>META-INF/maven/**</exclude>
                                             <exclude>module-info.class</exclude>
+                                            <exclude>**/package.html</exclude>
+                                            <exclude>com/sun/jna/aix-*/**</exclude>
+                                            <exclude>com/sun/jna/dragonflybsd-*/**</exclude>
+                                            <exclude>com/sun/jna/freebsd-*/**</exclude>
+                                            <exclude>com/sun/jna/openbsd-*/**</exclude>
+                                            <exclude>com/sun/jna/sunos-*/**</exclude>
+                                            <exclude>com/sun/jna/linux-arm*/**</exclude>
+                                            <exclude>com/sun/jna/linux-loongarch64/**</exclude>
+                                            <exclude>com/sun/jna/linux-mips64el/**</exclude>
+                                            <exclude>com/sun/jna/linux-ppc*/**</exclude>
+                                            <exclude>com/sun/jna/linux-riscv64/**</exclude>
+                                            <exclude>com/sun/jna/linux-s390x/**</exclude>
+                                            <exclude>com/sun/jna/linux-x86/**</exclude>
+                                            <exclude>com/sun/jna/win32-x86/**</exclude>
                                         </excludes>
                                     </filter>
                                 </filters>

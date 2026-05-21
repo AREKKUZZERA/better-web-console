@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.List;
 
 /**
  * Collects TPS, RAM and player data every second.
@@ -88,9 +89,15 @@ public class ServerStats {
         lastRamUsed = used;
         maxRam = max;
 
+        List<World> worlds = Bukkit.getWorlds();
+        int totalChunks = 0;
+        for (World world : worlds) {
+            totalChunks += world.getLoadedChunks().length;
+        }
+
         lastPlayers = Bukkit.getOnlinePlayers().size();
-        lastWorlds = Bukkit.getWorlds().size();
-        lastTotalChunks = Bukkit.getWorlds().stream().mapToInt(w -> w.getLoadedChunks().length).sum();
+        lastWorlds = worlds.size();
+        lastTotalChunks = totalChunks;
 
         addToHistory(tpsHistory, lastTps);
         addToHistory(ramHistory, lastRamUsed);
@@ -255,7 +262,7 @@ public class ServerStats {
         if (!signature.equals(lastBroadcastSignature) || now - lastBroadcastAt >= 3000L) {
             lastBroadcastSignature = signature;
             lastBroadcastAt = now;
-            handler.broadcastStats();
+            handler.broadcastStats(toJson());
         }
     }
 

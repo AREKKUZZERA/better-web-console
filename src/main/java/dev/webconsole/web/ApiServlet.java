@@ -17,12 +17,12 @@ import org.bukkit.Bukkit;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 /**
  * REST API endpoints:
@@ -46,13 +46,12 @@ public class ApiServlet extends HttpServlet {
 
     public ApiServlet(BetterWebConsolePlugin plugin, SessionManager sessionManager,
                       RateLimiter rateLimiter, CsrfUtil csrfUtil,
-                      IpWhitelistChecker ipChecker, WebSocketHandler wsHandler) {
+                      IpWhitelistChecker ipChecker) {
         this.plugin         = plugin;
         this.sessionManager = sessionManager;
         this.rateLimiter    = rateLimiter;
         this.csrfUtil       = csrfUtil;
         this.ipChecker      = ipChecker;
-        // wsHandler reserved for future API endpoints (e.g. broadcast message)
     }
 
     @Override
@@ -145,7 +144,11 @@ public class ApiServlet extends HttpServlet {
         String q = req.getParameter("q");
         if (q != null && !q.isBlank()) {
             final String lq = q.toLowerCase();
-            lines = lines.stream().filter(l -> l.toLowerCase().contains(lq)).collect(Collectors.toList());
+            List<String> filtered = new ArrayList<>();
+            for (String line : lines) {
+                if (line.toLowerCase().contains(lq)) filtered.add(line);
+            }
+            lines = filtered;
         }
 
         res.setContentType("text/plain;charset=UTF-8");
@@ -170,9 +173,8 @@ public class ApiServlet extends HttpServlet {
             return;
         }
 
-        String body;
-        try { body = req.getReader().lines().collect(Collectors.joining()); }
-        catch (Exception e) { sendError(res, 400, "Invalid body"); return; }
+        String body = readBody(req);
+        if (body == null) { sendError(res, 400, "Invalid body"); return; }
 
         String username, password, csrf;
         try {
@@ -243,6 +245,20 @@ public class ApiServlet extends HttpServlet {
         if (cookies == null) return null;
         for (Cookie c : cookies) if ("session".equals(c.getName())) return c.getValue();
         return null;
+    }
+
+    private String readBody(HttpServletRequest req) {
+        StringBuilder body = new StringBuilder(256);
+        try (var reader = req.getReader()) {
+            char[] buffer = new char[1024];
+            int read;
+            while ((read = reader.read(buffer)) != -1) {
+                body.append(buffer, 0, read);
+            }
+            return body.toString();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void sendError(HttpServletResponse res, int code, String msg) throws IOException {

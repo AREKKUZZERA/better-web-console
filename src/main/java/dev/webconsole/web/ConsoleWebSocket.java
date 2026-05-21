@@ -19,11 +19,14 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 @WebSocket
 public class ConsoleWebSocket {
 
     private static final String PLAYER_NAME_PATTERN = "[A-Za-z0-9_]{3,16}";
+    private static final Pattern PLAYER_NAME = Pattern.compile(PLAYER_NAME_PATTERN);
+    private static final Pattern CONTROL_CHARS = Pattern.compile("[\\p{Cntrl}&&[^\t]]");
     private static final int MAX_ALIAS_CHAIN = 10;
 
     private final BetterWebConsolePlugin plugin;
@@ -218,6 +221,10 @@ public class ConsoleWebSocket {
         send(msg.toString());
     }
 
+    public void sendPayload(String payload) {
+        send(payload);
+    }
+
     private void sendControl(String event) {
         JsonObject msg = new JsonObject();
         msg.addProperty("type", "control");
@@ -231,11 +238,11 @@ public class ConsoleWebSocket {
     }
 
     private boolean isValidPlayerName(String playerName) {
-        return playerName != null && playerName.matches(PLAYER_NAME_PATTERN);
+        return playerName != null && PLAYER_NAME.matcher(playerName).matches();
     }
 
     private String cleanReason(String reason) {
-        String cleaned = reason == null ? "" : reason.replaceAll("[\\p{Cntrl}&&[^\t]]", " ").trim();
+        String cleaned = reason == null ? "" : CONTROL_CHARS.matcher(reason).replaceAll(" ").trim();
         if (cleaned.isBlank()) return "No reason given";
         return cleaned.length() > 120 ? cleaned.substring(0, 120) : cleaned;
     }

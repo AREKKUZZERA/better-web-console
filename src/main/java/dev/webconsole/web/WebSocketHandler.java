@@ -1,5 +1,6 @@
 package dev.webconsole.web;
 
+import com.google.gson.JsonObject;
 import dev.webconsole.BetterWebConsolePlugin;
 import dev.webconsole.auth.RateLimiter;
 import dev.webconsole.auth.SessionManager;
@@ -20,15 +21,23 @@ public class WebSocketHandler {
 
     /** Broadcast a raw log line to all connected clients. */
     public void broadcast(String line) {
+        JsonObject msg = new JsonObject();
+        msg.addProperty("type", "log");
+        msg.addProperty("line", line);
+        String payload = msg.toString();
+
         for (ConsoleWebSocket s : sockets) {
-            try { s.sendLine(line); } catch (Exception ignored) {}
+            try { s.sendPayload(payload); } catch (Exception ignored) {}
         }
     }
 
     /** Push updated stats to all connected clients. */
-    public void broadcastStats() {
+    public void broadcastStats(JsonObject stats) {
+        stats.addProperty("type", "stats");
+        String payload = stats.toString();
+
         for (ConsoleWebSocket s : sockets) {
-            try { s.pushStats(); } catch (Exception ignored) {}
+            try { s.sendPayload(payload); } catch (Exception ignored) {}
         }
     }
 

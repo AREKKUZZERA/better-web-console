@@ -85,7 +85,7 @@ public class WebServer {
 
         // REST API servlet
         var apiServlet = new ServletHolder(new ApiServlet(plugin, sessionManager, rateLimiter,
-                csrfUtil, ipWhitelistChecker, wsHandler));
+                csrfUtil, ipWhitelistChecker));
         context.addServlet(apiServlet, "/api/*");
 
         // WebSocket servlet
