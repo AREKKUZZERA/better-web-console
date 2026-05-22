@@ -20,7 +20,7 @@
 
 - Cached player activity summary counters instead of recalculating them for every stats payload.
 
-## 2.4.2 - 2026-05-21
+## 2.4.3 - 2026-05-21
 
 ### Performance
 
