@@ -268,6 +268,17 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .alias-run:hover{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;transform:translateY(-1px)}
 .alias-hint{font-size:11px;color:var(--text-muted);margin-bottom:8px}
 
+/* Sessions */
+#panel-sessions{overflow-y:auto;padding:12px}
+.sessions-layout{width:min(100%,980px);margin:0 auto}
+.sessions-table{width:100%;min-width:640px;border-collapse:collapse}
+.sessions-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);padding:7px 10px;border-bottom:1px solid var(--border)}
+.sessions-table td{padding:8px 10px;border-bottom:1px solid var(--border2);font-size:12.5px;color:var(--text-dim)}
+.sessions-table td:first-child{color:var(--text);font-weight:600}
+.session-ip{font-family:var(--font);color:var(--accent2)}
+.session-empty{color:var(--text-muted);font-size:12px;text-align:center;padding:26px 0;background:var(--bg3);border-radius:var(--r-sm)}
+.session-error{color:var(--danger)}
+
 /* Modal */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:300;opacity:0;pointer-events:none;transition:opacity var(--slow)}
 .modal-bg.show{opacity:1;pointer-events:all}
@@ -363,6 +374,7 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
     <div class="tab" data-panel="dash" data-i18n="tab.dashboard">Dashboard</div>
     <div class="tab" data-panel="players"><span data-i18n="tab.players">Players</span> <span id="player-count-tab">(0)</span></div>
     <div class="tab" data-panel="aliases" data-i18n="tab.aliases">Aliases</div>
+    <div class="tab" data-panel="sessions" data-i18n="tab.sessions">Sessions</div>
   </div>
 
   <!-- Console Panel -->
@@ -577,6 +589,25 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
     <p class="alias-hint" data-i18n="aliases.hint">Click an alias to insert it into the console, or press Run to execute immediately.</p>
     <div class="alias-list" id="alias-list"></div>
   </div>
+
+  <!-- Sessions Panel -->
+  <div class="panel" id="panel-sessions">
+    <div class="sessions-layout">
+      <section class="players-card">
+        <div class="players-card-header">
+          <div class="players-card-title" data-i18n="sessions.active">Active Web Sessions</div>
+          <span class="players-card-badge" id="sessions-count">0</span>
+        </div>
+        <div class="player-table-wrap">
+          <table class="sessions-table" id="sessions-table" style="display:none">
+            <thead><tr><th data-i18n="sessions.user">User</th><th data-i18n="sessions.ip">IP</th><th data-i18n="sessions.lastSeen">Last activity</th><th data-i18n="sessions.expires">Expires</th></tr></thead>
+            <tbody id="sessions-tbody"></tbody>
+          </table>
+        </div>
+        <div class="session-empty" id="sessions-empty" data-i18n="sessions.empty">No active sessions.</div>
+      </section>
+    </div>
+  </div>
 </div>
 
 <!-- Action Modal -->
@@ -633,7 +664,10 @@ let expandedActivityDays=new Set();
 let lastStatsData=null;
 let lastSummarySignature='__init__';
 let lastTopPlayersSignature='__init__';
-const panelOrder=['console','dash','players','aliases'];
+let lastSessionsSignature='__init__';
+let sessionsLoaded=false;
+let sessionsLoading=false;
+const panelOrder=['console','dash','players','aliases','sessions'];
 const MAX_LINES=3000;
 
 // Dashboard counters
@@ -702,6 +736,12 @@ Object.assign(I18N.zh,{'dash.healthHistory':'健康历史','dash.noHealthEvents'
 Object.assign(I18N.pl,{'dash.healthHistory':'Historia stanu','dash.noHealthEvents':'Brak zdarzeń stanu','health.noReason':'Brak powodu','health.tpsLow':'Niski TPS','health.tpsDegraded':'Spadek TPS','health.errors':'Błędy','health.capacity':'Zapełnienie'});
 Object.assign(I18N.de,{'dash.healthHistory':'Zustandsverlauf','dash.noHealthEvents':'Noch keine Zustandsereignisse','health.noReason':'Kein Grund','health.tpsLow':'TPS niedrig','health.tpsDegraded':'TPS verschlechtert','health.errors':'Fehler','health.capacity':'Kapazität'});
 Object.assign(I18N.fr,{'dash.healthHistory':'Historique santé','dash.noHealthEvents':'Aucun événement santé','health.noReason':'Aucune raison','health.tpsLow':'TPS bas','health.tpsDegraded':'TPS dégradé','health.errors':'Erreurs','health.capacity':'Capacité'});
+Object.assign(I18N.en,{'tab.sessions':'Sessions','sessions.active':'Active Web Sessions','sessions.user':'User','sessions.ip':'IP','sessions.lastSeen':'Last activity','sessions.expires':'Expires','sessions.empty':'No active sessions.','sessions.loading':'Loading sessions...','sessions.error':'Failed to load sessions'});
+Object.assign(I18N.ru,{'tab.sessions':'Сессии','sessions.active':'Активные web-сессии','sessions.user':'Пользователь','sessions.ip':'IP','sessions.lastSeen':'Последняя активность','sessions.expires':'Истекает','sessions.empty':'Активных сессий нет.','sessions.loading':'Загрузка сессий...','sessions.error':'Не удалось загрузить сессии'});
+Object.assign(I18N.zh,{'tab.sessions':'Sessions','sessions.active':'Active Web Sessions','sessions.user':'User','sessions.ip':'IP','sessions.lastSeen':'Last activity','sessions.expires':'Expires','sessions.empty':'No active sessions.','sessions.loading':'Loading sessions...','sessions.error':'Failed to load sessions'});
+Object.assign(I18N.pl,{'tab.sessions':'Sessions','sessions.active':'Active Web Sessions','sessions.user':'User','sessions.ip':'IP','sessions.lastSeen':'Last activity','sessions.expires':'Expires','sessions.empty':'No active sessions.','sessions.loading':'Loading sessions...','sessions.error':'Failed to load sessions'});
+Object.assign(I18N.de,{'tab.sessions':'Sessions','sessions.active':'Active Web Sessions','sessions.user':'User','sessions.ip':'IP','sessions.lastSeen':'Last activity','sessions.expires':'Expires','sessions.empty':'No active sessions.','sessions.loading':'Loading sessions...','sessions.error':'Failed to load sessions'});
+Object.assign(I18N.fr,{'tab.sessions':'Sessions','sessions.active':'Active Web Sessions','sessions.user':'User','sessions.ip':'IP','sessions.lastSeen':'Last activity','sessions.expires':'Expires','sessions.empty':'No active sessions.','sessions.loading':'Loading sessions...','sessions.error':'Failed to load sessions'});
 const LANGS=['en','ru','zh','pl','de','fr'];
 const LANG_KEY='bwc_lang';
 let savedLang='en';
@@ -731,6 +771,7 @@ function applyTranslations(){
     renderPlayerSummary(lastStatsData.playerActivitySummary||{});
     renderTopActivePlayers(lastStatsData.playerActivitySummary||{});
   }
+  if(sessionsLoaded) loadSessions(true);
 }
 function setLanguage(lang){
   if(!LANGS.includes(lang)) lang='en';
@@ -761,6 +802,7 @@ function switchToPanel(name){
   if(!name) return;
   // FIX #3: aliases only load when tab is actually clicked (lazy), not on connect
   if(name==='aliases') loadAliases();
+  if(name==='sessions') loadSessions();
   if(activePanelName===name) return;
   const prevIdx=panelOrder.indexOf(activePanelName);
   const nextIdx=panelOrder.indexOf(name);
@@ -788,6 +830,7 @@ function animatePanelContent(name){
   if(name==='console'){ staggerAnimate([$('stats-bar'),$('console-wrap'),$('search-bar'),$('input-bar')],50); return; }
   if(name==='players'){ animatePlayersPanel(); return; }
   if(name==='aliases'){ staggerAnimate([$('panel-aliases').querySelector('.alias-hint'),...document.querySelectorAll('#alias-list > *')],26); return; }
+  if(name==='sessions'){ staggerAnimate([...document.querySelectorAll('#sessions-tbody tr')],26); return; }
   if(name==='dash'){ staggerAnimate([...document.querySelectorAll('.dash-grid .kpi'),...document.querySelectorAll('.chart-card'),...document.querySelectorAll('.machine-card')],18); }
 }
 
@@ -1381,6 +1424,59 @@ async function loadAliases(){
 }
 
 // ── Tab completion ──────────────────────────────────────────────────────────
+async function loadSessions(force=false){
+  if(sessionsLoading) return;
+  if(sessionsLoaded&&!force&&activePanelName!=='sessions') return;
+  const empty=$('sessions-empty');
+  if(empty&&!sessionsLoaded) empty.textContent=t('sessions.loading');
+  sessionsLoading=true;
+  try{
+    const r=await fetch('/api/sessions');
+    if(!r.ok) throw new Error(String(r.status));
+    const data=await r.json();
+    renderSessions(data.sessions||[]);
+    sessionsLoaded=true;
+  }catch(_){
+    renderSessions([],true);
+  }finally{
+    sessionsLoading=false;
+  }
+}
+
+function renderSessions(sessions,isError=false){
+  const tbody=$('sessions-tbody'), table=$('sessions-table'), empty=$('sessions-empty');
+  if(!tbody||!table||!empty) return;
+  const safe=Array.isArray(sessions)?sessions:[];
+  const sig=JSON.stringify(safe)+'|'+currentLang+'|'+isError;
+  if(sig===lastSessionsSignature) return;
+  lastSessionsSignature=sig;
+  setText('sessions-count', isError ? '!' : safe.length);
+  if(isError){
+    tbody.innerHTML='';
+    table.style.display='none';
+    empty.style.display='';
+    empty.classList.add('session-error');
+    empty.textContent=t('sessions.error');
+    return;
+  }
+  empty.classList.remove('session-error');
+  if(!safe.length){
+    tbody.innerHTML='';
+    table.style.display='none';
+    empty.style.display='';
+    empty.textContent=t('sessions.empty');
+    return;
+  }
+  empty.style.display='none';
+  table.style.display='';
+  tbody.innerHTML=safe.map(s=>{
+    const expires=Number(s.expiresInSeconds||0);
+    return `<tr><td>${esc(s.username||'')}</td><td><span class="session-ip">${esc(s.remoteIp||'--')}</span></td><td>${fmtDateTime(s.lastSeenAt)}</td><td>${fmtDuration(expires)}</td></tr>`;
+  }).join('');
+}
+
+setInterval(()=>{ if(activePanelName==='sessions') loadSessions(true); },10000);
+
 let acTimer=null;
 cmdInput.addEventListener('input',()=>{
   clearTimeout(acTimer); const v=cmdInput.value;
@@ -1528,6 +1624,14 @@ function fmtTime(timestamp){
   const d=new Date(n);
   if(Number.isNaN(d.getTime())) return '--:--';
   return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+function fmtDateTime(timestamp){
+  if(timestamp===null||timestamp===undefined||timestamp==='') return '--';
+  const n=Number(timestamp);
+  if(!Number.isFinite(n)||n<=0) return '--';
+  const d=new Date(n);
+  if(Number.isNaN(d.getTime())) return '--';
+  return d.toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 function setKpiState(valueId,value,warnAt,critAt){
   const el=$(valueId); if(!el||!el.parentElement) return;

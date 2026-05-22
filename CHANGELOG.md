@@ -6,6 +6,7 @@
 
 - Added a React + Vite frontend build pipeline for the next UI migration phase.
 - Added a read-only web sessions metadata API and React sessions panel scaffold.
+- Added a Sessions tab to the current web UI.
 - Added vanilla/Paper player actions for message, gamemode and teleport.
 - Added all-time player activity storage with day-grouped history in the Players tab.
 - Added dashboard player activity summaries and top active players.
