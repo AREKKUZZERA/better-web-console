@@ -4,7 +4,7 @@
 
 ### Added
 
-- Added a React + Vite frontend build pipeline for the next UI migration phase.
+- Added a React + Vite frontend build pipeline for the web UI.
 - Added a read-only web sessions metadata API and React sessions panel scaffold.
 - Added a Sessions tab to the current web UI.
 - Added vanilla/Paper player actions for message, gamemode and teleport.
@@ -14,6 +14,7 @@
 ### Changed
 
 - Improved Players tab filtering and reduced repeated history rendering.
+- Switched the main web UI entrypoint from the legacy HTML resource to the Vite-built React bundle.
 
 ### Performance
 

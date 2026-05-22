@@ -11,7 +11,7 @@ Supported server lines:
 
 ### Web Console
 
-- Embedded Jetty web server with one built-in web UI.
+- Embedded Jetty web server with one built-in React/Vite web UI.
 - Live console log streaming over WebSocket with buffered history for new sessions.
 - Console command execution through the server command map, including commands from plugins such as CMI.
 - Command history, filtering, log export and clear action in the browser.
