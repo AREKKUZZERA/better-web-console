@@ -1,6 +1,7 @@
 # Maven build
 /target/
 target/
+target/generated-frontend/
 *.log
 
 # IntelliJ IDEA
@@ -39,6 +40,10 @@ logs/
 # Env / secrets
 .env
 *.env
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
 
 # Jar
 *.jar
