@@ -63,6 +63,9 @@
                                         <exclude name="plugin.yml"/>
                                     </fileset>
                                 </copy>
+                                <copy todir="${project.build.directory}/generated-resources/shared">
+                                    <fileset dir="${maven.multiModuleProjectDirectory}/target/generated-frontend/webconsole"/>
+                                </copy>
                                 <copy file="${maven.multiModuleProjectDirectory}/src/main/resources/plugin.yml"
                                       tofile="${project.build.directory}/generated-resources/shared/plugin.yml"/>
                                 <replace file="${project.build.directory}/generated-resources/shared/plugin.yml">
