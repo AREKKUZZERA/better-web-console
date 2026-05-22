@@ -4,6 +4,8 @@
 
 ### Added
 
+- Added a React + Vite frontend build pipeline for the next UI migration phase.
+- Added a read-only web sessions metadata API and React sessions panel scaffold.
 - Added vanilla/Paper player actions for message, gamemode and teleport.
 - Added all-time player activity storage with day-grouped history in the Players tab.
 - Added dashboard player activity summaries and top active players.
@@ -11,6 +13,10 @@
 ### Changed
 
 - Improved Players tab filtering and reduced repeated history rendering.
+
+### Performance
+
+- Cached player activity summary counters instead of recalculating them for every stats payload.
 
 ## 2.4.2 - 2026-05-21
 

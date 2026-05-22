@@ -30,6 +30,7 @@ Supported server lines:
 - Player list with quick kick, ban, message, gamemode and teleport actions using vanilla/Paper commands.
 - Player join/leave and command history grouped by day, retained across the plugin data file lifetime.
 - Player activity summaries and top active players in the dashboard.
+- Read-only web sessions panel support for active admin session metadata.
 
 ### Security
 
@@ -46,8 +47,10 @@ Requirements:
 
 - JDK 25 for the full two-artifact build.
 - Maven 3.9+.
+- Node.js 22+ and npm when rebuilding frontend assets from source.
 
 Both produced plugin jars use Java 21 bytecode. The 26.1 build still needs a JDK that can read the current Paper 26.1 API during compilation.
+Published plugin jars contain prebuilt static frontend assets. Node.js is only needed for source builds.
 
 ```bash
 mvn clean package
