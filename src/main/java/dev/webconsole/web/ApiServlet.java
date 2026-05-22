@@ -30,6 +30,7 @@ import java.util.concurrent.TimeoutException;
  *   GET  /api/status      - session check
  *   GET  /api/stats       - server stats JSON (auth required)
  *   GET  /api/aliases     - command alias list (auth required)
+ *   GET  /api/sessions    - active web sessions (auth required)
  *   GET  /api/logs/export - download console log as text file (auth required)
  *   POST /api/login       - authenticate
  *   POST /api/logout      - invalidate session
@@ -63,6 +64,7 @@ public class ApiServlet extends HttpServlet {
             case "/status"      -> handleStatus(req, res);
             case "/stats"       -> handleStats(req, res);
             case "/aliases"     -> handleAliases(req, res);
+            case "/sessions"    -> handleSessions(req, res);
             case "/logs/export" -> handleLogExport(req, res);
             default             -> sendError(res, 404, "Not found");
         }
@@ -132,6 +134,14 @@ public class ApiServlet extends HttpServlet {
         }
         JsonObject resp = new JsonObject();
         resp.add("aliases", arr);
+        writeJson(res, 200, resp);
+    }
+
+    private void handleSessions(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.setContentType("application/json;charset=UTF-8");
+        if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
+        JsonObject resp = new JsonObject();
+        resp.add("sessions", sessionManager.sessionsJson());
         writeJson(res, 200, resp);
     }
 

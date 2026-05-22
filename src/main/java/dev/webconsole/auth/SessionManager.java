@@ -1,5 +1,8 @@
 package dev.webconsole.auth;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -79,6 +82,25 @@ public class SessionManager {
     public int getActiveSessionCount() {
         purgeExpired();
         return sessions.size();
+    }
+
+    public JsonArray sessionsJson() {
+        purgeExpired();
+        JsonArray arr = new JsonArray();
+        long now = System.currentTimeMillis();
+        long expiryMs = (long) sessionTimeoutMinutes * 60 * 1000;
+        for (Session session : sessions.values()) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("username", session.getUsername());
+            obj.addProperty("remoteIp", session.getRemoteIp());
+            obj.addProperty("createdAt", session.getCreatedAt());
+            obj.addProperty("lastSeenAt", session.getLastActivity());
+            long expiresAt = session.getLastActivity() + expiryMs;
+            obj.addProperty("expiresAt", expiresAt);
+            obj.addProperty("expiresInSeconds", Math.max(0L, (expiresAt - now) / 1000L));
+            arr.add(obj);
+        }
+        return arr;
     }
 
     private void purgeExpired() {

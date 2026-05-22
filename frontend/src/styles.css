@@ -9,27 +9,88 @@ body {
   margin: 0;
 }
 
-.app-shell {
+.app {
   min-height: 100vh;
-  display: grid;
-  place-items: center;
   padding: 24px;
+  box-sizing: border-box;
 }
 
-.app-card {
-  width: min(100%, 460px);
+.app-header,
+.panel {
+  width: min(100%, 1180px);
+  margin: 0 auto 16px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   background: #161b22;
-  padding: 24px;
+  padding: 16px;
+  box-sizing: border-box;
 }
 
-.app-card h1 {
-  margin: 0 0 8px;
+.app-header h1 {
+  margin: 0 0 12px;
   font-size: 24px;
 }
 
-.app-card p {
-  margin: 0;
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tab {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  background: #0d1117;
   color: #8b949e;
+  padding: 8px 10px;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+
+.tab.active {
+  border-color: #58a6ff;
+  color: #e6edf3;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 16px;
+  text-transform: capitalize;
+}
+
+.panel-header span,
+.empty-state {
+  color: #8b949e;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 620px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+  font-size: 13px;
+}
+
+.data-table th {
+  color: #8b949e;
+  text-transform: uppercase;
+  font-size: 11px;
 }

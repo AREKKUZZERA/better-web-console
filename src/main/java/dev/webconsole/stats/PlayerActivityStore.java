@@ -36,6 +36,10 @@ public class PlayerActivityStore {
     private final Logger logger;
     private final File file;
     private final List<Entry> entries = new ArrayList<>();
+    private final Map<String, PlayerSummary> cachedPlayers = new HashMap<>();
+    private int cachedJoins;
+    private int cachedLeaves;
+    private int cachedCommands;
 
     public PlayerActivityStore(File dataFolder, Logger logger) {
         this.logger = logger;
@@ -44,6 +48,7 @@ public class PlayerActivityStore {
             logger.warning("[BWC] Failed to create data folder for player activity history");
         }
         load();
+        rebuildSummaryCache();
     }
 
     public synchronized void recordJoin(UUID uuid, String playerName) {
@@ -95,30 +100,10 @@ public class PlayerActivityStore {
 
     public synchronized JsonObject summaryJson() {
         JsonObject summary = new JsonObject();
-        int joins = 0;
-        int leaves = 0;
-        int commands = 0;
-        Map<String, PlayerSummary> players = new HashMap<>();
-
-        for (Entry entry : entries) {
-            String name = entry.playerName().isBlank() ? "unknown" : entry.playerName();
-            PlayerSummary player = players.computeIfAbsent(name, PlayerSummary::new);
-            if (TYPE_JOIN.equals(entry.type())) {
-                joins++;
-                player.joins++;
-            } else if (TYPE_LEAVE.equals(entry.type())) {
-                leaves++;
-                player.leaves++;
-            } else if (TYPE_COMMAND.equals(entry.type())) {
-                commands++;
-                player.commands++;
-            }
-        }
-
-        summary.addProperty("joins", joins);
-        summary.addProperty("leaves", leaves);
-        summary.addProperty("commands", commands);
-        summary.add("topPlayers", topPlayersJson(players));
+        summary.addProperty("joins", cachedJoins);
+        summary.addProperty("leaves", cachedLeaves);
+        summary.addProperty("commands", cachedCommands);
+        summary.add("topPlayers", topPlayersJson(cachedPlayers));
         return summary;
     }
 
@@ -145,6 +130,7 @@ public class PlayerActivityStore {
     private void record(String type, long timestamp, UUID uuid, String playerName, String detail) {
         Entry entry = new Entry(type, timestamp, uuid.toString(), playerName, detail);
         entries.add(entry);
+        addToSummaryCache(entry);
         append(entry);
     }
 
@@ -213,6 +199,31 @@ public class PlayerActivityStore {
                     arr.add(obj);
                 });
         return arr;
+    }
+
+    private void rebuildSummaryCache() {
+        cachedJoins = 0;
+        cachedLeaves = 0;
+        cachedCommands = 0;
+        cachedPlayers.clear();
+        for (Entry entry : entries) {
+            addToSummaryCache(entry);
+        }
+    }
+
+    private void addToSummaryCache(Entry entry) {
+        String name = entry.playerName().isBlank() ? "unknown" : entry.playerName();
+        PlayerSummary player = cachedPlayers.computeIfAbsent(name, PlayerSummary::new);
+        if (TYPE_JOIN.equals(entry.type())) {
+            cachedJoins++;
+            player.joins++;
+        } else if (TYPE_LEAVE.equals(entry.type())) {
+            cachedLeaves++;
+            player.leaves++;
+        } else if (TYPE_COMMAND.equals(entry.type())) {
+            cachedCommands++;
+            player.commands++;
+        }
     }
 
     private static String escape(String value) {
