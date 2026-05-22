@@ -232,6 +232,13 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .action-btn:hover{transform:translateY(-1px)}
 .action-btn.kick:hover{border-color:var(--warn);color:var(--warn)}
 .action-btn.ban:hover{border-color:var(--danger);color:var(--danger)}
+.action-btn.neutral:hover{border-color:var(--accent);color:var(--accent)}
+.players-toolbar{display:flex;gap:8px;margin:0 0 10px;flex-wrap:wrap}
+.player-filter{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:var(--r-sm);padding:8px 10px;font-size:12px;min-width:150px}
+.player-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 10px}
+.player-summary-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px;font-size:11px;color:var(--text-muted)}
+.player-summary-card strong{display:block;font-size:16px;color:var(--text);margin-top:2px}
+.player-actions{display:flex;gap:5px;flex-wrap:wrap}
 .no-players{text-align:center;color:var(--text-muted);padding:34px 0;font-size:13px}
 .players-history{display:grid;gap:12px}
 .history-list{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
@@ -243,6 +250,11 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
 .history-command{display:block;color:var(--text);margin-top:2px;font-family:var(--font)}
 .history-time{font-size:10px;color:var(--text-muted);white-space:nowrap}
 .history-empty{color:var(--text-muted);font-size:12px;text-align:center;padding:18px 0;background:var(--bg3);border-radius:var(--r-sm)}
+.history-day{border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);margin-bottom:8px;overflow:hidden}
+.history-day-head{width:100%;border:0;background:var(--bg3);color:var(--text);padding:8px 10px;display:flex;justify-content:space-between;cursor:pointer;font-family:var(--font);font-size:12px}
+.history-day-body{display:flex;flex-direction:column;gap:5px;padding:8px}
+.history-day.collapsed .history-day-body{display:none}
+@media(max-width:720px){.player-summary{grid-template-columns:1fr}.player-filter{flex:1 1 100%}}
 
 /* Aliases */
 #panel-aliases{overflow-y:auto;padding:12px}
@@ -503,6 +515,10 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
               </div>
             </div>
             <div class="chart-card">
+              <div class="chart-card-header"><h3 data-i18n="players.topPlayers">Top Active Players</h3><span class="chart-badge" data-i18n="players.loadedHistory">loaded</span></div>
+              <div class="activity-feed" id="top-active-players"></div>
+            </div>
+            <div class="chart-card">
               <div class="chart-card-header"><h3 data-i18n="dash.healthHistory">Health History</h3><span class="chart-badge" id="health-history-count">0</span></div>
               <div class="health-history" id="health-history">
                 <div class="health-event-empty" data-i18n="dash.noHealthEvents">No health events yet</div>
@@ -522,6 +538,13 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
           <div class="players-card-title" data-i18n="players.onlinePlayers">Online Players</div>
           <span class="players-card-badge" id="players-online-badge">0 online</span>
         </div>
+        <div class="players-toolbar">
+          <input id="player-search" class="player-filter" type="search" placeholder="Search players..." data-i18n-placeholder="players.searchPlaceholder">
+          <select id="player-world-filter" class="player-filter">
+            <option value="" data-i18n="players.allWorlds">All worlds</option>
+          </select>
+        </div>
+        <div class="player-summary" id="player-summary"></div>
         <p class="no-players" id="no-players-msg" data-i18n="players.noneOnline">No players online.</p>
         <div class="player-table-wrap">
           <table class="player-table" id="player-table" style="display:none">
@@ -534,14 +557,14 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;backg
         <section class="players-card">
           <div class="players-card-header">
             <div class="players-card-title" data-i18n="players.joinHistory">Join History</div>
-            <span class="players-card-badge">24h</span>
+            <span class="players-card-badge" data-i18n="players.groupedByDay">by day</span>
           </div>
           <div class="history-list" id="player-event-history"></div>
         </section>
         <section class="players-card">
           <div class="players-card-header">
             <div class="players-card-title" data-i18n="players.playerCommands">Player Commands</div>
-            <span class="players-card-badge">24h</span>
+            <span class="players-card-badge" data-i18n="players.groupedByDay">by day</span>
           </div>
           <div class="history-list" id="player-command-history"></div>
         </section>
@@ -601,6 +624,15 @@ let lastPlayersVisualSignature='__init__';
 let lastPlayerEventsSignature='__init__';
 let lastPlayerCommandsSignature='__init__';
 let lastAnimatedPlayersSignature='';
+let currentPlayerList=[];
+let playerSearchText='';
+let playerWorldFilter='';
+let lastWorldFilterSignature='__init__';
+let lastActivityDaysSignature='__init__';
+let expandedActivityDays=new Set();
+let lastStatsData=null;
+let lastSummarySignature='__init__';
+let lastTopPlayersSignature='__init__';
 const panelOrder=['console','dash','players','aliases'];
 const MAX_LINES=3000;
 
@@ -657,6 +689,14 @@ Object.assign(I18N.pl,{'login.signing':'Logowanie...','login.missing':'Podaj uż
 Object.assign(I18N.de,{'login.signing':'Anmelden...','login.missing':'Benutzername und Passwort eingeben.','login.invalid':'Ungültige Zugangsdaten.','login.unreachable':'Server nicht erreichbar.','header.as':'als','header.notifications':'Fehlerbenachrichtigungen umschalten','stat.players':'Spieler','stat.lines':'Zeilen','stat.session':'Sitzung','console.bottom':'Unten','console.searchPlaceholder':'Logs suchen... (Ctrl+F)','console.commandPlaceholder':'Befehl oder !Alias eingeben... (Tab vervollständigt)','console.matches':'{count} Treffer','console.match':'{count} Treffer','console.acHint':'Tab / ↑↓ navigieren, Enter auswählen','dash.waitingStats':'Warte auf Statistiken','dash.playerCapacity':'Spielerkapazität','dash.onlineSlotsUsed':'Genutzte Slots','dash.pluginUptime':'Plugin-Laufzeit','dash.sincePluginEnable':'Seit Plugin-Aktivierung','dash.recentCommands':'Letzte Befehle','dash.playerCommands24h':'Spielerbefehle / 24h','dash.tickRate':'Tickrate','dash.ramUsed':'RAM genutzt','dash.heapMemory':'Heap-Speicher','dash.playersOnline':'Spieler online','dash.worlds':'Welten','dash.totalEntities':'Entitäten gesamt','dash.acrossWorlds':'Über alle Welten','dash.sessionErrors':'Sitzungsfehler','dash.errorLines':'SEVERE / ERROR Zeilen','dash.hostCpu':'Host-CPU','dash.systemLoad':'Systemlast','dash.machineRam':'Maschinen-RAM','dash.physicalMemory':'Physischer Speicher','dash.serverDisk':'Server-Datenträger','dash.worldContainer':'Weltordner','dash.jvmThreads':'JVM-Threads','dash.javaProcess':'Java-Prozess','dash.performanceHistory':'Leistungsverlauf (5 min)','dash.machineDetails':'Maschinendetails','dash.logBreakdown':'Log-Level','dash.worldBreakdown':'Welten','dash.world':'Welt','dash.chunks':'Chunks','dash.entities':'Entitäten','dash.noData':'Noch keine Daten','dash.activityFeed':'Aktivität','dash.live':'live','dash.waitingActivity':'Warte auf Aktivität...','metric.model':'Modell','metric.coresThreads':'Kerne / Threads','metric.processLoad':'Prozesslast','metric.memory':'Speicher','metric.machineUsed':'Genutzt','metric.machineFree':'Frei','metric.disk':'Datenträger','metric.used':'Genutzt','metric.free':'Frei','metric.mount':'Mount','metric.runtime':'Runtime','players.name':'Name','players.world':'Welt','players.ping':'Ping','players.actions':'Aktionen','players.online':'{count} online','players.joined':'Beigetreten','players.left':'Verlassen','players.unknown':'Unbekannt','players.noJoinHistory':'Kein Login-Verlauf der letzten 24 Stunden.','players.noCommands':'Keine Spielerbefehle der letzten 24 Stunden.','players.kickPlayer':'Spieler kicken','players.banPlayer':'Spieler bannen','players.kicked':'Gekickt','players.banned':'Gebannt','players.noReason':'Kein Grund angegeben','aliases.hint':'Alias anklicken zum Einfügen oder Run zum Ausführen.','aliases.empty':'Keine Aliase konfiguriert. In config.yml hinzufügen.','modal.action':'Aktion','modal.player':'Spieler','modal.reason':'Grund','modal.reasonPlaceholder':'Grund eingeben...','toast.lost':'Verbindung verloren - verbinde neu...','toast.sessionExpired':'Sitzung abgelaufen','toast.rateLimited':'Rate limit - langsamer','toast.blocked':'Befehl blockiert','toast.notificationsEnabled':'Benachrichtigungen aktiviert','toast.notificationsDenied':'Benachrichtigungen verweigert','toast.notificationsDisabled':'Benachrichtigungen deaktiviert','health.critical':'Kritisch','health.watch':'Beobachten','health.good':'Gut','health.needsAttention':'Benötigt Aufmerksamkeit','health.monitor':'Server überwachen','health.normal':'Kernsignale normal','health.excellent':'Ausgezeichnet ✓','health.degraded':'Verschlechtert','fmt.ofSlots':'{players} von {max} Slots','fmt.maxUnknown':'{players} online, Maximum unbekannt','fmt.ofMax':'von {max} max','fmt.chunksLoaded':'Geladene Chunks: {count}','fmt.ofRam':'von {max}MB ({pct}%)','fmt.process':'Prozess {value}','fmt.free':'{value} frei','fmt.daemon':'{value} daemon','fmt.lines':'{count} Zeilen'});
 Object.assign(I18N.fr,{'login.signing':'Connexion...','login.missing':'Saisir utilisateur et mot de passe.','login.invalid':'Identifiants invalides.','login.unreachable':'Serveur inaccessible.','header.as':'en tant que','header.notifications':'Basculer les notifications erreur','stat.players':'Joueurs','stat.lines':'Lignes','stat.session':'Session','console.bottom':'Bas','console.searchPlaceholder':'Rechercher les logs... (Ctrl+F)','console.commandPlaceholder':'Commande ou !alias... (Tab complète)','console.matches':'{count} résultats','console.match':'{count} résultat','console.acHint':'Tab / ↑↓ naviguer, Enter choisir','dash.waitingStats':'En attente des stats','dash.playerCapacity':'Capacité joueurs','dash.onlineSlotsUsed':'Slots utilisés','dash.pluginUptime':'Temps plugin','dash.sincePluginEnable':'Depuis activation du plugin','dash.recentCommands':'Commandes récentes','dash.playerCommands24h':'Commandes joueurs / 24h','dash.tickRate':'Rythme tick','dash.ramUsed':'RAM utilisée','dash.heapMemory':'Mémoire heap','dash.playersOnline':'Joueurs en ligne','dash.worlds':'Mondes','dash.totalEntities':'Entités totales','dash.acrossWorlds':'Tous les mondes','dash.sessionErrors':'Erreurs session','dash.errorLines':'Lignes SEVERE / ERROR','dash.hostCpu':'CPU hôte','dash.systemLoad':'Charge système','dash.machineRam':'RAM machine','dash.physicalMemory':'Mémoire physique','dash.serverDisk':'Disque serveur','dash.worldContainer':'Dossier mondes','dash.jvmThreads':'Threads JVM','dash.javaProcess':'Processus Java','dash.performanceHistory':'Historique perf (5 min)','dash.machineDetails':'Détails machine','dash.logBreakdown':'Niveaux de log','dash.worldBreakdown':'Mondes','dash.world':'Monde','dash.chunks':'Chunks','dash.entities':'Entités','dash.noData':'Pas encore de données','dash.activityFeed':'Activité','dash.live':'live','dash.waitingActivity':'En attente activité...','metric.model':'Modèle','metric.coresThreads':'Cœurs / Threads','metric.processLoad':'Charge processus','metric.memory':'Mémoire','metric.machineUsed':'Utilisée','metric.machineFree':'Libre','metric.disk':'Disque','metric.used':'Utilisé','metric.free':'Libre','metric.mount':'Montage','metric.runtime':'Runtime','players.name':'Nom','players.world':'Monde','players.ping':'Ping','players.actions':'Actions','players.online':'{count} en ligne','players.joined':'Connecté','players.left':'Parti','players.unknown':'Inconnu','players.noJoinHistory':'Aucun historique de connexion sur 24 h.','players.noCommands':'Aucune commande joueur sur 24 h.','players.kickPlayer':'Expulser joueur','players.banPlayer':'Bannir joueur','players.kicked':'Expulsé','players.banned':'Banni','players.noReason':'Aucune raison','aliases.hint':'Cliquez un alias pour l’insérer, ou Run pour exécuter.','aliases.empty':'Aucun alias configuré. Ajoutez-les dans config.yml.','modal.action':'Action','modal.player':'Joueur','modal.reason':'Raison','modal.reasonPlaceholder':'Entrer une raison...','toast.lost':'Connexion perdue - reconnexion...','toast.sessionExpired':'Session expirée','toast.rateLimited':'Limite atteinte - ralentir','toast.blocked':'Commande bloquée','toast.notificationsEnabled':'Notifications activées','toast.notificationsDenied':'Notifications refusées','toast.notificationsDisabled':'Notifications désactivées','health.critical':'Critique','health.watch':'Surveiller','health.good':'Bon','health.needsAttention':'Attention requise','health.monitor':'Surveiller le serveur','health.normal':'Signaux principaux normaux','health.excellent':'Excellent ✓','health.degraded':'Dégradé','fmt.ofSlots':'{players} sur {max} slots','fmt.maxUnknown':'{players} en ligne, max inconnu','fmt.ofMax':'sur {max} max','fmt.chunksLoaded':'Chunks chargés : {count}','fmt.ofRam':'sur {max}MB ({pct}%)','fmt.process':'Processus {value}','fmt.free':'{value} libre','fmt.daemon':'{value} daemon','fmt.lines':'{count} lignes'});
 Object.assign(I18N.en,{'dash.healthHistory':'Health History','dash.noHealthEvents':'No health events yet','health.noReason':'No reason','health.tpsLow':'TPS low','health.tpsDegraded':'TPS degraded','health.errors':'Errors','health.capacity':'Capacity'});
+Object.assign(I18N.en,{'players.searchPlaceholder':'Search players...','players.allWorlds':'All worlds','players.groupedByDay':'by day','players.message':'Msg','players.gamemode':'Mode','players.teleport':'TP','players.messagePlayer':'Message Player','players.changeGamemode':'Change Gamemode','players.teleportPlayer':'Teleport Player','players.messagePlaceholder':'Enter message...','players.loadedHistory':'Loaded history','players.topPlayers':'Top Active Players','players.targetPlaceholder':'Target player name','players.noJoinHistory':'No join history yet.','players.noCommands':'No player commands yet.'});
+Object.assign(I18N.ru,{'players.searchPlaceholder':'Search players...','players.allWorlds':'All worlds','players.groupedByDay':'by day','players.message':'Msg','players.gamemode':'Mode','players.teleport':'TP','players.messagePlayer':'Message Player','players.changeGamemode':'Change Gamemode','players.teleportPlayer':'Teleport Player','players.messagePlaceholder':'Enter message...','players.loadedHistory':'Loaded history','players.topPlayers':'Top Active Players','players.targetPlaceholder':'Target player name','players.noJoinHistory':'No join history yet.','players.noCommands':'No player commands yet.'});
+Object.assign(I18N.en,{'dash.playerCommands24h':'Loaded player commands'});
+Object.assign(I18N.ru,{'dash.playerCommands24h':'Loaded player commands'});
+Object.assign(I18N.zh,{'dash.playerCommands24h':'Loaded player commands'});
+Object.assign(I18N.pl,{'dash.playerCommands24h':'Loaded player commands'});
+Object.assign(I18N.de,{'dash.playerCommands24h':'Loaded player commands'});
+Object.assign(I18N.fr,{'dash.playerCommands24h':'Loaded player commands'});
 Object.assign(I18N.ru,{'dash.healthHistory':'История состояния','dash.noHealthEvents':'Событий состояния пока нет','health.noReason':'Причина не указана','health.tpsLow':'TPS низкий','health.tpsDegraded':'TPS просел','health.errors':'Ошибки','health.capacity':'Заполненность'});
 Object.assign(I18N.zh,{'dash.healthHistory':'健康历史','dash.noHealthEvents':'暂无健康事件','health.noReason':'无原因','health.tpsLow':'TPS 过低','health.tpsDegraded':'TPS 下降','health.errors':'错误','health.capacity':'容量'});
 Object.assign(I18N.pl,{'dash.healthHistory':'Historia stanu','dash.noHealthEvents':'Brak zdarzeń stanu','health.noReason':'Brak powodu','health.tpsLow':'Niski TPS','health.tpsDegraded':'Spadek TPS','health.errors':'Błędy','health.capacity':'Zapełnienie'});
@@ -681,6 +721,16 @@ function applyTranslations(){
   if(state) statusText.textContent=t('status.'+state);
   renderHealthState();
   renderHealthHistory();
+  lastWorldFilterSignature='__lang__';
+  lastSummarySignature='__lang__';
+  lastTopPlayersSignature='__lang__';
+  lastActivityDaysSignature='__lang__';
+  updateWorldFilterOptions(currentPlayerList);
+  renderPlayers(currentPlayerList,true);
+  if(lastStatsData){
+    renderPlayerSummary(lastStatsData.playerActivitySummary||{});
+    renderTopActivePlayers(lastStatsData.playerActivitySummary||{});
+  }
 }
 function setLanguage(lang){
   if(!LANGS.includes(lang)) lang='en';
@@ -690,6 +740,9 @@ function setLanguage(lang){
 }
 [loginLang,appLang].filter(Boolean).forEach(sel=>sel.addEventListener('change',()=>setLanguage(sel.value)));
 applyTranslations();
+const playerSearch=$('player-search'), playerWorldFilterEl=$('player-world-filter');
+if(playerSearch) playerSearch.addEventListener('input',()=>{ playerSearchText=playerSearch.value.trim().toLowerCase(); renderPlayers(currentPlayerList,true); });
+if(playerWorldFilterEl) playerWorldFilterEl.addEventListener('change',()=>{ playerWorldFilter=playerWorldFilterEl.value; renderPlayers(currentPlayerList,true); });
 
 // ── Toast ──────────────────────────────────────────────────────────────────
 let toastT;
@@ -986,6 +1039,7 @@ function renderHealthHistory(){
 }
 
 function handleStats(data){
+  lastStatsData=data;
   const tps=data.tps||0, ramUsed=data.ramUsed||0, ramMax=data.ramMax||0;
   const players=data.players||0, maxPlayers=data.maxPlayers||0;
   const hasMaxPlayers=Number(maxPlayers)>0;
@@ -1034,8 +1088,9 @@ function handleStats(data){
   if(data.cpuHistory)     updateChart(cpuChart,     data.cpuHistory);
   if(data.system)         handleSystemStats(data.system);
   if(data.playerList!==undefined) renderPlayers(data.playerList);
-  renderPlayerEvents(data.playerEvents||[]);
-  renderPlayerCommands(data.playerCommands||[]);
+  renderPlayerActivityDays(data.playerActivityDays||[]);
+  renderPlayerSummary(data.playerActivitySummary||{});
+  renderTopActivePlayers(data.playerActivitySummary||{});
 }
 
 function handleSystemStats(system){
@@ -1082,9 +1137,20 @@ function handleSystemStats(system){
 function renderWorldTable(worlds){
   const tbody=$('world-tbody'); if(!tbody) return;
   const colors=['var(--accent)','var(--info)','var(--purple)','var(--success)','var(--warn)'];
-  tbody.innerHTML=worlds.map((w,i)=>
+  const worldsSorted=[...(worlds||[])].sort((a,b)=>((b.entities||0)+(b.chunks||0))-((a.entities||0)+(a.chunks||0)));
+  tbody.innerHTML=worldsSorted.map((w,i)=>
     `<tr><td><span class="world-dot" style="background:${colors[i%colors.length]}"></span>${esc(w.name||'?')}</td><td>${w.chunks||0}</td><td>${w.entities||0}</td></tr>`
   ).join('');
+}
+
+function renderTopActivePlayers(summary){
+  const box=$('top-active-players'); if(!box) return;
+  const list=Array.isArray(summary.topPlayers)?summary.topPlayers:[];
+  const sig=JSON.stringify(list)+'|'+currentLang;
+  if(sig===lastTopPlayersSignature) return;
+  lastTopPlayersSignature=sig;
+  if(!list.length){ box.innerHTML=`<div class="history-empty">${t('dash.noData')}</div>`; return; }
+  box.innerHTML=list.map(p=>`<div class="activity-item cmd"><span class="activity-icon">&#9889;</span><span class="activity-text"><strong>${esc(p.player||t('players.unknown'))}</strong> ${p.score||0} total</span><span class="activity-time">CMD ${p.commands||0}</span></div>`).join('');
 }
 
 function updateChart(chart,data){
@@ -1142,18 +1208,33 @@ function initCharts(){
 }
 
 // ── Player list ─────────────────────────────────────────────────────────────
-function renderPlayers(list){
+function updateWorldFilterOptions(list){
+  const el=$('player-world-filter'); if(!el) return;
+  const worlds=[...new Set((list||[]).map(p=>p.world||'').filter(Boolean))].sort();
+  const sig=worlds.join('|')+'|'+currentLang;
+  if(sig===lastWorldFilterSignature) return;
+  lastWorldFilterSignature=sig;
+  const selected=playerWorldFilter;
+  el.innerHTML=`<option value="">${t('players.allWorlds')}</option>`+worlds.map(w=>`<option value="${esc(w)}">${esc(w)}</option>`).join('');
+  if(worlds.includes(selected)){ el.value=selected; } else { playerWorldFilter=''; el.value=''; }
+}
+
+function renderPlayers(list,force=false){
   const tbody=$('player-tbody'), tbl=$('player-table'), msg=$('no-players-msg');
-  const safeList=Array.isArray(list)?list:[];
-  setText('players-online-badge', t('players.online',{count:safeList.length}));
-  const structureSig=JSON.stringify(safeList.map(p=>({n:p.name||'',w:p.world||'',o:!!p.op})));
-  const visualSig=JSON.stringify(safeList.map(p=>({n:p.name||'',w:p.world||'',o:!!p.op,p:p.ping||0})));
+  currentPlayerList=Array.isArray(list)?list:[];
+  updateWorldFilterOptions(currentPlayerList);
+  let safeList=currentPlayerList;
+  if(playerSearchText) safeList=safeList.filter(p=>(p.name||'').toLowerCase().includes(playerSearchText));
+  if(playerWorldFilter) safeList=safeList.filter(p=>(p.world||'')===playerWorldFilter);
+  setText('players-online-badge', t('players.online',{count:currentPlayerList.length}));
+  const structureSig=JSON.stringify(safeList.map(p=>({n:p.name||'',w:p.world||'',o:!!p.op})))+'|'+playerSearchText+'|'+playerWorldFilter+'|'+currentLang;
+  const visualSig=JSON.stringify(safeList.map(p=>({n:p.name||'',w:p.world||'',o:!!p.op,p:p.ping||0})))+'|'+playerSearchText+'|'+playerWorldFilter+'|'+currentLang;
   const structureChanged=structureSig!==lastPlayersStructureSignature;
-  if(visualSig===lastPlayersVisualSignature) return;
+  if(!force&&visualSig===lastPlayersVisualSignature) return;
   lastPlayersStructureSignature=structureSig;
   lastPlayersVisualSignature=visualSig;
 
-  const newNames=new Set(safeList.map(p=>p.name));
+  const newNames=new Set(currentPlayerList.map(p=>p.name));
   newNames.forEach(n=>{ if(!prevPlayerNames.has(n)) pushActivity('join','&#128994;',`<strong>${esc(n)}</strong> ${t('players.joined').toLowerCase()}`,true); });
   prevPlayerNames.forEach(n=>{ if(!newNames.has(n)) pushActivity('leave','&#9899;',`<strong>${esc(n)}</strong> ${t('players.left').toLowerCase()}`,true); });
   prevPlayerNames=newNames;
@@ -1163,11 +1244,61 @@ function renderPlayers(list){
   safeList.forEach(p=>{
     const ping=p.ping||0, pc=ping<80?'ping-good':ping<200?'ping-ok':'ping-bad';
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${esc(p.name)}${p.op?'<span class="player-op">OP</span>':''}</td><td>${esc(p.world||'\u2014')}</td><td class="${pc}">${ping}ms</td><td><button class="action-btn kick" onclick="openModal('kick','${esc(p.name)}')">${t('players.kick')}</button> <button class="action-btn ban" onclick="openModal('ban','${esc(p.name)}')">${t('players.ban')}</button></td>`;
+    tr.innerHTML=`<td>${esc(p.name)}${p.op?'<span class="player-op">OP</span>':''}</td><td>${esc(p.world||'\u2014')}</td><td class="${pc}">${ping}ms</td><td><div class="player-actions"><button class="action-btn kick" onclick="openModal('kick','${esc(p.name)}')">${t('players.kick')}</button><button class="action-btn ban" onclick="openModal('ban','${esc(p.name)}')">${t('players.ban')}</button><button class="action-btn neutral" onclick="openModal('msg','${esc(p.name)}')">${t('players.message')}</button><button class="action-btn neutral" onclick="openModal('gamemode','${esc(p.name)}')">${t('players.gamemode')}</button><button class="action-btn neutral" onclick="openModal('tp','${esc(p.name)}')">${t('players.teleport')}</button></div></td>`;
     tbody.appendChild(tr);
   });
   if(activePanelName==='players'&&structureChanged) animatePlayersPanel(true);
 }
+
+function renderPlayerSummary(summary){
+  const box=$('player-summary'); if(!box) return;
+  const sig=JSON.stringify(summary||{});
+  if(sig===lastSummarySignature) return;
+  lastSummarySignature=sig;
+  const joins=summary.joins||0, leaves=summary.leaves||0, commands=summary.commands||0;
+  box.innerHTML=`<div class="player-summary-card"><span>${t('players.joined')}</span><strong>${joins}</strong></div><div class="player-summary-card"><span>${t('players.left')}</span><strong>${leaves}</strong></div><div class="player-summary-card"><span>CMD</span><strong>${commands}</strong></div>`;
+}
+
+function renderPlayerActivityDays(days){
+  const eventsBox=$('player-event-history'), commandsBox=$('player-command-history');
+  if(!eventsBox||!commandsBox) return;
+  const safe=Array.isArray(days)?days:[];
+  const sig=JSON.stringify(safe)+'|'+currentLang+'|'+[...expandedActivityDays].sort().join(',');
+  if(sig===lastActivityDaysSignature) return;
+  lastActivityDaysSignature=sig;
+  if(!safe.length){
+    eventsBox.innerHTML=`<div class="history-empty">${t('players.noJoinHistory')}</div>`;
+    commandsBox.innerHTML=`<div class="history-empty">${t('players.noCommands')}</div>`;
+    return;
+  }
+  eventsBox.innerHTML=renderActivityGroups(safe,item=>item.type==='join'||item.type==='leave',t('players.noJoinHistory'));
+  commandsBox.innerHTML=renderActivityGroups(safe,item=>item.type==='command',t('players.noCommands'));
+}
+
+function renderActivityGroups(days,predicate,emptyText){
+  const html=days.map((day,idx)=>{
+    const items=(day.items||[]).filter(predicate);
+    if(!items.length) return '';
+    const key=day.date||day.label||String(idx);
+    if(idx<2&&!expandedActivityDays.has(key)) expandedActivityDays.add(key);
+    const collapsed=expandedActivityDays.has(key)?'':' collapsed';
+    return `<div class="history-day${collapsed}" data-day="${esc(key)}"><button class="history-day-head" onclick="toggleActivityDay('${esc(key)}')"><span>${esc(day.label||key)}</span><span>${items.length}</span></button><div class="history-day-body">${items.map(renderActivityItem).join('')}</div></div>`;
+  }).join('');
+  return html||`<div class="history-empty">${emptyText}</div>`;
+}
+
+function renderActivityItem(item){
+  if(item.type==='command') return `<div class="history-item command"><span class="history-kind">CMD</span><span class="history-main"><strong>${esc(item.player||t('players.unknown'))}</strong><span class="history-command">${esc(item.command||'')}</span></span><span class="history-time">${fmtTime(item.timestamp)}</span></div>`;
+  const type=item.type==='leave'?'leave':'join';
+  const label=type==='leave'?t('players.left'):t('players.joined');
+  return `<div class="history-item ${type}"><span class="history-kind">${label}</span><span class="history-main"><strong>${esc(item.player||t('players.unknown'))}</strong></span><span class="history-time">${fmtTime(item.timestamp)}</span></div>`;
+}
+
+window.toggleActivityDay=function(key){
+  if(expandedActivityDays.has(key)) expandedActivityDays.delete(key); else expandedActivityDays.add(key);
+  lastActivityDaysSignature='__force__';
+  if(lastStatsData) renderPlayerActivityDays(lastStatsData.playerActivityDays||[]);
+};
 
 function renderPlayerEvents(events){
   const box=$('player-event-history'); if(!box) return;
@@ -1196,21 +1327,33 @@ function renderPlayerCommands(commands){
 // ── Modal ──────────────────────────────────────────────────────────────────
 window.openModal=function(action,player){
   modalAction=action; modalPlayer.value=player; modalReason.value='';
-  modalTitle.textContent=action==='kick'?t('players.kickPlayer'):t('players.banPlayer');
+  const labels={
+    kick:[t('players.kickPlayer'),t('modal.reasonPlaceholder'),t('players.kick')],
+    ban:[t('players.banPlayer'),t('modal.reasonPlaceholder'),t('players.ban')],
+    msg:[t('players.messagePlayer'),t('players.messagePlaceholder'),t('players.message')],
+    gamemode:[t('players.changeGamemode'),'survival | creative | adventure | spectator',t('players.gamemode')],
+    tp:[t('players.teleportPlayer'),t('players.targetPlaceholder'),t('players.teleport')]
+  };
+  const selected=labels[action]||labels.kick;
+  modalTitle.textContent=selected[0];
+  modalReason.placeholder=selected[1];
   modalConfirm.className='mbtn confirm '+(action==='kick'?'kick-mode':'');
-  modalConfirm.textContent=action==='kick'?t('players.kick'):t('players.ban');
+  modalConfirm.textContent=selected[2];
   modal.classList.add('show'); modalReason.focus();
 };
 modalCancel.addEventListener('click',()=>modal.classList.remove('show'));
 modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.remove('show'); });
 modalConfirm.addEventListener('click',()=>{
   if(!ws||ws.readyState!==WebSocket.OPEN) return;
-  const reason=modalReason.value||t('players.noReason');
-  ws.send(JSON.stringify({type:modalAction,player:modalPlayer.value,reason}));
+  const value=modalReason.value.trim();
+  if(modalAction==='msg') ws.send(JSON.stringify({type:'msg',player:modalPlayer.value,message:value}));
+  else if(modalAction==='gamemode') ws.send(JSON.stringify({type:'gamemode',player:modalPlayer.value,mode:value}));
+  else if(modalAction==='tp') ws.send(JSON.stringify({type:'tp',player:modalPlayer.value,target:value}));
+  else ws.send(JSON.stringify({type:modalAction,player:modalPlayer.value,reason:value||t('players.noReason')}));
   modal.classList.remove('show');
-  const act=modalAction==='kick'?t('players.kicked'):t('players.banned');
+  const act=modalConfirm.textContent;
   showToast(`${act} ${modalPlayer.value}`,'warn');
-  pushActivity('cmd','&#9889;',`<strong>${act}</strong> ${esc(modalPlayer.value)}: ${esc(reason)}`,true);
+  pushActivity('cmd','&#9889;',`<strong>${esc(act)}</strong> ${esc(modalPlayer.value)}${value?': '+esc(value):''}`,true);
 });
 modalReason.addEventListener('keydown',e=>{ if(e.key==='Enter') modalConfirm.click(); });
 

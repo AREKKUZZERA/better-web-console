@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added vanilla/Paper player actions for message, gamemode and teleport.
+- Added all-time player activity storage with day-grouped history in the Players tab.
+- Added dashboard player activity summaries and top active players.
+
+### Changed
+
+- Improved Players tab filtering and reduced repeated history rendering.
+
 ## 2.4.2 - 2026-05-21
 
 ### Performance

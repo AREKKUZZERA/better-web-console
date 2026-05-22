@@ -314,9 +314,13 @@ public class ServerStats {
         if (plugin.getPlayerActivityStore() != null) {
             obj.add("playerEvents", plugin.getPlayerActivityStore().recentEventsJson());
             obj.add("playerCommands", plugin.getPlayerActivityStore().recentCommandsJson());
+            obj.add("playerActivityDays", plugin.getPlayerActivityStore().groupedActivityJson());
+            obj.add("playerActivitySummary", plugin.getPlayerActivityStore().summaryJson());
         } else {
             obj.add("playerEvents", new JsonArray());
             obj.add("playerCommands", new JsonArray());
+            obj.add("playerActivityDays", new JsonArray());
+            obj.add("playerActivitySummary", new JsonObject());
         }
 
         return obj;

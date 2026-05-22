@@ -88,6 +88,9 @@ public class ConsoleWebSocket {
             case "complete" -> handleTabComplete(json);
             case "kick" -> handleKick(json);
             case "ban" -> handleBan(json);
+            case "msg" -> handleMessagePlayer(json);
+            case "gamemode" -> handleGamemode(json);
+            case "tp" -> handleTeleport(json);
             case "ping_stats" -> pushStats();
             default -> { }
         }
@@ -206,6 +209,49 @@ public class ConsoleWebSocket {
         });
     }
 
+    private void handleMessagePlayer(JsonObject json) {
+        if (!rateLimiter.allowCommand(sessionToken)) { sendControl("RATE_LIMITED"); return; }
+        String target = json.has("player") ? json.get("player").getAsString().trim() : "";
+        String message = cleanText(json.has("message") ? json.get("message").getAsString() : "");
+        if (!isValidPlayerName(target)) { sendLine("[BWC] Invalid player name: " + target); return; }
+        if (message.isBlank()) { sendLine("[BWC] Message cannot be empty"); return; }
+        executeCommand("msg " + target + " " + message);
+        if (plugin.getPluginConfig().isAuditLog()) {
+            plugin.getAuditLog().log(authSession.getUsername(), authSession.getRemoteIp(), "MSG", target + ": " + message);
+        }
+    }
+
+    private void handleGamemode(JsonObject json) {
+        if (!rateLimiter.allowCommand(sessionToken)) { sendControl("RATE_LIMITED"); return; }
+        String target = json.has("player") ? json.get("player").getAsString().trim() : "";
+        String mode = json.has("mode") ? json.get("mode").getAsString().trim().toLowerCase() : "";
+        if (!isValidPlayerName(target)) { sendLine("[BWC] Invalid player name: " + target); return; }
+        if (!isValidGamemode(mode)) { sendLine("[BWC] Invalid gamemode: " + mode); return; }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (Bukkit.getPlayerExact(target) == null) { sendLine("[BWC] Player not found: " + target); return; }
+            executeCommand("gamemode " + mode + " " + target);
+            if (plugin.getPluginConfig().isAuditLog()) {
+                plugin.getAuditLog().log(authSession.getUsername(), authSession.getRemoteIp(), "GAMEMODE", target + " -> " + mode);
+            }
+        });
+    }
+
+    private void handleTeleport(JsonObject json) {
+        if (!rateLimiter.allowCommand(sessionToken)) { sendControl("RATE_LIMITED"); return; }
+        String player = json.has("player") ? json.get("player").getAsString().trim() : "";
+        String target = json.has("target") ? json.get("target").getAsString().trim() : "";
+        if (!isValidPlayerName(player)) { sendLine("[BWC] Invalid player name: " + player); return; }
+        if (!isValidPlayerName(target)) { sendLine("[BWC] Invalid player name: " + target); return; }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (Bukkit.getPlayerExact(player) == null) { sendLine("[BWC] Player not found: " + player); return; }
+            if (Bukkit.getPlayerExact(target) == null) { sendLine("[BWC] Player not found: " + target); return; }
+            executeCommand("tp " + player + " " + target);
+            if (plugin.getPluginConfig().isAuditLog()) {
+                plugin.getAuditLog().log(authSession.getUsername(), authSession.getRemoteIp(), "TP", player + " -> " + target);
+            }
+        });
+    }
+
     public void pushStats() {
         Bukkit.getScheduler().runTask(plugin, () -> {
             JsonObject stats = plugin.getServerStats().toJson();
@@ -241,9 +287,21 @@ public class ConsoleWebSocket {
         return playerName != null && PLAYER_NAME.matcher(playerName).matches();
     }
 
+    private boolean isValidGamemode(String mode) {
+        return "survival".equals(mode)
+                || "creative".equals(mode)
+                || "adventure".equals(mode)
+                || "spectator".equals(mode);
+    }
+
     private String cleanReason(String reason) {
         String cleaned = reason == null ? "" : CONTROL_CHARS.matcher(reason).replaceAll(" ").trim();
         if (cleaned.isBlank()) return "No reason given";
+        return cleaned.length() > 120 ? cleaned.substring(0, 120) : cleaned;
+    }
+
+    private String cleanText(String value) {
+        String cleaned = value == null ? "" : CONTROL_CHARS.matcher(value).replaceAll(" ").trim();
         return cleaned.length() > 120 ? cleaned.substring(0, 120) : cleaned;
     }
 

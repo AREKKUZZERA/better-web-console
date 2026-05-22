@@ -27,8 +27,9 @@ Supported server lines:
 - Machine details: CPU model, cores/threads, memory, disk mount, OS, Java runtime, PID and JVM uptime.
 - Analytics blocks for log levels, per-world chunks/entities and recent activity.
 - Centered dashboard panels with responsive mobile layouts.
-- Player list with quick kick/ban actions.
-- Player join/leave history and player-entered command history for the last 24 hours.
+- Player list with quick kick, ban, message, gamemode and teleport actions using vanilla/Paper commands.
+- Player join/leave and command history grouped by day, retained across the plugin data file lifetime.
+- Player activity summaries and top active players in the dashboard.
 
 ### Security
 
@@ -215,7 +216,7 @@ Player activity history is stored in:
 plugins/Better-WebConsole/player-command-history.tsv
 ```
 
-It keeps join/leave events and player-entered slash commands for 24 hours. The dashboard sends only the newest 80 join/leave events and 120 commands to the browser.
+It stores join/leave events and player-entered slash commands over time. The web UI loads a bounded recent day window so large history files do not flood the browser.
 
 Use `commands.blocked` to prevent risky commands from web access, for example:
 
