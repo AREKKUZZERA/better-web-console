@@ -17,7 +17,12 @@ public class FrontendServlet extends HttpServlet {
         String path = req.getPathInfo();
         if (path == null) path = "/";
 
-        if (path.startsWith("/assets/")) {
+        if (path.equals("/favicon.ico")) {
+            serveResource("/favicon.svg", res);
+            return;
+        }
+
+        if (path.equals("/favicon.svg") || path.startsWith("/assets/")) {
             serveResource(path, res);
             return;
         }
@@ -45,6 +50,12 @@ public class FrontendServlet extends HttpServlet {
                 res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
             } else if (normalized.endsWith(".css")) {
                 res.setContentType("text/css;charset=UTF-8");
+                res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+            } else if (normalized.endsWith(".svg")) {
+                res.setContentType("image/svg+xml;charset=UTF-8");
+                res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+            } else if (normalized.endsWith(".ico")) {
+                res.setContentType("image/x-icon");
                 res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
             } else {
                 res.setContentType("application/octet-stream");

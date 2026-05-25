@@ -9,6 +9,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Map;
@@ -31,11 +33,13 @@ public class SessionManager {
     private final int sessionTimeoutMinutes;
     private final ScheduledExecutorService cleaner;
     private final Path storageFile;
+    private boolean loadedLegacyTokens;
 
     public SessionManager(int sessionTimeoutMinutes, Path storageFile) {
         this.sessionTimeoutMinutes = sessionTimeoutMinutes;
         this.storageFile = storageFile;
         loadFromDisk();
+        if (loadedLegacyTokens) persistQuietly();
         this.cleaner = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "Better-WebConsole-SessionCleaner");
             t.setDaemon(true);
@@ -48,20 +52,21 @@ public class SessionManager {
         byte[] tokenBytes = new byte[TOKEN_BYTES];
         SECURE_RANDOM.nextBytes(tokenBytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
-        sessions.put(token, new Session(username, remoteIp, System.currentTimeMillis()));
+        sessions.put(hashToken(token), new Session(username, remoteIp, System.currentTimeMillis()));
         persistQuietly();
         return token;
     }
 
     public Session validateSession(String token) {
         if (token == null || token.isBlank()) return null;
-        Session session = sessions.get(token);
+        String tokenHash = hashToken(token);
+        Session session = sessions.get(tokenHash);
         if (session == null) return null;
 
         long now = System.currentTimeMillis();
         long expiryMs = (long) sessionTimeoutMinutes * 60 * 1000;
         if (now - session.getLastActivity() > expiryMs) {
-            sessions.remove(token);
+            sessions.remove(tokenHash);
             persistQuietly();
             return null;
         }
@@ -74,7 +79,7 @@ public class SessionManager {
 
     public void invalidateSession(String token) {
         if (token == null) return;
-        sessions.remove(token);
+        sessions.remove(hashToken(token));
         persistQuietly();
     }
 
@@ -130,14 +135,15 @@ public class SessionManager {
                 if (line.isBlank()) continue;
                 String[] parts = line.split("\\t", 5);
                 if (parts.length != 5) continue;
-                String token = parts[0];
+                String tokenHash = normalizeStoredToken(parts[0]);
+                if (!parts[0].startsWith("sha256:")) loadedLegacyTokens = true;
                 String username = unescape(parts[1]);
                 String remoteIp = unescape(parts[2]);
                 long createdAt = parseLong(parts[3], 0L);
                 long lastActivity = parseLong(parts[4], createdAt);
-                if (token.isBlank() || username.isBlank()) continue;
+                if (tokenHash.isBlank() || username.isBlank()) continue;
                 if (now - lastActivity > expiryMs) continue;
-                sessions.put(token, new Session(username, remoteIp, createdAt, lastActivity));
+                sessions.put(tokenHash, new Session(username, remoteIp, createdAt, lastActivity));
             }
         } catch (Exception ignored) {
         }
@@ -196,6 +202,22 @@ public class SessionManager {
             return Long.parseLong(value);
         } catch (Exception ignored) {
             return fallback;
+        }
+    }
+
+    private static String normalizeStoredToken(String stored) {
+        if (stored == null || stored.isBlank()) return "";
+        if (stored.startsWith("sha256:")) return stored;
+        return hashToken(stored);
+    }
+
+    private static String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashed = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            return "sha256:" + Base64.getUrlEncoder().withoutPadding().encodeToString(hashed);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is unavailable", e);
         }
     }
 

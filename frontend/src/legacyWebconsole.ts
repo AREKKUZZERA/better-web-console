@@ -1,4 +1,17 @@
 ﻿// @ts-nocheck
+import {
+  CategoryScale,
+  Chart,
+  Filler,
+  LinearScale,
+  LineController,
+  LineElement,
+  PointElement,
+  Tooltip
+} from 'chart.js';
+
+Chart.register(CategoryScale, Filler, LinearScale, LineController, LineElement, PointElement, Tooltip);
+
 let mounted = false;
 
 export function mountLegacyWebConsole() {
@@ -22,6 +35,8 @@ let notifEnabled=false, notifCount=0;
 let modalAction=null;
 let acItems=[], acIdx=-1, acReqId=0;
 let tpsChart=null, ramChart=null, playersChart=null, cpuChart=null;
+let chartResizeTimer=null;
+const chartSignatures=new WeakMap();
 let activePanelName='console';
 let lastPlayersStructureSignature='__init__';
 let lastPlayersVisualSignature='__init__';
@@ -38,9 +53,14 @@ let lastStatsData=null;
 let lastSummarySignature='__init__';
 let lastTopPlayersSignature='__init__';
 let lastSessionsSignature='__init__';
+let lastAuditSignature='__init__';
 let sessionsLoaded=false;
 let sessionsLoading=false;
-const panelOrder=['console','dash','players','aliases','sessions'];
+let auditLoaded=false;
+let auditLoading=false;
+let auditEntries=[];
+let auditSearchText='';
+const panelOrder=['console','dash','players','aliases','sessions','audit'];
 const MAX_LINES=3000;
 
 // Dashboard counters
@@ -115,6 +135,12 @@ Object.assign(I18N.zh,{'tab.sessions':'Sessions','sessions.active':'Active Web S
 Object.assign(I18N.pl,{'tab.sessions':'Sessions','sessions.active':'Active Web Sessions','sessions.user':'User','sessions.ip':'IP','sessions.lastSeen':'Last activity','sessions.expires':'Expires','sessions.empty':'No active sessions.','sessions.loading':'Loading sessions...','sessions.error':'Failed to load sessions'});
 Object.assign(I18N.de,{'tab.sessions':'Sessions','sessions.active':'Active Web Sessions','sessions.user':'User','sessions.ip':'IP','sessions.lastSeen':'Last activity','sessions.expires':'Expires','sessions.empty':'No active sessions.','sessions.loading':'Loading sessions...','sessions.error':'Failed to load sessions'});
 Object.assign(I18N.fr,{'tab.sessions':'Sessions','sessions.active':'Active Web Sessions','sessions.user':'User','sessions.ip':'IP','sessions.lastSeen':'Last activity','sessions.expires':'Expires','sessions.empty':'No active sessions.','sessions.loading':'Loading sessions...','sessions.error':'Failed to load sessions'});
+Object.assign(I18N.en,{'tab.audit':'Audit','audit.title':'Audit Log','audit.searchPlaceholder':'Filter audit...','audit.refresh':'Refresh','audit.time':'Time','audit.action':'Action','audit.user':'User','audit.ip':'IP','audit.detail':'Detail','audit.empty':'No audit entries.','audit.loading':'Loading audit...','audit.error':'Failed to load audit log'});
+Object.assign(I18N.ru,{'tab.audit':'Аудит','audit.title':'Журнал аудита','audit.searchPlaceholder':'Фильтр аудита...','audit.refresh':'Обновить','audit.time':'Время','audit.action':'Действие','audit.user':'Пользователь','audit.ip':'IP','audit.detail':'Детали','audit.empty':'Записей аудита нет.','audit.loading':'Загрузка аудита...','audit.error':'Не удалось загрузить аудит'});
+Object.assign(I18N.zh,{'tab.audit':'Audit','audit.title':'Audit Log','audit.searchPlaceholder':'Filter audit...','audit.refresh':'Refresh','audit.time':'Time','audit.action':'Action','audit.user':'User','audit.ip':'IP','audit.detail':'Detail','audit.empty':'No audit entries.','audit.loading':'Loading audit...','audit.error':'Failed to load audit log'});
+Object.assign(I18N.pl,{'tab.audit':'Audit','audit.title':'Audit Log','audit.searchPlaceholder':'Filter audit...','audit.refresh':'Refresh','audit.time':'Time','audit.action':'Action','audit.user':'User','audit.ip':'IP','audit.detail':'Detail','audit.empty':'No audit entries.','audit.loading':'Loading audit...','audit.error':'Failed to load audit log'});
+Object.assign(I18N.de,{'tab.audit':'Audit','audit.title':'Audit Log','audit.searchPlaceholder':'Filter audit...','audit.refresh':'Refresh','audit.time':'Time','audit.action':'Action','audit.user':'User','audit.ip':'IP','audit.detail':'Detail','audit.empty':'No audit entries.','audit.loading':'Loading audit...','audit.error':'Failed to load audit log'});
+Object.assign(I18N.fr,{'tab.audit':'Audit','audit.title':'Audit Log','audit.searchPlaceholder':'Filter audit...','audit.refresh':'Refresh','audit.time':'Time','audit.action':'Action','audit.user':'User','audit.ip':'IP','audit.detail':'Detail','audit.empty':'No audit entries.','audit.loading':'Loading audit...','audit.error':'Failed to load audit log'});
 const LANGS=['en','ru','zh','pl','de','fr'];
 const LANG_KEY='bwc_lang';
 let savedLang='en';
@@ -145,6 +171,7 @@ function applyTranslations(){
     renderTopActivePlayers(lastStatsData.playerActivitySummary||{});
   }
   if(sessionsLoaded) loadSessions(true);
+  if(auditLoaded) renderAudit(auditEntries);
 }
 function setLanguage(lang){
   if(!LANGS.includes(lang)) lang='en';
@@ -157,6 +184,9 @@ applyTranslations();
 const playerSearch=$('player-search'), playerWorldFilterEl=$('player-world-filter');
 if(playerSearch) playerSearch.addEventListener('input',()=>{ playerSearchText=playerSearch.value.trim().toLowerCase(); renderPlayers(currentPlayerList,true); });
 if(playerWorldFilterEl) playerWorldFilterEl.addEventListener('change',()=>{ playerWorldFilter=playerWorldFilterEl.value; renderPlayers(currentPlayerList,true); });
+const auditSearch=$('audit-search'), auditRefresh=$('audit-refresh');
+if(auditSearch) auditSearch.addEventListener('input',()=>{ auditSearchText=auditSearch.value.trim().toLowerCase(); renderAudit(auditEntries); });
+if(auditRefresh) auditRefresh.addEventListener('click',()=>loadAudit(true));
 
 // ── Toast ──────────────────────────────────────────────────────────────────
 let toastT;
@@ -176,7 +206,11 @@ function switchToPanel(name){
   // FIX #3: aliases only load when tab is actually clicked (lazy), not on connect
   if(name==='aliases') loadAliases();
   if(name==='sessions') loadSessions();
-  if(activePanelName===name) return;
+  if(name==='audit') loadAudit();
+  if(activePanelName===name){
+    if(name==='dash') ensureChartsReady();
+    return;
+  }
   const prevIdx=panelOrder.indexOf(activePanelName);
   const nextIdx=panelOrder.indexOf(name);
   const enterClass=(prevIdx!==-1&&nextIdx<prevIdx)?'enter-from-left':'enter-from-right';
@@ -186,7 +220,10 @@ function switchToPanel(name){
   nextPanel.classList.add('active',enterClass);
   nextPanel.addEventListener('animationend',()=>nextPanel.classList.remove('enter-from-right','enter-from-left'),{once:true});
   activePanelName=name;
-  requestAnimationFrame(()=>animatePanelContent(name));
+  requestAnimationFrame(()=>{
+    if(name==='dash') ensureChartsReady();
+    animatePanelContent(name);
+  });
 }
 
 function staggerAnimate(nodes,step=40){
@@ -204,6 +241,7 @@ function animatePanelContent(name){
   if(name==='players'){ animatePlayersPanel(); return; }
   if(name==='aliases'){ staggerAnimate([$('panel-aliases').querySelector('.alias-hint'),...document.querySelectorAll('#alias-list > *')],26); return; }
   if(name==='sessions'){ staggerAnimate([...document.querySelectorAll('#sessions-tbody tr')],26); return; }
+  if(name==='audit'){ staggerAnimate([...document.querySelectorAll('#audit-tbody tr')],18); return; }
   if(name==='dash'){ staggerAnimate([...document.querySelectorAll('.dash-grid .kpi'),...document.querySelectorAll('.chart-card'),...document.querySelectorAll('.machine-card')],18); }
 }
 
@@ -498,10 +536,7 @@ function handleStats(data){
   const br=$('badge-ram'); if(br) br.textContent=ramUsed+'MB';
   const bp=$('badge-players'); if(bp) bp.textContent=t('players.online',{count:players});
 
-  if(data.tpsHistory)     updateChart(tpsChart,    data.tpsHistory);
-  if(data.ramHistory)     updateChart(ramChart,     data.ramHistory);
-  if(data.playersHistory) updateChart(playersChart, data.playersHistory);
-  if(data.cpuHistory)     updateChart(cpuChart,     data.cpuHistory);
+  syncChartsFromStats();
   if(data.system)         handleSystemStats(data.system);
   if(data.playerList!==undefined) renderPlayers(data.playerList);
   renderPlayerActivityDays(data.playerActivityDays||[]);
@@ -570,9 +605,16 @@ function renderTopActivePlayers(summary){
 }
 
 function updateChart(chart,data){
-  if(!chart) return;
-  chart.data.labels=data.map((_,i)=>i);
-  chart.data.datasets[0].data=data;
+  if(!chart||!Array.isArray(data)) return;
+  const points=data.map(v=>{
+    const n=Number(v);
+    return Number.isFinite(n)?n:null;
+  });
+  const signature=points.join('|');
+  if(chartSignatures.get(chart)===signature) return;
+  chartSignatures.set(chart,signature);
+  chart.data.labels=points.map((_,i)=>i);
+  chart.data.datasets[0].data=points;
   chart.update('none');
 }
 
@@ -603,24 +645,70 @@ function renderActivity(){
 }
 
 // ── Charts ─────────────────────────────────────────────────────────────────
+function chartSizeMode(){
+  const width=window.innerWidth||document.documentElement.clientWidth||1024;
+  return {tickFont:width<520?9:10,maxTicks:width<520?3:4,tooltipFont:width<520?10:11,tooltipPadding:width<520?6:8};
+}
+
 function makeChart(id,label,color,max){
-  const ctx=document.getElementById(id).getContext('2d');
+  const canvas=document.getElementById(id);
+  if(!canvas) return null;
+  const ctx=canvas.getContext('2d');
+  if(!ctx) return null;
+  const size=chartSizeMode();
   return new Chart(ctx,{
     type:'line',
     data:{labels:[],datasets:[{label,data:[],borderColor:color,backgroundColor:color+'18',borderWidth:1.8,pointRadius:0,fill:true,tension:.35}]},
     options:{responsive:true,maintainAspectRatio:false,animation:false,
-      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,backgroundColor:'#1e1e1e',borderColor:'rgba(255,255,255,.10)',borderWidth:1,titleColor:'#eee',bodyColor:'#eee',callbacks:{label:c=>label+': '+c.parsed.y}}},
-      scales:{x:{display:false},y:{min:0,max:max||undefined,grid:{color:'rgba(255,255,255,.042)'},ticks:{color:'#aaa',font:{size:10},maxTicksLimit:4}}}}
+      interaction:{mode:'nearest',axis:'x',intersect:false},
+      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,displayColors:true,backgroundColor:'#1e1e1e',borderColor:'rgba(255,255,255,.10)',borderWidth:1,titleColor:'#eee',bodyColor:'#eee',caretSize:5,padding:size.tooltipPadding,titleFont:{size:size.tooltipFont,weight:'700'},bodyFont:{size:size.tooltipFont},callbacks:{label:c=>label+': '+c.parsed.y}}},
+      scales:{x:{display:false},y:{min:0,max:max||undefined,bounds:'ticks',grid:{color:'rgba(255,255,255,.042)'},ticks:{color:'#aaa',font:{size:size.tickFont},maxTicksLimit:size.maxTicks,precision:0}}}}
   });
 }
 
+function resizeCharts(){
+  if(!chartsInitialized) return;
+  clearTimeout(chartResizeTimer);
+  chartResizeTimer=setTimeout(()=>scheduleChartResize(),80);
+}
+
+function scheduleChartResize(){
+  requestAnimationFrame(()=>{
+    [tpsChart,ramChart,playersChart,cpuChart].filter(Boolean).forEach(chart=>{
+      const size=chartSizeMode();
+      chart.options.plugins.tooltip.titleFont.size=size.tooltipFont;
+      chart.options.plugins.tooltip.bodyFont.size=size.tooltipFont;
+      chart.options.plugins.tooltip.padding=size.tooltipPadding;
+      chart.options.scales.y.ticks.font.size=size.tickFont;
+      chart.options.scales.y.ticks.maxTicksLimit=size.maxTicks;
+      chart.resize();
+      chart.update('none');
+    });
+  });
+}
+
+function syncChartsFromStats(){
+  if(!chartsInitialized||!lastStatsData) return;
+  updateChart(tpsChart,     lastStatsData.tpsHistory);
+  updateChart(ramChart,     lastStatsData.ramHistory);
+  updateChart(playersChart, lastStatsData.playersHistory);
+  updateChart(cpuChart,     lastStatsData.cpuHistory);
+  resizeCharts();
+}
+
 function initCharts(){
-  if(chartsInitialized) return;
+  if(chartsInitialized){ resizeCharts(); return; }
   tpsChart     = makeChart('chart-tps',    'TPS',     '#f23987', 20);
   ramChart     = makeChart('chart-ram',    'RAM MB',  '#4fc3f7');
   playersChart = makeChart('chart-players','Players', '#d05ce3');
   cpuChart     = makeChart('chart-cpu',    'CPU %',   '#00e676', 100);
   chartsInitialized=true;
+  syncChartsFromStats();
+}
+
+function ensureChartsReady(){
+  initCharts();
+  resizeCharts();
 }
 
 // ── Player list ─────────────────────────────────────────────────────────────
@@ -850,6 +938,66 @@ function renderSessions(sessions,isError=false){
 
 setInterval(()=>{ if(activePanelName==='sessions') loadSessions(true); },10000);
 
+async function loadAudit(force=false){
+  if(auditLoading) return;
+  if(auditLoaded&&!force&&activePanelName!=='audit') return;
+  const empty=$('audit-empty');
+  if(empty&&!auditLoaded) empty.textContent=t('audit.loading');
+  auditLoading=true;
+  try{
+    const r=await fetch('/api/audit?limit=200');
+    if(!r.ok) throw new Error(String(r.status));
+    const data=await r.json();
+    auditEntries=Array.isArray(data.entries)?data.entries:[];
+    renderAudit(auditEntries);
+    auditLoaded=true;
+  }catch(_){
+    renderAudit([],true);
+  }finally{
+    auditLoading=false;
+  }
+}
+
+function renderAudit(entries,isError=false){
+  const tbody=$('audit-tbody'), table=$('audit-table'), empty=$('audit-empty');
+  if(!tbody||!table||!empty) return;
+  const safe=Array.isArray(entries)?entries:[];
+  const filtered=auditSearchText?safe.filter(e=>auditEntryText(e).includes(auditSearchText)):safe;
+  const sig=JSON.stringify(filtered)+'|'+currentLang+'|'+isError+'|'+auditSearchText;
+  if(sig===lastAuditSignature) return;
+  lastAuditSignature=sig;
+  setText('audit-count', isError ? '!' : filtered.length);
+  if(isError){
+    tbody.innerHTML='';
+    table.style.display='none';
+    empty.style.display='';
+    empty.classList.add('session-error');
+    empty.textContent=t('audit.error');
+    return;
+  }
+  empty.classList.remove('session-error');
+  if(!filtered.length){
+    tbody.innerHTML='';
+    table.style.display='none';
+    empty.style.display='';
+    empty.textContent=t('audit.empty');
+    return;
+  }
+  empty.style.display='none';
+  table.style.display='';
+  tbody.innerHTML=filtered.slice().reverse().map(e=>{
+    const action=esc(e.action||'RAW');
+    const detail=esc(e.detail||e.raw||'');
+    return `<tr><td>${esc(e.timestamp||'--')}</td><td><span class="audit-action">${action}</span></td><td>${esc(e.username||'--')}</td><td><span class="session-ip">${esc(e.ip||'--')}</span></td><td class="audit-detail" title="${detail}">${detail}</td></tr>`;
+  }).join('');
+}
+
+function auditEntryText(e){
+  return [e.timestamp,e.action,e.username,e.ip,e.detail,e.raw].filter(Boolean).join(' ').toLowerCase();
+}
+
+setInterval(()=>{ if(activePanelName==='audit') loadAudit(true); },15000);
+
 let acTimer=null;
 cmdInput.addEventListener('input',()=>{
   clearTimeout(acTimer); const v=cmdInput.value;
@@ -925,7 +1073,7 @@ async function doLogout(){
   app.classList.remove('show'); loginScreen.classList.remove('hide');
   lp.value=''; loginErr.textContent='';
   sessionUser=''; cmdInput.disabled=true; btnSend.disabled=true;
-  output.innerHTML=''; lineCount=0; aliasesLoaded=false;
+  output.innerHTML=''; lineCount=0; aliasesLoaded=false; sessionsLoaded=false; auditLoaded=false; auditEntries=[];
   lastPlayersStructureSignature='__init__'; lastPlayersVisualSignature='__init__';
   lastPlayerEventsSignature='__init__'; lastPlayerCommandsSignature='__init__';
   const eventHistory=$('player-event-history'); if(eventHistory) eventHistory.innerHTML='';
@@ -947,7 +1095,7 @@ async function doLogin(){
       sessionUser=data.username; sessionStart=Date.now();
       ulabel.textContent=sessionUser;
       loginScreen.classList.add('hide'); app.classList.add('show');
-      switchToPanel('console'); initCharts(); animatePanelContent('console');
+      switchToPanel('console'); animatePanelContent('console');
       manualDisconnect=false; connectWs(true);
     } else {
       loginErr.textContent=data.error||t('login.invalid');
@@ -1019,7 +1167,7 @@ function setKpiState(valueId,value,warnAt,critAt){
       sessionUser=d.username; sessionStart=Date.now();
       ulabel.textContent=sessionUser;
       loginScreen.classList.add('hide'); app.classList.add('show');
-      switchToPanel('console'); initCharts(); animatePanelContent('console');
+      switchToPanel('console'); animatePanelContent('console');
       manualDisconnect=false; connectWs(true); return;
     }
   }catch(_){}
@@ -1028,6 +1176,7 @@ function setKpiState(valueId,value,warnAt,critAt){
 
 window.addEventListener('online',()=>{ if(!manualDisconnect) connectWs(true); });
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&!manualDisconnect&&(!ws||ws.readyState!==WebSocket.OPEN)) connectWs(true); });
+window.addEventListener('resize',resizeCharts,{passive:true});
 setInterval(()=>{ if(!manualDisconnect&&(!ws||ws.readyState===WebSocket.CLOSED)) connectWs(); },5000);
 })();
 }

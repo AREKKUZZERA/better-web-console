@@ -13,16 +13,12 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.bukkit.Bukkit;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
 /**
@@ -32,6 +28,7 @@ import java.util.regex.Pattern;
  *   GET  /api/stats       - server stats JSON (auth required)
  *   GET  /api/aliases     - command alias list (auth required)
  *   GET  /api/sessions    - active web sessions (auth required)
+ *   GET  /api/audit       - recent audit log entries (auth required)
  *   GET  /api/logs/export - download console log as text file (auth required)
  *   POST /api/login       - authenticate
  *   POST /api/logout      - invalidate session
@@ -68,6 +65,7 @@ public class ApiServlet extends HttpServlet {
             case "/stats"       -> handleStats(req, res);
             case "/aliases"     -> handleAliases(req, res);
             case "/sessions"    -> handleSessions(req, res);
+            case "/audit"       -> handleAudit(req, res);
             case "/logs/export" -> handleLogExport(req, res);
             default             -> sendError(res, 404, "Not found");
         }
@@ -109,24 +107,7 @@ public class ApiServlet extends HttpServlet {
     private void handleStats(HttpServletRequest req, HttpServletResponse res) throws IOException {
         res.setContentType("application/json;charset=UTF-8");
         if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
-        JsonObject stats = statsOnMainThread();
-        if (stats == null) { sendError(res, 503, "Stats unavailable"); return; }
-        writeJson(res, 200, stats);
-    }
-
-    private JsonObject statsOnMainThread() {
-        if (Bukkit.isPrimaryThread()) return plugin.getServerStats().toJson();
-        try {
-            return Bukkit.getScheduler()
-                    .callSyncMethod(plugin, () -> plugin.getServerStats().toJson())
-                    .get(3, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return null;
-        } catch (ExecutionException | TimeoutException e) {
-            plugin.getLogger().warning("[BWC] Failed to collect stats for API: " + e.getMessage());
-            return null;
-        }
+        writeJson(res, 200, plugin.getServerStats().toJson());
     }
 
     private void handleAliases(HttpServletRequest req, HttpServletResponse res) throws IOException {
@@ -149,6 +130,15 @@ public class ApiServlet extends HttpServlet {
         if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
         JsonObject resp = new JsonObject();
         resp.add("sessions", sessionManager.sessionsJson());
+        writeJson(res, 200, resp);
+    }
+
+    private void handleAudit(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.setContentType("application/json;charset=UTF-8");
+        if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
+        int limit = parseLimit(req.getParameter("limit"), 200);
+        JsonObject resp = new JsonObject();
+        resp.add("entries", plugin.getAuditLog().recentJson(limit));
         writeJson(res, 200, resp);
     }
 
@@ -294,6 +284,14 @@ public class ApiServlet extends HttpServlet {
             return body.toString();
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    private int parseLimit(String raw, int fallback) {
+        try {
+            return Math.max(1, Math.min(500, Integer.parseInt(raw)));
+        } catch (Exception ignored) {
+            return fallback;
         }
     }
 

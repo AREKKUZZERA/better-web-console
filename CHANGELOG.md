@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.4.5 - 2026-05-25
+
+### Added
+
+- Added an authenticated audit log API at `/api/audit`.
+- Added an Audit tab with recent audit entries, search filtering and manual refresh.
+- Added packaged favicon assets and static SVG favicon serving.
+
+### Changed
+
+- Stored persisted web session identifiers as SHA-256 hashes instead of raw cookie tokens.
+- Migrated legacy raw `sessions.tsv` tokens to hashed entries on next plugin startup.
+- Served `/api/stats` and WebSocket stat pings from cached `ServerStats` snapshots instead of collecting Bukkit data per request.
+- Isolated the legacy web UI shell mount in React so future panel migration can happen incrementally without direct `dangerouslySetInnerHTML`.
+- Bundled Chart.js through the Vite dependency graph instead of loading it from a CDN script.
+
+### Fixed
+
+- Reduced main-thread pressure from stats polling during active web dashboard usage.
+- Kept audit log viewing bounded to recent entries instead of exposing the full raw audit file.
+
 ## 2.4.4 - 2026-05-25
 
 ### Added

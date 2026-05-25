@@ -252,11 +252,9 @@ public class ConsoleWebSocket {
     }
 
     public void pushStats() {
-        runOnMainThread(() -> {
-            JsonObject stats = plugin.getServerStats().toJson();
-            stats.addProperty("type", "stats");
-            send(stats.toString());
-        });
+        JsonObject stats = plugin.getServerStats().toJson();
+        stats.addProperty("type", "stats");
+        send(stats.toString());
     }
 
     public void sendLine(String line) {

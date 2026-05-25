@@ -33,6 +33,7 @@ import java.util.List;
 public class ServerStats {
 
     private static final int HISTORY_POINTS = 300; // 300 x 1s = 5 min
+    private static final long WORLD_STATS_INTERVAL_MS = 3000L;
 
     private final BetterWebConsolePlugin plugin;
     private final MemoryMXBean memBean = ManagementFactory.getMemoryMXBean();
@@ -52,6 +53,7 @@ public class ServerStats {
     private volatile int lastTotalChunks = 0;
     private volatile int lastTotalEntities = 0;
     private volatile JsonArray lastWorldStats = new JsonArray();
+    private volatile JsonObject lastSnapshot = new JsonObject();
     private volatile WebSocketHandler wsHandler;
     private final long startTimeMs = System.currentTimeMillis();
 
@@ -59,6 +61,7 @@ public class ServerStats {
     private String lastBroadcastSignature = "";
     private long lastBroadcastAt = 0L;
     private long lastSystemStatsAt = 0L;
+    private long lastWorldStatsAt = 0L;
     private long lastSystemInfoInitAttempt = 0L;
     private SystemInfo systemInfo;
     private HardwareAbstractionLayer hardware;
@@ -91,6 +94,24 @@ public class ServerStats {
         lastRamUsed = used;
         maxRam = max;
 
+        lastPlayers = Bukkit.getOnlinePlayers().size();
+        collectWorldStatsIfDue();
+
+        addToHistory(tpsHistory, lastTps);
+        addToHistory(ramHistory, lastRamUsed);
+        addToHistory(playersHistory, lastPlayers);
+        collectSystemStatsIfDue();
+
+        JsonObject snapshot = buildSnapshotJson();
+        lastSnapshot = snapshot;
+        maybeBroadcast(snapshot);
+    }
+
+    private void collectWorldStatsIfDue() {
+        long now = System.currentTimeMillis();
+        if (now - lastWorldStatsAt < WORLD_STATS_INTERVAL_MS) return;
+        lastWorldStatsAt = now;
+
         List<World> worlds = Bukkit.getWorlds();
         int totalChunks = 0;
         int totalEntities = 0;
@@ -109,18 +130,10 @@ public class ServerStats {
             worldStats.add(wobj);
         }
 
-        lastPlayers = Bukkit.getOnlinePlayers().size();
         lastWorlds = worlds.size();
         lastTotalChunks = totalChunks;
         lastTotalEntities = totalEntities;
         lastWorldStats = worldStats;
-
-        addToHistory(tpsHistory, lastTps);
-        addToHistory(ramHistory, lastRamUsed);
-        addToHistory(playersHistory, lastPlayers);
-        collectSystemStatsIfDue();
-
-        maybeBroadcast();
     }
 
     private void collectSystemStatsIfDue() {
@@ -269,7 +282,7 @@ public class ServerStats {
         return disk;
     }
 
-    private void maybeBroadcast() {
+    private void maybeBroadcast(JsonObject snapshot) {
         WebSocketHandler handler = wsHandler;
         if (handler == null || handler.getConnectionCount() == 0) return;
 
@@ -278,7 +291,7 @@ public class ServerStats {
         if (!signature.equals(lastBroadcastSignature) || now - lastBroadcastAt >= 3000L) {
             lastBroadcastSignature = signature;
             lastBroadcastAt = now;
-            handler.broadcastStats(toJson());
+            handler.broadcastStats(snapshot.deepCopy());
         }
     }
 
@@ -288,6 +301,10 @@ public class ServerStats {
     }
 
     public JsonObject toJson() {
+        return lastSnapshot.deepCopy();
+    }
+
+    private JsonObject buildSnapshotJson() {
         JsonObject obj = new JsonObject();
         obj.addProperty("tps", Math.round(lastTps * 10.0) / 10.0);
         obj.addProperty("ramUsed", lastRamUsed);
