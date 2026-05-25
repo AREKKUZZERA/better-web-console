@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 
 /**
  * REST API endpoints:
@@ -38,6 +39,8 @@ import java.util.concurrent.TimeoutException;
 public class ApiServlet extends HttpServlet {
 
     private static final Gson GSON = new Gson();
+    private static final int MAX_BODY_CHARS = 16 * 1024;
+    private static final Pattern USERNAME = Pattern.compile("[a-zA-Z0-9_-]{3,32}");
 
     private final BetterWebConsolePlugin plugin;
     private final SessionManager sessionManager;
@@ -73,6 +76,10 @@ public class ApiServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException {
         if (!ipChecker.isAllowed(req.getRemoteAddr())) { sendError(res, 403, "IP not allowed"); return; }
+        if (!SameOriginGuard.isAllowed(req.getHeader("Origin"), req.getHeader("Referer"), req.getHeader("Host"))) {
+            sendError(res, 403, "Cross-origin request blocked");
+            return;
+        }
         String path = req.getPathInfo() == null ? "/" : req.getPathInfo();
         switch (path) {
             case "/login"  -> handleLogin(req, res);
@@ -196,11 +203,14 @@ public class ApiServlet extends HttpServlet {
 
         if (!csrfUtil.validateToken(csrf)) { sendError(res, 403, "Invalid CSRF token"); return; }
 
+        if (!USERNAME.matcher(username).matches()) {
+            handleFailedLogin(ip, "invalid");
+            sendError(res, 401, "Invalid credentials");
+            return;
+        }
+
         if (!plugin.getUserManager().verifyPassword(username, password)) {
-            rateLimiter.recordFailedLogin(ip);
-            if (plugin.getPluginConfig().isLogAuth()) plugin.getLogger().warning("[AUTH] Failed: " + username + "@" + ip);
-            if (plugin.getPluginConfig().isAuditLog()) plugin.getAuditLog().logFailed(username, ip);
-            try { Thread.sleep(600); } catch (InterruptedException ignored) {}
+            handleFailedLogin(ip, username);
             sendError(res, 401, "Invalid credentials");
             return;
         }
@@ -218,6 +228,21 @@ public class ApiServlet extends HttpServlet {
         obj.addProperty("success", true);
         obj.addProperty("username", username);
         writeJson(res, 200, obj);
+    }
+
+    private void handleFailedLogin(String ip, String username) {
+        rateLimiter.recordFailedLogin(ip);
+        if (plugin.getPluginConfig().isLogAuth()) {
+            plugin.getLogger().warning("[AUTH] Failed: " + username + "@" + ip);
+        }
+        if (plugin.getPluginConfig().isAuditLog()) {
+            plugin.getAuditLog().logFailed(username, ip);
+        }
+        try {
+            Thread.sleep(600);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private void handleLogout(HttpServletRequest req, HttpServletResponse res) throws IOException {
@@ -263,6 +288,7 @@ public class ApiServlet extends HttpServlet {
             char[] buffer = new char[1024];
             int read;
             while ((read = reader.read(buffer)) != -1) {
+                if (body.length() + read > MAX_BODY_CHARS) return null;
                 body.append(buffer, 0, read);
             }
             return body.toString();

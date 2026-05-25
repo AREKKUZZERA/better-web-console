@@ -61,7 +61,6 @@ public class ConsoleWebSocket {
     @OnWebSocketClose
     public void onClose(int code, String reason) {
         wsHandler.unregister(this);
-        rateLimiter.removeSession(sessionToken);
         plugin.getLogger().info("[BWC] WS disconnected: " + authSession.getUsername());
     }
 
@@ -141,7 +140,7 @@ public class ConsoleWebSocket {
             plugin.getLogger().info("[BWC] Command by '" + authSession.getUsername() + "': " + toRun);
         }
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        runOnMainThread(() -> {
             try {
                 boolean ok = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), toRun);
                 if (!ok) sendLine("[BWC] Unknown command: " + toRun);
@@ -156,7 +155,7 @@ public class ConsoleWebSocket {
         String partial = json.has("partial") ? json.get("partial").getAsString() : "";
         int reqId = json.has("reqId") ? json.get("reqId").getAsInt() : 0;
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        runOnMainThread(() -> {
             List<String> suggestions;
             try {
                 CommandMap commandMap = Bukkit.getCommandMap();
@@ -183,7 +182,7 @@ public class ConsoleWebSocket {
         String reason = cleanReason(json.has("reason") ? json.get("reason").getAsString() : "Kicked by admin");
         if (!isValidPlayerName(target)) { sendLine("[BWC] Invalid player name: " + target); return; }
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        runOnMainThread(() -> {
             Player p = Bukkit.getPlayerExact(target);
             if (p == null) { sendLine("[BWC] Player not found: " + target); return; }
             p.kick(Component.text(reason));
@@ -200,7 +199,7 @@ public class ConsoleWebSocket {
         String reason = cleanReason(json.has("reason") ? json.get("reason").getAsString() : "Banned by admin");
         if (!isValidPlayerName(target)) { sendLine("[BWC] Invalid player name: " + target); return; }
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        runOnMainThread(() -> {
             executeCommand("ban " + target + " " + reason);
             sendLine("[BWC] Banned " + target + ": " + reason);
             if (plugin.getPluginConfig().isAuditLog()) {
@@ -227,7 +226,7 @@ public class ConsoleWebSocket {
         String mode = json.has("mode") ? json.get("mode").getAsString().trim().toLowerCase() : "";
         if (!isValidPlayerName(target)) { sendLine("[BWC] Invalid player name: " + target); return; }
         if (!isValidGamemode(mode)) { sendLine("[BWC] Invalid gamemode: " + mode); return; }
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        runOnMainThread(() -> {
             if (Bukkit.getPlayerExact(target) == null) { sendLine("[BWC] Player not found: " + target); return; }
             executeCommand("gamemode " + mode + " " + target);
             if (plugin.getPluginConfig().isAuditLog()) {
@@ -242,7 +241,7 @@ public class ConsoleWebSocket {
         String target = json.has("target") ? json.get("target").getAsString().trim() : "";
         if (!isValidPlayerName(player)) { sendLine("[BWC] Invalid player name: " + player); return; }
         if (!isValidPlayerName(target)) { sendLine("[BWC] Invalid player name: " + target); return; }
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        runOnMainThread(() -> {
             if (Bukkit.getPlayerExact(player) == null) { sendLine("[BWC] Player not found: " + player); return; }
             if (Bukkit.getPlayerExact(target) == null) { sendLine("[BWC] Player not found: " + target); return; }
             executeCommand("tp " + player + " " + target);
@@ -253,7 +252,7 @@ public class ConsoleWebSocket {
     }
 
     public void pushStats() {
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        runOnMainThread(() -> {
             JsonObject stats = plugin.getServerStats().toJson();
             stats.addProperty("type", "stats");
             send(stats.toString());
@@ -308,5 +307,13 @@ public class ConsoleWebSocket {
     private String firstWord(String command) {
         int space = command.indexOf(' ');
         return space >= 0 ? command.substring(0, space) : command;
+    }
+
+    private void runOnMainThread(Runnable task) {
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+        } else {
+            Bukkit.getScheduler().runTask(plugin, task);
+        }
     }
 }

@@ -50,6 +50,8 @@ public class ServerStats {
     private volatile int lastPlayers = 0;
     private volatile int lastWorlds = 0;
     private volatile int lastTotalChunks = 0;
+    private volatile int lastTotalEntities = 0;
+    private volatile JsonArray lastWorldStats = new JsonArray();
     private volatile WebSocketHandler wsHandler;
     private final long startTimeMs = System.currentTimeMillis();
 
@@ -91,13 +93,27 @@ public class ServerStats {
 
         List<World> worlds = Bukkit.getWorlds();
         int totalChunks = 0;
+        int totalEntities = 0;
+        JsonArray worldStats = new JsonArray();
         for (World world : worlds) {
-            totalChunks += world.getLoadedChunks().length;
+            int chunks = world.getLoadedChunks().length;
+            int entities = world.getEntities().size();
+            totalChunks += chunks;
+            totalEntities += entities;
+
+            JsonObject wobj = new JsonObject();
+            wobj.addProperty("name", world.getName());
+            wobj.addProperty("entities", entities);
+            wobj.addProperty("chunks", chunks);
+            wobj.addProperty("environment", world.getEnvironment().name());
+            worldStats.add(wobj);
         }
 
         lastPlayers = Bukkit.getOnlinePlayers().size();
         lastWorlds = worlds.size();
         lastTotalChunks = totalChunks;
+        lastTotalEntities = totalEntities;
+        lastWorldStats = worldStats;
 
         addToHistory(tpsHistory, lastTps);
         addToHistory(ramHistory, lastRamUsed);
@@ -258,7 +274,7 @@ public class ServerStats {
         if (handler == null || handler.getConnectionCount() == 0) return;
 
         long now = System.currentTimeMillis();
-        String signature = Math.round(lastTps * 10.0) + ":" + lastRamUsed + ":" + lastPlayers + ":" + lastWorlds + ":" + lastTotalChunks + ":" + lastSystemStats.hashCode();
+        String signature = Math.round(lastTps * 10.0) + ":" + lastRamUsed + ":" + lastPlayers + ":" + lastWorlds + ":" + lastTotalChunks + ":" + lastTotalEntities + ":" + lastSystemStats.hashCode();
         if (!signature.equals(lastBroadcastSignature) || now - lastBroadcastAt >= 3000L) {
             lastBroadcastSignature = signature;
             lastBroadcastAt = now;
@@ -281,16 +297,7 @@ public class ServerStats {
         // Server uptime in seconds since plugin enable
         obj.addProperty("uptimeSeconds", (System.currentTimeMillis() - startTimeMs) / 1000L);
 
-        JsonArray worlds = new JsonArray();
-        for (World w : Bukkit.getWorlds()) {
-            JsonObject wobj = new JsonObject();
-            wobj.addProperty("name", w.getName());
-            wobj.addProperty("entities", w.getEntities().size());
-            wobj.addProperty("chunks", w.getLoadedChunks().length);
-            wobj.addProperty("environment", w.getEnvironment().name());
-            worlds.add(wobj);
-        }
-        obj.add("worlds", worlds);
+        obj.add("worlds", lastWorldStats.deepCopy());
 
         obj.add("tpsHistory", toJsonArray(tpsHistory));
         obj.add("ramHistory", toJsonArray(ramHistory));

@@ -41,6 +41,11 @@ public class ConsoleWebSocketServlet extends JettyWebSocketServlet {
                 return null;
             }
 
+            if (!SameOriginGuard.isAllowed(req.getHeader("Origin"), req.getHeader("Host"))) {
+                resp.setStatusCode(403);
+                return null;
+            }
+
             // Session validation via cookie
             String sessionToken = null;
             String cookieHeader = req.getHeader("Cookie");

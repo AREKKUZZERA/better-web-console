@@ -1,5 +1,7 @@
 package dev.webconsole.audit;
 
+import dev.webconsole.util.SecureFiles;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -52,13 +54,16 @@ public class AuditLog {
     private void writerLoop() {
         try (PrintWriter writer = new PrintWriter(new BufferedWriter(
                 new OutputStreamWriter(new FileOutputStream(logFile, true), StandardCharsets.UTF_8)))) {
+            SecureFiles.ownerOnlyFile(logFile.toPath());
             while (running || !queue.isEmpty()) {
                 try {
                     String line = queue.poll(500, TimeUnit.MILLISECONDS);
                     if (line != null) { writer.println(line); writer.flush(); }
                 } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
+                    if (!running && queue.isEmpty()) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
                 }
             }
         } catch (IOException e) {
@@ -68,6 +73,10 @@ public class AuditLog {
 
     public void shutdown() {
         running = false;
-        writerThread.interrupt();
+        try {
+            writerThread.join(2_000L);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

@@ -17,6 +17,8 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
@@ -31,11 +33,13 @@ public class BetterWebConsolePlugin extends JavaPlugin {
     private AuditLog auditLog;
     private ServerStats serverStats;
     private PlayerActivityStore playerActivityStore;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Override
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
+        ensureCsrfSecret();
         this.pluginConfig = new PluginConfig(getConfig());
         this.userManager = new UserManager(getDataFolder());
         this.auditLog = new AuditLog(getDataFolder());
@@ -250,6 +254,16 @@ public class BetterWebConsolePlugin extends JavaPlugin {
 
     private String color(String code, String text) {
         return "\u00A7" + code + text;
+    }
+
+    private void ensureCsrfSecret() {
+        String secret = getConfig().getString("security.csrf-secret", "");
+        if (secret != null && !secret.isBlank()) return;
+
+        byte[] secretBytes = new byte[32];
+        SECURE_RANDOM.nextBytes(secretBytes);
+        getConfig().set("security.csrf-secret", Base64.getUrlEncoder().withoutPadding().encodeToString(secretBytes));
+        saveConfig();
     }
 
     public static BetterWebConsolePlugin getInstance() { return instance; }

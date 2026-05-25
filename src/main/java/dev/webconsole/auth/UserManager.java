@@ -1,6 +1,7 @@
 package dev.webconsole.auth;
 
 import at.favre.lib.crypto.bcrypt.BCrypt;
+import dev.webconsole.util.SecureFiles;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +18,7 @@ public class UserManager {
 
     private static final Logger log = Logger.getLogger("Better-WebConsole");
     private static final int BCRYPT_COST = 12;
+    private static final byte[] DUMMY_HASH = BCrypt.withDefaults().hash(4, "dummy".toCharArray());
 
     private final File usersFile;
     private final Map<String, String> users = new ConcurrentHashMap<>(); // username -> bcrypt hash
@@ -63,6 +65,7 @@ public class UserManager {
             Files.move(tmp.toPath(), usersFile.toPath(),
                     java.nio.file.StandardCopyOption.REPLACE_EXISTING,
                     java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            SecureFiles.ownerOnlyFile(usersFile.toPath());
         } catch (IOException e) {
             log.severe("[Better-WebConsole] Failed to save users: " + e.getMessage());
         }
@@ -103,7 +106,7 @@ public class UserManager {
         String hash = users.get(username.toLowerCase());
         if (hash == null) {
             // Perform a dummy hash to prevent timing attacks
-            BCrypt.verifyer().verify("dummy".toCharArray(), BCrypt.withDefaults().hash(4, "dummy".toCharArray()));
+            BCrypt.verifyer().verify("dummy".toCharArray(), DUMMY_HASH);
             return false;
         }
         BCrypt.Result result = BCrypt.verifyer().verify(password.toCharArray(), hash);
@@ -111,6 +114,7 @@ public class UserManager {
     }
 
     public boolean userExists(String username) {
+        if (username == null) return false;
         return users.containsKey(username.toLowerCase());
     }
 

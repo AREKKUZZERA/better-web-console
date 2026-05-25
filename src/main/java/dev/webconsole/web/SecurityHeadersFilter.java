@@ -10,6 +10,16 @@ import java.io.IOException;
  */
 public class SecurityHeadersFilter implements Filter {
 
+    private final boolean hstsEnabled;
+
+    public SecurityHeadersFilter() {
+        this(false);
+    }
+
+    public SecurityHeadersFilter(boolean hstsEnabled) {
+        this.hstsEnabled = hstsEnabled;
+    }
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
@@ -21,15 +31,18 @@ public class SecurityHeadersFilter implements Filter {
             res.setHeader("Referrer-Policy", "no-referrer");
             res.setHeader("Content-Security-Policy",
                     "default-src 'self'; " +
-                    "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
+                    "script-src 'self' 'unsafe-inline'; " +
                     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
                     "font-src 'self' https://fonts.gstatic.com data:; " +
                     "img-src 'self' data:; " +
-                    "connect-src 'self' ws: wss:; " +
+                    "connect-src 'self'; " +
                     "frame-ancestors 'none';");
             res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=()");
             res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
             res.setHeader("Pragma", "no-cache");
+            if (hstsEnabled) {
+                res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+            }
         }
 
         chain.doFilter(request, response);

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.4.4 - 2026-05-25
 
 ### Added
 
@@ -10,15 +10,32 @@
 - Added vanilla/Paper player actions for message, gamemode and teleport.
 - Added all-time player activity storage with day-grouped history in the Players tab.
 - Added dashboard player activity summaries and top active players.
+- Added same-origin protection for authenticated API POST requests and WebSocket handshakes.
+- Added persisted CSRF secret generation on first plugin start.
+- Added POSIX owner-only permission hardening for `users.dat`, `sessions.tsv` and `audit.log`.
 
 ### Changed
 
 - Improved Players tab filtering and reduced repeated history rendering.
 - Switched the main web UI entrypoint from the legacy HTML resource to the Vite-built React bundle.
+- Tightened Content Security Policy for scripts and WebSocket connections.
+- Enabled HSTS automatically when `security.secure-cookies` is enabled.
+- Aligned web login username validation with `/bwc adduser` rules.
+
+### Fixed
+
+- Fixed session activity persistence so active sessions remain stable across restarts.
+- Fixed WebSocket reconnects resetting per-session command rate limits.
+- Fixed invalid CIDR whitelist prefixes matching unintended IP addresses.
+- Fixed audit log shutdown potentially dropping queued entries.
+- Added login body size limits and consistent failed-login handling.
 
 ### Performance
 
 - Cached player activity summary counters instead of recalculating them for every stats payload.
+- Cached dummy bcrypt verification hash for unknown-user login attempts.
+- Cached world/entity stats between stats collection ticks.
+- Limited and compacted persisted player activity history.
 
 ## 2.4.3 - 2026-05-21
 

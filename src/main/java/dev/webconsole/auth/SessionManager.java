@@ -2,6 +2,7 @@ package dev.webconsole.auth;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import dev.webconsole.util.SecureFiles;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +25,7 @@ public class SessionManager {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final int TOKEN_BYTES = 32; // 256 bits
+    private static final long REFRESH_PERSIST_INTERVAL_MS = 60_000L;
 
     private final Map<String, Session> sessions = new ConcurrentHashMap<>();
     private final int sessionTimeoutMinutes;
@@ -56,14 +58,17 @@ public class SessionManager {
         Session session = sessions.get(token);
         if (session == null) return null;
 
+        long now = System.currentTimeMillis();
         long expiryMs = (long) sessionTimeoutMinutes * 60 * 1000;
-        if (System.currentTimeMillis() - session.getLastActivity() > expiryMs) {
+        if (now - session.getLastActivity() > expiryMs) {
             sessions.remove(token);
             persistQuietly();
             return null;
         }
 
-        session.refreshActivity();
+        if (session.refreshActivity(now)) {
+            persistQuietly();
+        }
         return session;
     }
 
@@ -154,6 +159,8 @@ public class SessionManager {
             }
             Files.writeString(tempFile, sb.toString(), StandardCharsets.UTF_8);
             Files.move(tempFile, storageFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            SecureFiles.ownerOnlyFile(storageFile);
+            sessions.values().forEach(Session::markPersisted);
         } catch (IOException ignored) {
         }
     }
@@ -197,6 +204,7 @@ public class SessionManager {
         private final String remoteIp;
         private final long createdAt;
         private volatile long lastActivity;
+        private volatile long lastPersistedActivity;
 
         public Session(String username, String remoteIp, long createdAt) {
             this(username, remoteIp, createdAt, createdAt);
@@ -207,10 +215,16 @@ public class SessionManager {
             this.remoteIp = remoteIp == null ? "" : remoteIp;
             this.createdAt = createdAt;
             this.lastActivity = lastActivity;
+            this.lastPersistedActivity = lastActivity;
         }
 
-        public void refreshActivity() {
-            this.lastActivity = System.currentTimeMillis();
+        public boolean refreshActivity(long now) {
+            this.lastActivity = now;
+            return now - lastPersistedActivity >= REFRESH_PERSIST_INTERVAL_MS;
+        }
+
+        private void markPersisted() {
+            this.lastPersistedActivity = lastActivity;
         }
 
         public String getUsername() { return username; }

@@ -23,6 +23,8 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 public class PlayerActivityStore {
+    private static final int MAX_STORED_ENTRIES = 10_000;
+    private static final int COMPACT_INTERVAL_WRITES = 500;
     private static final int MAX_EVENT_JSON = 80;
     private static final int MAX_COMMAND_JSON = 120;
     private static final int MAX_ACTIVITY_DAYS = 30;
@@ -40,6 +42,7 @@ public class PlayerActivityStore {
     private int cachedJoins;
     private int cachedLeaves;
     private int cachedCommands;
+    private int writesSinceCompact;
 
     public PlayerActivityStore(File dataFolder, Logger logger) {
         this.logger = logger;
@@ -48,6 +51,7 @@ public class PlayerActivityStore {
             logger.warning("[BWC] Failed to create data folder for player activity history");
         }
         load();
+        if (trimOldEntries()) compact();
         rebuildSummaryCache();
     }
 
@@ -132,6 +136,16 @@ public class PlayerActivityStore {
         entries.add(entry);
         addToSummaryCache(entry);
         append(entry);
+
+        writesSinceCompact++;
+        if (trimOldEntries()) {
+            rebuildSummaryCache();
+            compact();
+            writesSinceCompact = 0;
+        } else if (writesSinceCompact >= COMPACT_INTERVAL_WRITES) {
+            compact();
+            writesSinceCompact = 0;
+        }
     }
 
     private boolean load() {
@@ -182,6 +196,13 @@ public class PlayerActivityStore {
         } catch (IOException e) {
             logger.warning("[BWC] Failed to compact player activity history: " + e.getMessage());
         }
+    }
+
+    private boolean trimOldEntries() {
+        int extra = entries.size() - MAX_STORED_ENTRIES;
+        if (extra <= 0) return false;
+        entries.subList(0, extra).clear();
+        return true;
     }
 
     private JsonArray topPlayersJson(Map<String, PlayerSummary> players) {

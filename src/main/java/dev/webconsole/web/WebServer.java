@@ -69,7 +69,10 @@ public class WebServer {
         context.setContextPath("/");
 
         // Security headers filter (all requests)
-        context.addFilter(SecurityHeadersFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(
+                new FilterHolder(new SecurityHeadersFilter(config.isSecureCookies())),
+                "/*",
+                EnumSet.of(DispatcherType.REQUEST));
 
         // IP whitelist filter (all requests, before any servlet)
         context.addFilter(

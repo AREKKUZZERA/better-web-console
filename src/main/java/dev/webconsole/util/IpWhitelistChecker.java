@@ -29,6 +29,8 @@ public class IpWhitelistChecker {
                     String[] parts = entry.split("/", 2);
                     InetAddress addr = InetAddress.getByName(parts[0]);
                     int prefix = Integer.parseInt(parts[1]);
+                    int maxPrefix = addr.getAddress().length * 8;
+                    if (prefix < 0 || prefix > maxPrefix) continue;
                     blocks.add(new CidrBlock(addr.getAddress(), prefix, addr.getAddress().length));
                 } else {
                     InetAddress addr = InetAddress.getByName(entry);
@@ -36,8 +38,7 @@ public class IpWhitelistChecker {
                     blocks.add(new CidrBlock(b, b.length * 8, b.length));
                 }
             } catch (UnknownHostException | NumberFormatException e) {
-                // Log warning but continue
-                System.err.println("[Better-WebConsole] Invalid whitelist entry: " + entry);
+                // Ignore invalid entries and continue parsing the rest of the whitelist.
             }
         }
     }
@@ -46,8 +47,7 @@ public class IpWhitelistChecker {
         if (allowAll) return true;
         if (remoteIp == null) return false;
 
-        // Strip IPv6 brackets and port
-        remoteIp = remoteIp.replaceAll("^\\[|]:\\d+$|:\\d+$", "");
+        remoteIp = normalizeRemoteIp(remoteIp);
 
         try {
             byte[] addr = InetAddress.getByName(remoteIp).getAddress();
@@ -73,5 +73,20 @@ public class IpWhitelistChecker {
             if ((addr[fullBytes] & mask) != (network[fullBytes] & mask)) return false;
         }
         return true;
+    }
+
+    private String normalizeRemoteIp(String remoteIp) {
+        String value = remoteIp.trim();
+        if (value.startsWith("[") && value.contains("]")) {
+            return value.substring(1, value.indexOf(']'));
+        }
+        int colon = value.indexOf(':');
+        if (colon > 0 && colon == value.lastIndexOf(':')) {
+            String port = value.substring(colon + 1);
+            if (port.chars().allMatch(Character::isDigit)) {
+                return value.substring(0, colon);
+            }
+        }
+        return value;
     }
 }
