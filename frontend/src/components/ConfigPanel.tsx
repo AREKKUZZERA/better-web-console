@@ -77,12 +77,12 @@ export function ConfigPanel() {
             <span className="players-card-badge">{t('config.reloadApplies')}</span>
           </div>
           <div className="config-grid">
-            <label className="config-toggle"><input type="checkbox" checked={config.logging.logCommands} onChange={event => setConfig({ ...config, logging: { ...config.logging, logCommands: event.target.checked } })} />{t('config.logCommands')}</label>
-            <label className="config-toggle"><input type="checkbox" checked={config.logging.logAuth} onChange={event => setConfig({ ...config, logging: { ...config.logging, logAuth: event.target.checked } })} />{t('config.logAuth')}</label>
-            <label className="config-toggle"><input type="checkbox" checked={config.logging.auditLog} onChange={event => setConfig({ ...config, logging: { ...config.logging, auditLog: event.target.checked } })} />{t('config.auditLog')}</label>
-            <label className="config-toggle"><input type="checkbox" checked={config.systemStats.enabled} onChange={event => setConfig({ ...config, systemStats: { ...config.systemStats, enabled: event.target.checked } })} />{t('config.systemStats')}</label>
-            <label className="config-toggle"><input type="checkbox" checked={config.systemStats.showDisk} onChange={event => setConfig({ ...config, systemStats: { ...config.systemStats, showDisk: event.target.checked } })} />{t('config.showDisk')}</label>
-            <label className="config-number">{t('config.interval')}<input type="number" min={2} max={60} value={config.systemStats.updateIntervalSeconds} onChange={event => setConfig({ ...config, systemStats: { ...config.systemStats, updateIntervalSeconds: Number(event.target.value) } })} /></label>
+            <label className="config-toggle"><input id="config-log-commands" name="logCommands" type="checkbox" checked={config.logging.logCommands} onChange={event => setConfig({ ...config, logging: { ...config.logging, logCommands: event.target.checked } })} />{t('config.logCommands')}</label>
+            <label className="config-toggle"><input id="config-log-auth" name="logAuth" type="checkbox" checked={config.logging.logAuth} onChange={event => setConfig({ ...config, logging: { ...config.logging, logAuth: event.target.checked } })} />{t('config.logAuth')}</label>
+            <label className="config-toggle"><input id="config-audit-log" name="auditLog" type="checkbox" checked={config.logging.auditLog} onChange={event => setConfig({ ...config, logging: { ...config.logging, auditLog: event.target.checked } })} />{t('config.auditLog')}</label>
+            <label className="config-toggle"><input id="config-system-stats" name="systemStatsEnabled" type="checkbox" checked={config.systemStats.enabled} onChange={event => setConfig({ ...config, systemStats: { ...config.systemStats, enabled: event.target.checked } })} />{t('config.systemStats')}</label>
+            <label className="config-toggle"><input id="config-show-disk" name="showDisk" type="checkbox" checked={config.systemStats.showDisk} onChange={event => setConfig({ ...config, systemStats: { ...config.systemStats, showDisk: event.target.checked } })} />{t('config.showDisk')}</label>
+            <label className="config-number">{t('config.interval')}<input id="config-stats-interval" name="statsIntervalSeconds" type="number" min={2} max={60} value={config.systemStats.updateIntervalSeconds} onChange={event => setConfig({ ...config, systemStats: { ...config.systemStats, updateIntervalSeconds: Number(event.target.value) } })} /></label>
           </div>
         </section>
 
@@ -91,7 +91,7 @@ export function ConfigPanel() {
             <div className="players-card-title">{t('config.blocked')}</div>
             <span className="players-card-badge">{t('config.onePerLine')}</span>
           </div>
-          <textarea className="config-textarea" value={blockedText} onChange={event => setBlockedText(event.target.value)} />
+          <textarea id="config-blocked-commands" name="blockedCommands" className="config-textarea" value={blockedText} onChange={event => setBlockedText(event.target.value)} />
         </section>
 
         <section className="players-card">
@@ -102,8 +102,8 @@ export function ConfigPanel() {
           <div className="config-alias-list">
             {config.aliases.map((alias, index) => (
               <div className="config-alias-row" key={index}>
-                <input className="player-filter" value={alias.name} placeholder="name" onChange={event => updateAlias(index, 'name', event.target.value)} />
-                <input className="player-filter" value={alias.command} placeholder="command" onChange={event => updateAlias(index, 'command', event.target.value)} />
+                <input id={`config-alias-name-${index}`} name={`aliasName${index}`} className="player-filter" value={alias.name} placeholder={t('config.aliasName')} onChange={event => updateAlias(index, 'name', event.target.value)} />
+                <input id={`config-alias-command-${index}`} name={`aliasCommand${index}`} className="player-filter" value={alias.command} placeholder={t('config.aliasCommand')} onChange={event => updateAlias(index, 'command', event.target.value)} />
                 <button className="action-btn ban" type="button" onClick={() => setConfig({ ...config, aliases: config.aliases.filter((_alias, i) => i !== index) })}>X</button>
               </div>
             ))}

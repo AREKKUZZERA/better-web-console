@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.4.7 - 2026-05-28
+
+### Added
+
+- Added Spanish (`es`) localization to the web UI language selector.
+- Added missing localized labels for sessions, audit, config, diagnostics and player profile fields across supported languages.
+
+### Changed
+
+- Replaced OSHI-based system metrics with Java runtime and OS MXBean metrics to reduce shaded dependencies and runtime native-library issues.
+- Added stable `name` attributes to login, console, player, audit, config and modal form controls for better browser autofill and automation compatibility.
+- Localized remaining hardcoded player activity and profile labels.
+
+### Fixed
+
+- Collected an initial stats snapshot when the plugin starts so the dashboard has data sooner after startup.
+
 ## 2.4.5 - 2026-05-25
 
 ### Added

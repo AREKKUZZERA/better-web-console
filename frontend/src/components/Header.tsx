@@ -1,4 +1,8 @@
+import { useWebConsoleLanguage } from './useWebConsoleRuntime';
+
 export function Header() {
+  const { t } = useWebConsoleLanguage();
+
   return (
     <header>
         <div className="hlogo">&#x2B21; BWC</div>
@@ -8,13 +12,14 @@ export function Header() {
         <div className="hsep"></div>
         <div className="huser"><span data-i18n="header.as">as</span> <strong id="ulabel"></strong></div>
         <div className="spacer"></div>
-        <select className="lang-select" id="app-lang" aria-label="Language">
+        <select className="lang-select" id="app-lang" name="appLanguage" aria-label={t('lang.label')}>
           <option value="en">English</option>
           <option value="ru">Русский</option>
           <option value="zh">中文</option>
           <option value="pl">Polski</option>
           <option value="de">Deutsch</option>
           <option value="fr">Français</option>
+          <option value="es">Español</option>
         </select>
         <button className="hbtn" id="notif-btn" title="Toggle error notifications" data-i18n-title="header.notifications">&#128276; <span className="notif-badge" id="nbadge"></span></button>
         <button className="hbtn" id="btn-export" data-i18n="header.export">Export Log</button>

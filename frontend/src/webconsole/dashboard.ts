@@ -29,7 +29,7 @@ export function renderWorldRows(worlds) {
 export function renderTopPlayersHtml(summary, t) {
   const list = Array.isArray(summary.topPlayers) ? summary.topPlayers : [];
   if (!list.length) return `<div class="history-empty">${t('dash.noData')}</div>`;
-  return list.map(p => `<div class="activity-item cmd"><span class="activity-icon">&#9889;</span><span class="activity-text"><strong class="notranslate" translate="no">${esc(p.player || t('players.unknown'))}</strong> ${p.score || 0} total</span><span class="activity-time">CMD ${p.commands || 0}</span></div>`).join('');
+  return list.map(p => `<div class="activity-item cmd"><span class="activity-icon">&#9889;</span><span class="activity-text"><strong class="notranslate" translate="no">${esc(p.player || t('players.unknown'))}</strong> ${p.score || 0} ${t('players.total')}</span><span class="activity-time">CMD ${p.commands || 0}</span></div>`).join('');
 }
 
 export function renderActivityHtml(activityLog, t) {

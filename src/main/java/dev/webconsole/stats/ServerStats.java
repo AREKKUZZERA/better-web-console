@@ -12,13 +12,8 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
-import oshi.SystemInfo;
-import oshi.hardware.CentralProcessor;
-import oshi.hardware.GlobalMemory;
-import oshi.hardware.HardwareAbstractionLayer;
-import oshi.software.os.OSFileStore;
-import oshi.software.os.OperatingSystem;
 
+import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
@@ -65,18 +60,15 @@ public class ServerStats {
     private long lastBroadcastAt = 0L;
     private long lastSystemStatsAt = 0L;
     private long lastWorldStatsAt = 0L;
-    private long lastSystemInfoInitAttempt = 0L;
-    private SystemInfo systemInfo;
-    private HardwareAbstractionLayer hardware;
-    private OperatingSystem operatingSystem;
-    private long[] previousCpuTicks;
+    private long lastProcessCpuTimeNs = -1L;
+    private long lastProcessCpuWallNs = -1L;
 
     public ServerStats(BetterWebConsolePlugin plugin) {
         this.plugin = plugin;
-        initSystemInfo();
     }
 
     public void start() {
+        collect();
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::collect, 20L, 20L);
     }
 
@@ -186,11 +178,6 @@ public class ServerStats {
             return;
         }
 
-        if (!initSystemInfo()) {
-            lastSystemStats = new JsonObject();
-            return;
-        }
-
         long now = System.currentTimeMillis();
         long intervalMs = config.getSystemStatsUpdateIntervalSeconds() * 1000L;
         if (now - lastSystemStatsAt < intervalMs) return;
@@ -202,7 +189,7 @@ public class ServerStats {
                 JsonObject cpu = lastSystemStats.getAsJsonObject("cpu");
                 if (cpu.has("systemLoadPercent")) addToHistory(cpuHistory, cpu.get("systemLoadPercent").getAsDouble());
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             JsonObject error = new JsonObject();
             error.addProperty("enabled", false);
             error.addProperty("error", e.getMessage());
@@ -210,46 +197,25 @@ public class ServerStats {
         }
     }
 
-    private boolean initSystemInfo() {
-        if (systemInfo != null && hardware != null && operatingSystem != null) return true;
-        if (!plugin.getPluginConfig().isSystemStatsEnabled()) return false;
-        long now = System.currentTimeMillis();
-        if (now - lastSystemInfoInitAttempt < 60_000L) return false;
-        lastSystemInfoInitAttempt = now;
-
-        try {
-            this.systemInfo = new SystemInfo();
-            this.hardware = systemInfo.getHardware();
-            this.operatingSystem = systemInfo.getOperatingSystem();
-            this.previousCpuTicks = hardware.getProcessor().getSystemCpuLoadTicks();
-            return true;
-        } catch (Exception e) {
-            plugin.getLogger().warning("[BWC] Failed to initialize system stats: " + e.getMessage());
-            return false;
-        }
-    }
-
     private JsonObject buildSystemStats(PluginConfig config) {
         JsonObject system = new JsonObject();
         system.addProperty("enabled", true);
 
-        CentralProcessor processor = hardware.getProcessor();
-        double systemCpuLoad = processor.getSystemCpuLoadBetweenTicks(previousCpuTicks);
-        previousCpuTicks = processor.getSystemCpuLoadTicks();
-
-        double processCpuLoad = processCpuLoad();
+        java.lang.management.OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+        int processors = Math.max(1, osBean.getAvailableProcessors());
+        double systemCpuLoad = systemCpuLoad(osBean);
+        double processCpuLoad = processCpuLoad(osBean, processors);
 
         JsonObject cpu = new JsonObject();
-        cpu.addProperty("model", processor.getProcessorIdentifier().getName());
-        cpu.addProperty("physicalCores", processor.getPhysicalProcessorCount());
-        cpu.addProperty("logicalCores", processor.getLogicalProcessorCount());
-        cpu.addProperty("systemLoadPercent", percent(systemCpuLoad));
-        cpu.addProperty("processLoadPercent", percent(processCpuLoad));
+        cpu.addProperty("model", System.getenv().getOrDefault("PROCESSOR_IDENTIFIER", System.getProperty("os.arch", "unknown")));
+        cpu.addProperty("physicalCores", processors);
+        cpu.addProperty("logicalCores", processors);
+        cpu.addProperty("systemLoadPercent", systemCpuLoad);
+        cpu.addProperty("processLoadPercent", processCpuLoad);
         system.add("cpu", cpu);
 
-        GlobalMemory memory = hardware.getMemory();
-        long totalMemory = memory.getTotal();
-        long availableMemory = memory.getAvailable();
+        long totalMemory = totalPhysicalMemory(osBean);
+        long availableMemory = freePhysicalMemory(osBean);
         JsonObject memoryJson = new JsonObject();
         memoryJson.addProperty("totalBytes", totalMemory);
         memoryJson.addProperty("availableBytes", availableMemory);
@@ -266,17 +232,17 @@ public class ServerStats {
         jvm.addProperty("uptimeSeconds", ManagementFactory.getRuntimeMXBean().getUptime() / 1000L);
         jvm.addProperty("threads", threadBean.getThreadCount());
         jvm.addProperty("daemonThreads", threadBean.getDaemonThreadCount());
-        jvm.addProperty("pid", operatingSystem.getProcessId());
+        jvm.addProperty("pid", ProcessHandle.current().pid());
         jvm.addProperty("javaVersion", System.getProperty("java.version", "unknown"));
         jvm.addProperty("javaVendor", System.getProperty("java.vendor", "unknown"));
         system.add("jvm", jvm);
 
         JsonObject os = new JsonObject();
-        os.addProperty("family", operatingSystem.getFamily());
-        os.addProperty("version", operatingSystem.getVersionInfo().toString());
+        os.addProperty("family", System.getProperty("os.name", "unknown"));
+        os.addProperty("version", System.getProperty("os.version", "unknown"));
         os.addProperty("arch", System.getProperty("os.arch", "unknown"));
-        os.addProperty("bitness", operatingSystem.getBitness());
-        os.addProperty("uptimeSeconds", operatingSystem.getSystemUptime());
+        os.addProperty("bitness", System.getProperty("sun.arch.data.model", "unknown"));
+        os.addProperty("uptimeSeconds", ManagementFactory.getRuntimeMXBean().getUptime() / 1000L);
         system.add("os", os);
 
         if (config.isShowDiskStats()) {
@@ -288,31 +254,12 @@ public class ServerStats {
 
     private JsonObject buildDiskStats() {
         Path serverPath = plugin.getServer().getWorldContainer().toPath().toAbsolutePath().normalize();
-        String bestMount = "";
-        long bestTotal = 0L;
-        long bestUsable = 0L;
-
-        for (OSFileStore store : operatingSystem.getFileSystem().getFileStores()) {
-            String mount = store.getMount();
-            if (mount == null || mount.isBlank()) continue;
-            Path mountPath;
-            try {
-                mountPath = Path.of(mount).toAbsolutePath().normalize();
-            } catch (Exception ignored) {
-                continue;
-            }
-            if (serverPath.startsWith(mountPath) && mount.length() >= bestMount.length()) {
-                bestMount = mount;
-                bestTotal = store.getTotalSpace();
-                bestUsable = store.getUsableSpace();
-            }
-        }
-
-        if (bestTotal <= 0L) {
-            bestMount = serverPath.toString();
-            bestTotal = serverPath.toFile().getTotalSpace();
-            bestUsable = serverPath.toFile().getUsableSpace();
-        }
+        File root = serverPath.toFile();
+        Path rootPath = serverPath.getRoot();
+        if (rootPath != null) root = rootPath.toFile();
+        long bestTotal = root.getTotalSpace();
+        long bestUsable = root.getUsableSpace();
+        String bestMount = rootPath != null ? rootPath.toString() : serverPath.toString();
 
         JsonObject disk = new JsonObject();
         long used = Math.max(0L, bestTotal - bestUsable);
@@ -408,12 +355,46 @@ public class ServerStats {
         return Math.max(0.0, Math.min(100.0, Math.round(ratio * 1000.0) / 10.0));
     }
 
-    private double processCpuLoad() {
-        java.lang.management.OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+    private double systemCpuLoad(java.lang.management.OperatingSystemMXBean osBean) {
+        if (osBean instanceof com.sun.management.OperatingSystemMXBean sunOsBean) {
+            double load = sunOsBean.getCpuLoad();
+            return load < 0 ? 0.0 : percent(load);
+        }
+
+        double average = osBean.getSystemLoadAverage();
+        return average < 0 ? 0.0 : percent(average / Math.max(1, osBean.getAvailableProcessors()));
+    }
+
+    private double processCpuLoad(java.lang.management.OperatingSystemMXBean osBean, int processors) {
         if (osBean instanceof com.sun.management.OperatingSystemMXBean sunOsBean) {
             double load = sunOsBean.getProcessCpuLoad();
-            return load < 0 ? 0.0 : load;
+            if (load >= 0) return percent(load);
+
+            long cpuTimeNs = sunOsBean.getProcessCpuTime();
+            long wallNs = System.nanoTime();
+            if (lastProcessCpuTimeNs >= 0 && lastProcessCpuWallNs >= 0 && wallNs > lastProcessCpuWallNs) {
+                double ratio = (double) (cpuTimeNs - lastProcessCpuTimeNs) / (double) (wallNs - lastProcessCpuWallNs) / processors;
+                lastProcessCpuTimeNs = cpuTimeNs;
+                lastProcessCpuWallNs = wallNs;
+                return percent(ratio);
+            }
+            lastProcessCpuTimeNs = cpuTimeNs;
+            lastProcessCpuWallNs = wallNs;
         }
         return 0.0;
+    }
+
+    private long totalPhysicalMemory(java.lang.management.OperatingSystemMXBean osBean) {
+        if (osBean instanceof com.sun.management.OperatingSystemMXBean sunOsBean) {
+            return Math.max(0L, sunOsBean.getTotalMemorySize());
+        }
+        return 0L;
+    }
+
+    private long freePhysicalMemory(java.lang.management.OperatingSystemMXBean osBean) {
+        if (osBean instanceof com.sun.management.OperatingSystemMXBean sunOsBean) {
+            return Math.max(0L, sunOsBean.getFreeMemorySize());
+        }
+        return 0L;
     }
 }

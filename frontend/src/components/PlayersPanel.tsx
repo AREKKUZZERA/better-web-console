@@ -80,8 +80,8 @@ export function PlayersPanel() {
               <span className="players-card-badge" id="players-online-badge">{t('players.online', { count: players.length })}</span>
             </div>
             <div className="players-toolbar">
-              <input id="player-search" className="player-filter" type="search" placeholder={t('players.searchPlaceholder')} data-i18n-placeholder="players.searchPlaceholder" value={search} onChange={event => setSearch(event.target.value)} />
-              <select id="player-world-filter" className="player-filter" value={selectedWorld} onChange={event => setWorld(event.target.value)}>
+              <input id="player-search" name="playerSearch" className="player-filter" type="search" placeholder={t('players.searchPlaceholder')} data-i18n-placeholder="players.searchPlaceholder" value={search} onChange={event => setSearch(event.target.value)} />
+              <select id="player-world-filter" name="playerWorldFilter" className="player-filter" value={selectedWorld} onChange={event => setWorld(event.target.value)}>
                 <option value="" data-i18n="players.allWorlds">{t('players.allWorlds')}</option>
                 {worlds.map(worldName => <option value={worldName} key={worldName}>{worldName}</option>)}
               </select>
@@ -160,8 +160,8 @@ export function PlayersPanel() {
                     <div><span>{t('players.ping')}</span><strong>{profile.ping}ms</strong></div>
                     <div><span>HP</span><strong>{profile.health}/{profile.maxHealth}</strong></div>
                     <div><span>XYZ</span><strong>{profile.x} / {profile.y} / {profile.z}</strong></div>
-                    <div><span>Food</span><strong>{profile.food}</strong></div>
-                    <div><span>Level</span><strong>{profile.level}</strong></div>
+                    <div><span>{t('players.food')}</span><strong>{profile.food}</strong></div>
+                    <div><span>{t('players.level')}</span><strong>{profile.level}</strong></div>
                   </div>
                   <div className="players-card-title profile-history-title">{t('players.history')}</div>
                   <div className="history-list profile-history">

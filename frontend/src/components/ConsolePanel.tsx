@@ -14,7 +14,7 @@ export function ConsolePanel() {
         </div>
         <div id="search-bar">
           <span className="slbl" data-i18n="console.filter">Filter</span>
-          <input id="search-input" type="text" placeholder="Search logs&#8230; (Ctrl+F)" data-i18n-placeholder="console.searchPlaceholder" spellCheck="false" />
+          <input id="search-input" name="consoleSearch" type="text" placeholder="Search logs&#8230; (Ctrl+F)" data-i18n-placeholder="console.searchPlaceholder" spellCheck="false" />
           <span id="search-count"></span>
           <button className="ftog INFO active" data-lv="INFO">Info</button>
           <button className="ftog WARN active" data-lv="WARN">Warn</button>
@@ -23,7 +23,7 @@ export function ConsolePanel() {
         </div>
         <div id="input-bar">
           <span className="prompt">&#10095;</span>
-          <input id="cmd-input" type="text" placeholder="Type command or !alias&#8230; (Tab to complete)" data-i18n-placeholder="console.commandPlaceholder" autoComplete="off" spellCheck="false" disabled />
+          <input id="cmd-input" name="consoleCommand" type="text" placeholder="Type command or !alias&#8230; (Tab to complete)" data-i18n-placeholder="console.commandPlaceholder" autoComplete="off" spellCheck="false" disabled />
           <div id="autocomplete"></div>
           <button className="btn-send" id="btn-send" disabled data-i18n="console.run">Run</button>
         </div>

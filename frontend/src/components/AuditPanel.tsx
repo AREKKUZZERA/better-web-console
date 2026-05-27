@@ -102,7 +102,7 @@ export function AuditPanel() {
             <span className="players-card-badge" id="audit-count">{error ? '!' : filtered.length}</span>
           </div>
           <div className="audit-toolbar">
-            <input id="audit-search" className="player-filter" type="search" placeholder={t('audit.searchPlaceholder')} data-i18n-placeholder="audit.searchPlaceholder" value={search} onChange={event => setSearch(event.target.value)} />
+            <input id="audit-search" name="auditSearch" className="player-filter" type="search" placeholder={t('audit.searchPlaceholder')} data-i18n-placeholder="audit.searchPlaceholder" value={search} onChange={event => setSearch(event.target.value)} />
             <button className="alias-run" id="audit-refresh" type="button" data-i18n="audit.refresh" onClick={() => void loadAudit()}>{t('audit.refresh')}</button>
             <a className="alias-run" href={auditExportUrl('csv', { q: search.trim() })}>CSV</a>
             <a className="alias-run" href={auditExportUrl('json', { q: search.trim() })}>JSON</a>
