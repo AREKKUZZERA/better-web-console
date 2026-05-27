@@ -17,6 +17,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Collections;
@@ -46,6 +47,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
         this.playerActivityStore = new PlayerActivityStore(getDataFolder(), getLogger());
 
         this.consoleLogHandler = new ConsoleLogHandler(pluginConfig.getLogBufferSize());
+        consoleLogHandler.loadBacklog(serverLogPath(), getLogger());
         consoleLogHandler.hookSystemStreams();
         consoleLogHandler.hookLog4j();
 
@@ -264,6 +266,10 @@ public class BetterWebConsolePlugin extends JavaPlugin {
         SECURE_RANDOM.nextBytes(secretBytes);
         getConfig().set("security.csrf-secret", Base64.getUrlEncoder().withoutPadding().encodeToString(secretBytes));
         saveConfig();
+    }
+
+    private Path serverLogPath() {
+        return getServer().getWorldContainer().toPath().resolve("logs").resolve("latest.log");
     }
 
     public static BetterWebConsolePlugin getInstance() { return instance; }

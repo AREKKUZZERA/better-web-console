@@ -4,10 +4,14 @@ import dev.webconsole.web.WebSocketHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -22,6 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 public class ConsoleLogHandler extends Handler {
@@ -98,6 +103,18 @@ public class ConsoleLogHandler extends Handler {
             String trimmed = line.stripTrailing();
             if (!trimmed.isEmpty()) {
                 publishFormattedLine(trimmed);
+            }
+        }
+    }
+
+    public void loadBacklog(Path logFile, Logger logger) {
+        if (logFile == null || !Files.isRegularFile(logFile)) return;
+
+        try (var lines = Files.lines(logFile, StandardCharsets.UTF_8)) {
+            lines.forEach(this::publishFormattedLine);
+        } catch (IOException e) {
+            if (logger != null) {
+                logger.fine("Failed to load console backlog from " + logFile + ": " + e.getMessage());
             }
         }
     }

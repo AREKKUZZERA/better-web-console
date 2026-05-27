@@ -16,6 +16,7 @@
 ### Fixed
 
 - Collected an initial stats snapshot when the plugin starts so the dashboard has data sooner after startup.
+- Loaded existing `logs/latest.log` lines into the web console backlog before live log capture starts.
 
 ## 2.4.5 - 2026-05-25
 
