@@ -2,6 +2,7 @@ package dev.webconsole.web;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.webconsole.BetterWebConsolePlugin;
@@ -13,11 +14,16 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import io.papermc.paper.plugin.configuration.PluginMeta;
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.FileConfiguration;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -38,6 +44,7 @@ public class ApiServlet extends HttpServlet {
     private static final Gson GSON = new Gson();
     private static final int MAX_BODY_CHARS = 16 * 1024;
     private static final Pattern USERNAME = Pattern.compile("[a-zA-Z0-9_-]{3,32}");
+    private static final Pattern ALIAS_NAME = Pattern.compile("[a-z0-9_-]{1,32}");
 
     private final BetterWebConsolePlugin plugin;
     private final SessionManager sessionManager;
@@ -66,6 +73,11 @@ public class ApiServlet extends HttpServlet {
             case "/aliases"     -> handleAliases(req, res);
             case "/sessions"    -> handleSessions(req, res);
             case "/audit"       -> handleAudit(req, res);
+            case "/audit/export" -> handleAuditExport(req, res);
+            case "/compat"      -> handleCompatibility(req, res);
+            case "/config"      -> handleConfig(req, res);
+            case "/errors"      -> handleErrors(req, res);
+            case "/player"      -> handlePlayer(req, res);
             case "/logs/export" -> handleLogExport(req, res);
             default             -> sendError(res, 404, "Not found");
         }
@@ -82,6 +94,7 @@ public class ApiServlet extends HttpServlet {
         switch (path) {
             case "/login"  -> handleLogin(req, res);
             case "/logout" -> handleLogout(req, res);
+            case "/config" -> handleConfigSave(req, res);
             default        -> sendError(res, 404, "Not found");
         }
     }
@@ -138,7 +151,158 @@ public class ApiServlet extends HttpServlet {
         if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
         int limit = parseLimit(req.getParameter("limit"), 200);
         JsonObject resp = new JsonObject();
-        resp.add("entries", plugin.getAuditLog().recentJson(limit));
+        resp.add("entries", plugin.getAuditLog().searchJson(limit, req.getParameter("q"), req.getParameter("action"),
+                req.getParameter("username"), req.getParameter("ip")));
+        writeJson(res, 200, resp);
+    }
+
+    private void handleAuditExport(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
+        int limit = parseLimit(req.getParameter("limit"), 500);
+        String format = req.getParameter("format") == null ? "json" : req.getParameter("format").toLowerCase(Locale.ROOT);
+        List<JsonObject> entries = plugin.getAuditLog().searchEntries(limit, req.getParameter("q"), req.getParameter("action"),
+                req.getParameter("username"), req.getParameter("ip"));
+
+        if ("csv".equals(format)) {
+            res.setContentType("text/csv;charset=UTF-8");
+            res.setHeader("Content-Disposition", "attachment; filename=\"audit-export.csv\"");
+            PrintWriter w = res.getWriter();
+            w.println("timestamp,action,username,ip,detail,raw");
+            for (JsonObject entry : entries) {
+                w.println(csv(entry, "timestamp") + "," + csv(entry, "action") + "," + csv(entry, "username") + ","
+                        + csv(entry, "ip") + "," + csv(entry, "detail") + "," + csv(entry, "raw"));
+            }
+            w.flush();
+            return;
+        }
+
+        res.setContentType("application/json;charset=UTF-8");
+        res.setHeader("Content-Disposition", "attachment; filename=\"audit-export.json\"");
+        JsonObject resp = new JsonObject();
+        JsonArray arr = new JsonArray();
+        entries.forEach(arr::add);
+        resp.add("entries", arr);
+        writeJson(res, 200, resp);
+    }
+
+    private void handleCompatibility(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.setContentType("application/json;charset=UTF-8");
+        if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
+        JsonObject obj = new JsonObject();
+        String bukkitVersion = Bukkit.getBukkitVersion();
+        PluginMeta pluginMeta = plugin.getPluginMeta();
+        String pluginApi = pluginMeta.getAPIVersion();
+        String detectedLine = detectLine(bukkitVersion);
+        String jarLine = detectLine(pluginApi);
+        obj.addProperty("pluginVersion", pluginMeta.getVersion());
+        obj.addProperty("pluginApiVersion", pluginApi);
+        obj.addProperty("serverName", Bukkit.getName());
+        obj.addProperty("serverVersion", Bukkit.getVersion());
+        obj.addProperty("bukkitVersion", bukkitVersion);
+        obj.addProperty("javaVersion", System.getProperty("java.version"));
+        obj.addProperty("javaVendor", System.getProperty("java.vendor"));
+        obj.addProperty("detectedServerLine", detectedLine);
+        obj.addProperty("jarLine", jarLine);
+        obj.addProperty("compatible", jarLine.equals("unknown") || detectedLine.equals("unknown") || jarLine.equals(detectedLine));
+        writeJson(res, 200, obj);
+    }
+
+    private void handleConfig(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.setContentType("application/json;charset=UTF-8");
+        if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
+        JsonObject obj = new JsonObject();
+        JsonObject logging = new JsonObject();
+        logging.addProperty("logCommands", plugin.getPluginConfig().isLogCommands());
+        logging.addProperty("logAuth", plugin.getPluginConfig().isLogAuth());
+        logging.addProperty("auditLog", plugin.getPluginConfig().isAuditLog());
+        obj.add("logging", logging);
+
+        JsonObject systemStats = new JsonObject();
+        systemStats.addProperty("enabled", plugin.getPluginConfig().isSystemStatsEnabled());
+        systemStats.addProperty("updateIntervalSeconds", plugin.getPluginConfig().getSystemStatsUpdateIntervalSeconds());
+        systemStats.addProperty("showDisk", plugin.getPluginConfig().isShowDiskStats());
+        obj.add("systemStats", systemStats);
+
+        JsonArray blocked = new JsonArray();
+        plugin.getPluginConfig().getBlockedCommands().stream().sorted().forEach(blocked::add);
+        obj.add("blockedCommands", blocked);
+
+        JsonArray aliases = new JsonArray();
+        for (Map.Entry<String, String> entry : plugin.getPluginConfig().getAliases().entrySet()) {
+            JsonObject alias = new JsonObject();
+            alias.addProperty("name", entry.getKey());
+            alias.addProperty("command", entry.getValue());
+            aliases.add(alias);
+        }
+        obj.add("aliases", aliases);
+        writeJson(res, 200, obj);
+    }
+
+    private void handleErrors(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.setContentType("application/json;charset=UTF-8");
+        if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
+        JsonObject obj = new JsonObject();
+        obj.add("groups", plugin.getConsoleLogHandler().errorGroupsJson());
+        writeJson(res, 200, obj);
+    }
+
+    private void handlePlayer(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.setContentType("application/json;charset=UTF-8");
+        if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
+        JsonObject profile = plugin.getServerStats().playerProfileJson(req.getParameter("id"));
+        if (!profile.has("online") || !profile.get("online").getAsBoolean()) {
+            sendError(res, 404, "Player not online");
+            return;
+        }
+        writeJson(res, 200, profile);
+    }
+
+    private void handleConfigSave(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.setContentType("application/json;charset=UTF-8");
+        if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
+        String body = readBody(req);
+        if (body == null) { sendError(res, 400, "Invalid body"); return; }
+
+        JsonObject input;
+        try {
+            input = JsonParser.parseString(body).getAsJsonObject();
+        } catch (Exception e) {
+            sendError(res, 400, "Invalid JSON");
+            return;
+        }
+
+        Map<String, String> aliases;
+        List<String> blocked;
+        try {
+            aliases = parseAliases(input.getAsJsonArray("aliases"));
+            blocked = parseStringList(input.getAsJsonArray("blockedCommands"), 64, 80);
+        } catch (IOException e) {
+            sendError(res, 400, e.getMessage());
+            return;
+        }
+        JsonObject logging = input.has("logging") && input.get("logging").isJsonObject() ? input.getAsJsonObject("logging") : new JsonObject();
+        JsonObject systemStats = input.has("systemStats") && input.get("systemStats").isJsonObject() ? input.getAsJsonObject("systemStats") : new JsonObject();
+
+        FileConfiguration cfg = plugin.getConfig();
+        cfg.set("commands.aliases", null);
+        for (Map.Entry<String, String> entry : aliases.entrySet()) cfg.set("commands.aliases." + entry.getKey(), entry.getValue());
+        cfg.set("commands.blocked", blocked);
+        cfg.set("logging.log-commands", bool(logging, "logCommands", plugin.getPluginConfig().isLogCommands()));
+        cfg.set("logging.log-auth", bool(logging, "logAuth", plugin.getPluginConfig().isLogAuth()));
+        cfg.set("logging.audit-log", bool(logging, "auditLog", plugin.getPluginConfig().isAuditLog()));
+        cfg.set("system-stats.enabled", bool(systemStats, "enabled", plugin.getPluginConfig().isSystemStatsEnabled()));
+        cfg.set("system-stats.update-interval-seconds", Math.max(2, Math.min(60,
+                integer(systemStats, "updateIntervalSeconds", plugin.getPluginConfig().getSystemStatsUpdateIntervalSeconds()))));
+        cfg.set("system-stats.show-disk", bool(systemStats, "showDisk", plugin.getPluginConfig().isShowDiskStats()));
+        plugin.saveConfig();
+        plugin.reloadPluginConfig();
+
+        if (plugin.getPluginConfig().isAuditLog()) {
+            plugin.getAuditLog().log(getSessionUsername(req), req.getRemoteAddr(), "CONFIG", "web config saved");
+        }
+
+        JsonObject resp = new JsonObject();
+        resp.addProperty("success", true);
         writeJson(res, 200, resp);
     }
 
@@ -293,6 +457,62 @@ public class ApiServlet extends HttpServlet {
         } catch (Exception ignored) {
             return fallback;
         }
+    }
+
+    private Map<String, String> parseAliases(JsonArray raw) throws IOException {
+        Map<String, String> aliases = new LinkedHashMap<>();
+        if (raw == null) return aliases;
+        if (raw.size() > 100) throw new IOException("Too many aliases");
+        for (JsonElement item : raw) {
+            if (!item.isJsonObject()) continue;
+            JsonObject obj = item.getAsJsonObject();
+            String name = obj.has("name") ? obj.get("name").getAsString().trim().toLowerCase(Locale.ROOT) : "";
+            String command = obj.has("command") ? obj.get("command").getAsString().trim() : "";
+            if (name.isBlank() && command.isBlank()) continue;
+            if (!ALIAS_NAME.matcher(name).matches()) throw new IOException("Invalid alias name: " + name);
+            if (command.isBlank() || command.length() > 300) throw new IOException("Invalid alias command: " + name);
+            aliases.put(name, command);
+        }
+        return aliases;
+    }
+
+    private List<String> parseStringList(JsonArray raw, int maxItems, int maxLength) throws IOException {
+        List<String> values = new ArrayList<>();
+        if (raw == null) return values;
+        if (raw.size() > maxItems) throw new IOException("Too many values");
+        for (JsonElement item : raw) {
+            if (!item.isJsonPrimitive()) continue;
+            String value = item.getAsString().trim();
+            if (value.isBlank()) continue;
+            if (value.length() > maxLength) throw new IOException("Value too long");
+            values.add(value);
+        }
+        return values;
+    }
+
+    private boolean bool(JsonObject obj, String key, boolean fallback) {
+        return obj.has(key) && obj.get(key).isJsonPrimitive() ? obj.get(key).getAsBoolean() : fallback;
+    }
+
+    private int integer(JsonObject obj, String key, int fallback) {
+        try {
+            return obj.has(key) ? obj.get(key).getAsInt() : fallback;
+        } catch (Exception ignored) {
+            return fallback;
+        }
+    }
+
+    private String detectLine(String version) {
+        if (version == null) return "unknown";
+        String v = version.toLowerCase(Locale.ROOT);
+        if (v.startsWith("26.1") || v.contains("mc: 26.1") || v.contains("minecraft version 26.1")) return "26.1.X";
+        if (v.startsWith("1.21") || v.contains("mc: 1.21") || v.contains("minecraft version 1.21")) return "1.21.X";
+        return "unknown";
+    }
+
+    private String csv(JsonObject obj, String key) {
+        String value = obj.has(key) ? obj.get(key).getAsString() : "";
+        return "\"" + value.replace("\"", "\"\"") + "\"";
     }
 
     private void sendError(HttpServletResponse res, int code, String msg) throws IOException {

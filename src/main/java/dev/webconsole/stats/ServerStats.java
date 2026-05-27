@@ -6,7 +6,10 @@ import dev.webconsole.BetterWebConsolePlugin;
 import dev.webconsole.config.PluginConfig;
 import dev.webconsole.web.WebSocketHandler;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 import oshi.SystemInfo;
@@ -83,6 +86,46 @@ public class ServerStats {
 
     public void setWebSocketHandler(WebSocketHandler wsHandler) {
         this.wsHandler = wsHandler;
+    }
+
+    public JsonObject playerProfileJson(String nameOrUuid) {
+        Player player = findPlayer(nameOrUuid);
+        JsonObject obj = new JsonObject();
+        obj.addProperty("online", player != null);
+        if (player == null) return obj;
+
+        Location loc = player.getLocation();
+        obj.addProperty("name", player.getName());
+        obj.addProperty("uuid", player.getUniqueId().toString());
+        obj.addProperty("world", player.getWorld().getName());
+        obj.addProperty("ping", player.getPing());
+        obj.addProperty("op", player.isOp());
+        obj.addProperty("gamemode", player.getGameMode().name());
+        obj.addProperty("health", Math.round(player.getHealth() * 10.0) / 10.0);
+        AttributeInstance maxHealth = player.getAttribute(Attribute.MAX_HEALTH);
+        obj.addProperty("maxHealth", Math.round((maxHealth != null ? maxHealth.getValue() : player.getHealth()) * 10.0) / 10.0);
+        obj.addProperty("food", player.getFoodLevel());
+        obj.addProperty("level", player.getLevel());
+        obj.addProperty("x", Math.round(loc.getX() * 10.0) / 10.0);
+        obj.addProperty("y", Math.round(loc.getY() * 10.0) / 10.0);
+        obj.addProperty("z", Math.round(loc.getZ() * 10.0) / 10.0);
+        if (plugin.getPlayerActivityStore() != null) {
+            obj.add("history", plugin.getPlayerActivityStore().playerHistoryJson(player.getUniqueId().toString(), player.getName(), 80));
+        } else {
+            obj.add("history", new JsonArray());
+        }
+        return obj;
+    }
+
+    private Player findPlayer(String nameOrUuid) {
+        if (nameOrUuid == null || nameOrUuid.isBlank()) return null;
+        String needle = nameOrUuid.trim();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.getName().equalsIgnoreCase(needle) || player.getUniqueId().toString().equalsIgnoreCase(needle)) {
+                return player;
+            }
+        }
+        return null;
     }
 
     private void collect() {

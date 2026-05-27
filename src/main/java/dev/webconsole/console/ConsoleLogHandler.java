@@ -13,8 +13,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Deque;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -208,6 +211,64 @@ public class ConsoleLogHandler extends Handler {
             return new ArrayList<>(logBuffer);
         } finally {
             bufferLock.unlock();
+        }
+    }
+
+    public com.google.gson.JsonArray errorGroupsJson() {
+        Map<String, ErrorGroup> groups = new LinkedHashMap<>();
+        List<String> lines = getBufferedLines();
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (!isErrorLine(line)) continue;
+            String signature = errorSignature(line);
+            ErrorGroup group = groups.computeIfAbsent(signature, ignored -> new ErrorGroup(signature));
+            group.count++;
+            if (group.firstLine == 0) group.firstLine = i + 1;
+            group.lastLine = i + 1;
+            group.sample = line;
+        }
+
+        com.google.gson.JsonArray arr = new com.google.gson.JsonArray();
+        groups.values().stream()
+                .sorted((a, b) -> Integer.compare(b.count, a.count))
+                .limit(25)
+                .forEach(group -> {
+                    com.google.gson.JsonObject obj = new com.google.gson.JsonObject();
+                    obj.addProperty("signature", group.signature);
+                    obj.addProperty("count", group.count);
+                    obj.addProperty("firstLine", group.firstLine);
+                    obj.addProperty("lastLine", group.lastLine);
+                    obj.addProperty("sample", group.sample);
+                    arr.add(obj);
+                });
+        return arr;
+    }
+
+    private boolean isErrorLine(String line) {
+        String upper = line.toUpperCase(Locale.ROOT);
+        return upper.contains(" SEVERE") || upper.contains(" ERROR") || upper.contains("EXCEPTION")
+                || upper.contains("CAUSED BY:");
+    }
+
+    private String errorSignature(String line) {
+        String normalized = line
+                .replaceAll("^\\[[^]]+]", "")
+                .replaceAll("\\bat [\\w.$]+\\([^)]*\\)", "at <stack>")
+                .replaceAll("\\b[0-9a-fA-F-]{32,}\\b", "<id>")
+                .replaceAll("\\b\\d+\\b", "<n>")
+                .trim();
+        return normalized.length() > 160 ? normalized.substring(0, 160) : normalized;
+    }
+
+    private static final class ErrorGroup {
+        private final String signature;
+        private int count;
+        private int firstLine;
+        private int lastLine;
+        private String sample = "";
+
+        private ErrorGroup(String signature) {
+            this.signature = signature;
         }
     }
 }

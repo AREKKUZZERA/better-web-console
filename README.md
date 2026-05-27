@@ -16,7 +16,8 @@ Supported server lines:
 - Console command execution through the server command map, including commands from plugins such as CMI.
 - Command history, filtering, log export and clear action in the browser.
 - Configurable web aliases through `!alias`, including chained aliases with `&&`.
-- Audit log for auth events, command execution, player actions and log exports.
+- Audit log for auth events, command execution, player actions, config saves and log exports.
+- Searchable audit table with action/user/IP filters and CSV/JSON export.
 
 ### Dashboard
 
@@ -26,11 +27,15 @@ Supported server lines:
 - Performance history charts for TPS, JVM RAM, online players and host CPU.
 - Machine details: CPU model, cores/threads, memory, disk mount, OS, Java runtime, PID and JVM uptime.
 - Analytics blocks for log levels, per-world chunks/entities and recent activity.
+- Compatibility diagnostics for BWC, Java and supported Paper/Purpur server lines.
+- Error grouping for recent console ERROR/SEVERE/exception lines.
 - Centered dashboard panels with responsive mobile layouts.
 - Player list with quick kick, ban, message, gamemode and teleport actions using vanilla/Paper commands.
+- Player profile drawer with UUID, location, gamemode, health and recent activity for online players.
 - Player join/leave and command history grouped by day, retained across the plugin data file lifetime.
 - Player activity summaries and top active players in the dashboard.
 - Read-only web sessions panel support for active admin session metadata.
+- Web config editor for aliases, blocked commands, logging and system stats settings.
 
 ### Security
 
@@ -59,12 +64,12 @@ mvn clean package
 Output:
 
 ```text
-target/bwc-2.4.5-paper-1.21.X.jar
-target/bwc-2.4.5-paper-26.1.X.jar
+target/bwc-2.4.6-paper-1.21.X.jar
+target/bwc-2.4.6-paper-26.1.X.jar
 ```
 
-Use `bwc-2.4.5-paper-1.21.X.jar` on Paper/Purpur `1.21` through `1.21.11`.
-Use `bwc-2.4.5-paper-26.1.X.jar` on Paper `26.1` through `26.1.2`.
+Use `bwc-2.4.6-paper-1.21.X.jar` on Paper/Purpur `1.21` through `1.21.11`.
+Use `bwc-2.4.6-paper-26.1.X.jar` on Paper `26.1` through `26.1.2`.
 
 ## First Setup
 

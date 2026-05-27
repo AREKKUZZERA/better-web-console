@@ -268,6 +268,10 @@ public class BetterWebConsolePlugin extends JavaPlugin {
 
     public static BetterWebConsolePlugin getInstance() { return instance; }
     public PluginConfig getPluginConfig() { return pluginConfig; }
+    public void reloadPluginConfig() {
+        reloadConfig();
+        pluginConfig = new PluginConfig(getConfig());
+    }
     public UserManager getUserManager() { return userManager; }
     public ConsoleLogHandler getConsoleLogHandler() { return consoleLogHandler; }
     public AuditLog getAuditLog() { return auditLog; }

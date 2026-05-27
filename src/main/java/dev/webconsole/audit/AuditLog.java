@@ -11,7 +11,10 @@ import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -61,6 +64,10 @@ public class AuditLog {
     }
 
     public JsonArray recentJson(int limit) {
+        return searchJson(limit, null, null, null, null);
+    }
+
+    public JsonArray searchJson(int limit, String query, String action, String username, String ip) {
         int safeLimit = Math.max(1, Math.min(500, limit));
         JsonArray arr = new JsonArray();
         if (!logFile.isFile()) return arr;
@@ -69,6 +76,8 @@ public class AuditLog {
         try (BufferedReader reader = Files.newBufferedReader(logFile.toPath(), StandardCharsets.UTF_8)) {
             String line;
             while ((line = reader.readLine()) != null) {
+                JsonObject parsed = parseLine(line);
+                if (!matches(parsed, query, action, username, ip)) continue;
                 if (lines.size() >= safeLimit) lines.removeFirst();
                 lines.addLast(line);
             }
@@ -81,6 +90,34 @@ public class AuditLog {
             arr.add(parseLine(line));
         }
         return arr;
+    }
+
+    public List<JsonObject> searchEntries(int limit, String query, String action, String username, String ip) {
+        JsonArray json = searchJson(limit, query, action, username, ip);
+        List<JsonObject> entries = new ArrayList<>(json.size());
+        for (int i = 0; i < json.size(); i++) {
+            if (json.get(i).isJsonObject()) entries.add(json.get(i).getAsJsonObject());
+        }
+        return entries;
+    }
+
+    private boolean matches(JsonObject entry, String query, String action, String username, String ip) {
+        if (!contains(entry, "action", action)) return false;
+        if (!contains(entry, "username", username)) return false;
+        if (!contains(entry, "ip", ip)) return false;
+        if (query == null || query.isBlank()) return true;
+
+        String q = query.toLowerCase(Locale.ROOT);
+        for (String key : List.of("timestamp", "action", "username", "ip", "detail", "raw")) {
+            if (entry.has(key) && entry.get(key).getAsString().toLowerCase(Locale.ROOT).contains(q)) return true;
+        }
+        return false;
+    }
+
+    private boolean contains(JsonObject entry, String key, String expected) {
+        if (expected == null || expected.isBlank()) return true;
+        return entry.has(key) && entry.get(key).getAsString().toLowerCase(Locale.ROOT)
+                .contains(expected.toLowerCase(Locale.ROOT));
     }
 
     private JsonObject parseLine(String line) {

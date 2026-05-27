@@ -111,6 +111,25 @@ public class PlayerActivityStore {
         return summary;
     }
 
+    public synchronized JsonArray playerHistoryJson(String uuid, String playerName, int limit) {
+        int safeLimit = Math.max(1, Math.min(200, limit));
+        String normalizedUuid = uuid == null ? "" : uuid.trim();
+        String normalizedName = playerName == null ? "" : playerName.trim();
+        List<Entry> selected = new ArrayList<>(safeLimit);
+        for (int i = entries.size() - 1; i >= 0 && selected.size() < safeLimit; i--) {
+            Entry entry = entries.get(i);
+            boolean uuidMatch = !normalizedUuid.isBlank() && normalizedUuid.equalsIgnoreCase(entry.uuid());
+            boolean nameMatch = !normalizedName.isBlank() && normalizedName.equalsIgnoreCase(entry.playerName());
+            if (uuidMatch || nameMatch) selected.add(entry);
+        }
+
+        JsonArray arr = new JsonArray();
+        for (int i = selected.size() - 1; i >= 0; i--) {
+            arr.add(selected.get(i).toJson());
+        }
+        return arr;
+    }
+
     private JsonArray recentJson(int limit, String... types) {
         List<Entry> selected = new ArrayList<>(Math.min(limit, entries.size()));
         for (int i = entries.size() - 1; i >= 0 && selected.size() < limit; i--) {

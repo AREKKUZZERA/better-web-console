@@ -1,30 +1,11 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
-import { legacyHtml } from './legacyHtml';
-import { mountLegacyWebConsole } from './legacyWebconsole';
+import { useEffect } from 'react';
+import { WebConsoleShell } from './components/WebConsoleShell';
+import { mountWebConsole } from './webConsoleController';
 
 export function App() {
   useEffect(() => {
-    mountLegacyWebConsole();
+    mountWebConsole();
   }, []);
 
-  return <LegacyShell />;
-}
-
-function LegacyShell() {
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-
-    const template = document.createElement('template');
-    template.innerHTML = legacyHtml;
-    root.replaceChildren(template.content.cloneNode(true));
-
-    return () => {
-      root.replaceChildren();
-    };
-  }, []);
-
-  return <div ref={rootRef} />;
+  return <WebConsoleShell />;
 }
