@@ -18,6 +18,7 @@ public class PluginConfig {
     private final String bindAddress;
     private final int logBufferSize;
     private final int sessionTimeout;
+    private final int sessionMaxLifetime;
     private final int maxLoginAttempts;
     private final int lockoutDuration;
     private final int commandRateLimit;
@@ -38,6 +39,8 @@ public class PluginConfig {
         this.bindAddress   = config.getString("web.bind-address", "0.0.0.0");
         this.logBufferSize = Math.max(10, Math.min(5000, config.getInt("web.log-buffer-size", 1000)));
         this.sessionTimeout    = positiveInt(config, "security.session-timeout-minutes", "security.session-timeout", 60);
+        this.sessionMaxLifetime = Math.max(this.sessionTimeout,
+                positiveInt(config, "security.session-max-lifetime-minutes", null, 12 * 60));
         this.maxLoginAttempts  = positiveInt(config, "security.max-login-attempts", null, 5);
         this.lockoutDuration   = positiveInt(config, "security.lockout-duration-minutes", "security.lockout-duration", 15);
         this.commandRateLimit  = positiveInt(config, "security.command-rate-limit-per-minute", "security.command-rate-limit", 30);
@@ -103,6 +106,7 @@ public class PluginConfig {
     public String getBindAddress()     { return bindAddress; }
     public int getLogBufferSize()      { return logBufferSize; }
     public int getSessionTimeout()     { return sessionTimeout; }
+    public int getSessionMaxLifetime() { return sessionMaxLifetime; }
     public int getMaxLoginAttempts()   { return maxLoginAttempts; }
     public int getLockoutDuration()    { return lockoutDuration; }
     public int getCommandRateLimit()   { return commandRateLimit; }

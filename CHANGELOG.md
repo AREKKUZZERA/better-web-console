@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Added an absolute web session lifetime limit in addition to the idle timeout.
+- Set the session cookie lifetime from the absolute session lifetime so browser cookies and server-side sliding sessions stay consistent.
+- Matched unknown-user dummy bcrypt verification cost to real password hashes.
+
+### Fixed
+
+- Restored normal login form submit behavior for browser autofill, password managers and automation.
+- Cleared the password field after a successful web login.
+- Warned when the web panel listens on all interfaces without secure cookies or an IP whitelist.
+
 ## 2.4.7 - 2026-05-28
 
 ### Added

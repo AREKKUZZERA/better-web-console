@@ -373,7 +373,7 @@ public class ApiServlet extends HttpServlet {
         String token = sessionManager.createSession(username, ip);
         String secure = plugin.getPluginConfig().isSecureCookies() ? "; Secure" : "";
         res.addHeader("Set-Cookie",
-                "session=" + token + "; Path=/; HttpOnly; SameSite=Strict" + secure + "; Max-Age=" + (plugin.getPluginConfig().getSessionTimeout() * 60));
+                "session=" + token + "; Path=/; HttpOnly; SameSite=Strict" + secure + "; Max-Age=" + (plugin.getPluginConfig().getSessionMaxLifetime() * 60));
 
         if (plugin.getPluginConfig().isLogAuth()) plugin.getLogger().info("[AUTH] Login: " + username + "@" + ip);
         if (plugin.getPluginConfig().isAuditLog()) plugin.getAuditLog().logLogin(username, ip);

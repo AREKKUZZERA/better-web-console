@@ -19,7 +19,7 @@ export function LoginScreen() {
             <option value="es">Español</option>
           </select>
         </div>
-        <form id="login-form" action="#">
+        <form id="login-form" noValidate>
           <div className="field">
             <label htmlFor="lu" data-i18n="login.username">Username</label>
             <input id="lu" name="username" type="text" autoComplete="username" placeholder="admin" spellCheck="false" />

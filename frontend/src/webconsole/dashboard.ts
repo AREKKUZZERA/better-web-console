@@ -8,7 +8,7 @@ export function getHealthStatus(snapshot) {
   return 'good';
 }
 
-export function getHealthReasons(snapshot, t) {
+export function getHealthReasons(snapshot, t = key => key) {
   if (!snapshot) return [];
   const reasons = [];
   if (snapshot.tps < 15) reasons.push({ code: 'tps', level: 'red', label: t('health.tpsLow'), title: 'TPS: ' + snapshot.tps.toFixed(1) + ' < 15' });

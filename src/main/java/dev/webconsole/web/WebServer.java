@@ -39,7 +39,8 @@ public class WebServer {
     }
 
     public void start() throws Exception {
-        sessionManager = new SessionManager(config.getSessionTimeout(), plugin.getDataFolder().toPath().resolve("sessions.tsv"));
+        sessionManager = new SessionManager(config.getSessionTimeout(), config.getSessionMaxLifetime(),
+                plugin.getDataFolder().toPath().resolve("sessions.tsv"));
         rateLimiter = new RateLimiter(
                 config.getMaxLoginAttempts(),
                 config.getLockoutDuration(),

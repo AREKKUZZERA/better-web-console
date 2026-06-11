@@ -184,6 +184,7 @@ web:
 
 security:
   session-timeout-minutes: 60
+  session-max-lifetime-minutes: 720
   max-login-attempts: 5
   lockout-duration-minutes: 15
   command-rate-limit-per-minute: 30
@@ -235,10 +236,11 @@ commands:
 
 Use an alias by typing `!name` in the web console. Aliases can chain up to 10 commands with `&&`.
 
-`/bwc reload` updates aliases, logging, system stats settings and command block rules. Restart the Minecraft server after changing `web.port`, `web.bind-address`, `security.ip-whitelist`, session timeout or rate-limit settings.
+`/bwc reload` updates aliases, logging, system stats settings and command block rules. Restart the Minecraft server after changing `web.port`, `web.bind-address`, `security.ip-whitelist`, session timeout, session max lifetime or rate-limit settings.
 
 ## Security Notes
 
+- `session-timeout-minutes` is the idle timeout; `session-max-lifetime-minutes` is the absolute re-authentication limit.
 - Do not expose `0.0.0.0:4242` directly to the internet unless firewall/IP whitelist/VPN rules are in place.
 - Set `secure-cookies: true` only when users access the panel through HTTPS.
 - Block or avoid destructive commands such as `stop`, `restart`, `op`, `deop`, `ban-ip` and `whitelist`.
