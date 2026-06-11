@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.4.8 - 2026-06-11
+
 ### Changed
 
 - Added an absolute web session lifetime limit in addition to the idle timeout.
