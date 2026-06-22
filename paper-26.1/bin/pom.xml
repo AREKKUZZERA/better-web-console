@@ -7,7 +7,7 @@
     <parent>
         <groupId>dev.webconsole</groupId>
         <artifactId>Better-WebConsole</artifactId>
-        <version>2.4.7</version>
+        <version>2.4.8</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -21,7 +21,7 @@
     </properties>
 
     <build>
-        <finalName>bwc-${project.version}-paper-26.1.X</finalName>
+        <finalName>bwc-${project.version}-paper-26.X</finalName>
         <sourceDirectory>${project.basedir}/../src/main/java</sourceDirectory>
         <testSourceDirectory>${project.basedir}/../src/test/java</testSourceDirectory>
 
@@ -76,7 +76,7 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>copy-root-artifact</id>
+                        <id>copy-grouped-artifact</id>
                         <phase>package</phase>
                         <goals>
                             <goal>run</goal>
@@ -84,8 +84,15 @@
                         <configuration>
                             <target>
                                 <mkdir dir="${maven.multiModuleProjectDirectory}/target"/>
+                                <delete>
+                                    <fileset dir="${maven.multiModuleProjectDirectory}/target">
+                                        <include name="bwc-${project.version}-paper-26.1.jar"/>
+                                        <include name="bwc-${project.version}-paper-26.2.jar"/>
+                                        <include name="bwc-${project.version}-paper-26.1.X.jar"/>
+                                    </fileset>
+                                </delete>
                                 <copy file="${project.build.directory}/${project.build.finalName}.jar"
-                                      todir="${maven.multiModuleProjectDirectory}/target"/>
+                                      tofile="${maven.multiModuleProjectDirectory}/target/${project.build.finalName}.jar"/>
                             </target>
                         </configuration>
                     </execution>

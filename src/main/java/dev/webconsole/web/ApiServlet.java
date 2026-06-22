@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
  *   GET  /api/csrf        - CSRF token
  *   GET  /api/status      - session check
  *   GET  /api/stats       - server stats JSON (auth required)
+ *   GET  /api/stats/history - server stats history JSON (auth required)
  *   GET  /api/aliases     - command alias list (auth required)
  *   GET  /api/sessions    - active web sessions (auth required)
  *   GET  /api/audit       - recent audit log entries (auth required)
@@ -70,6 +71,7 @@ public class ApiServlet extends HttpServlet {
             case "/csrf"        -> handleCsrf(res);
             case "/status"      -> handleStatus(req, res);
             case "/stats"       -> handleStats(req, res);
+            case "/stats/history" -> handleStatsHistory(req, res);
             case "/aliases"     -> handleAliases(req, res);
             case "/sessions"    -> handleSessions(req, res);
             case "/audit"       -> handleAudit(req, res);
@@ -121,6 +123,16 @@ public class ApiServlet extends HttpServlet {
         res.setContentType("application/json;charset=UTF-8");
         if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
         writeJson(res, 200, plugin.getServerStats().toJson());
+    }
+
+    private void handleStatsHistory(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.setContentType("application/json;charset=UTF-8");
+        if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
+        if (plugin.getServerStatsHistoryStore() == null) {
+            writeJson(res, 200, new JsonObject());
+            return;
+        }
+        writeJson(res, 200, plugin.getServerStatsHistoryStore().historyJson(req.getParameter("range")));
     }
 
     private void handleAliases(HttpServletRequest req, HttpServletResponse res) throws IOException {
@@ -250,8 +262,8 @@ public class ApiServlet extends HttpServlet {
         res.setContentType("application/json;charset=UTF-8");
         if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
         JsonObject profile = plugin.getServerStats().playerProfileJson(req.getParameter("id"));
-        if (!profile.has("online") || !profile.get("online").getAsBoolean()) {
-            sendError(res, 404, "Player not online");
+        if (!profile.has("name") && !profile.has("uuid")) {
+            sendError(res, 404, "Player not found");
             return;
         }
         writeJson(res, 200, profile);

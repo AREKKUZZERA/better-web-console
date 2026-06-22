@@ -32,6 +32,9 @@ public class PluginConfig {
     private final boolean systemStatsEnabled;
     private final int systemStatsUpdateIntervalSeconds;
     private final boolean showDiskStats;
+    private final int statsHistoryRetentionPoints;
+    private final int statsHistoryApiMaxPoints;
+    private final int statsHistoryWriteIntervalSeconds;
 
     public PluginConfig(FileConfiguration config) {
         this.port          = validPort(config.getInt("web.port", 4242));
@@ -51,6 +54,9 @@ public class PluginConfig {
         this.systemStatsEnabled = config.getBoolean("system-stats.enabled", true);
         this.systemStatsUpdateIntervalSeconds = Math.max(2, Math.min(60, config.getInt("system-stats.update-interval-seconds", 5)));
         this.showDiskStats = config.getBoolean("system-stats.show-disk", true);
+        this.statsHistoryRetentionPoints = Math.max(300, Math.min(604_800, config.getInt("system-stats.history.retention-points", 86_400)));
+        this.statsHistoryApiMaxPoints = Math.max(120, Math.min(10_000, config.getInt("system-stats.history.api-max-points", 720)));
+        this.statsHistoryWriteIntervalSeconds = Math.max(1, Math.min(60, config.getInt("system-stats.history.write-interval-seconds", 1)));
 
         this.aliases = new LinkedHashMap<>();
         loadAliases(config, "commands.aliases");
@@ -117,4 +123,7 @@ public class PluginConfig {
     public boolean isSystemStatsEnabled() { return systemStatsEnabled; }
     public int getSystemStatsUpdateIntervalSeconds() { return systemStatsUpdateIntervalSeconds; }
     public boolean isShowDiskStats() { return showDiskStats; }
+    public int getStatsHistoryRetentionPoints() { return statsHistoryRetentionPoints; }
+    public int getStatsHistoryApiMaxPoints() { return statsHistoryApiMaxPoints; }
+    public int getStatsHistoryWriteIntervalSeconds() { return statsHistoryWriteIntervalSeconds; }
 }

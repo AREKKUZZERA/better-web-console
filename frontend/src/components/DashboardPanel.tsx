@@ -61,7 +61,7 @@ export function DashboardPanel() {
                 <div className="kpi green" id="kpi-health-card"><div className="kpi-label" data-i18n="dash.serverHealth">Server Health</div><div className="kpi-value" id="kpi-health">--</div><div className="kpi-sub" id="kpi-health-sub" data-i18n="dash.waitingStats">Waiting for stats</div><div className="health-reasons" id="kpi-health-reasons"></div></div>
                 <div className="kpi purple"><div className="kpi-label" data-i18n="dash.playerCapacity">Player Capacity</div><div className="kpi-value" id="kpi-capacity">--</div><div className="kpi-sub" id="kpi-capacity-sub" data-i18n="dash.onlineSlotsUsed">Online slots used</div></div>
                 <div className="kpi blue"><div className="kpi-label" data-i18n="dash.pluginUptime">Plugin Uptime</div><div className="kpi-value" id="kpi-uptime">--</div><div className="kpi-sub" data-i18n="dash.sincePluginEnable">Since plugin enable</div></div>
-                <div className="kpi warn"><div className="kpi-label" data-i18n="dash.recentCommands">Recent Commands</div><div className="kpi-value" id="kpi-player-cmds">0</div><div className="kpi-sub" data-i18n="dash.playerCommands24h">Player commands / 24h</div></div>
+                <div className="kpi warn"><div className="kpi-label" data-i18n="dash.recentCommands">Loaded Commands</div><div className="kpi-value" id="kpi-player-cmds">0</div><div className="kpi-sub" data-i18n="dash.playerCommands24h">Loaded history</div></div>
               </div>
             </div>
             <div className="dash-metric-groups">
@@ -87,7 +87,15 @@ export function DashboardPanel() {
               </div>
             </div>
             <div className="dash-section">
-              <div className="dash-section-title" data-i18n="dash.performanceHistory">Performance History (5 min)</div>
+              <div className="dash-section-title dash-title-row">
+                <span data-i18n="dash.performanceHistory">Performance History</span>
+                <div className="range-toggle" id="stats-range-toggle" aria-label="Stats history range">
+                  <button type="button" className="active" data-range="1h">1h</button>
+                  <button type="button" data-range="6h">6h</button>
+                  <button type="button" data-range="24h">24h</button>
+                  <button type="button" data-range="all">all</button>
+                </div>
+              </div>
               <div className="dash-charts">
                 <div className="chart-card">
                   <div className="chart-card-header"><h3>TPS</h3><span className="chart-badge" id="badge-tps">&#8212;</span></div>
@@ -164,15 +172,6 @@ export function DashboardPanel() {
                       <thead><tr><th data-i18n="dash.world">World</th><th data-i18n="dash.chunks">Chunks</th><th data-i18n="dash.entities">Entities</th></tr></thead>
                       <tbody id="world-tbody"><tr><td colSpan={3} style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '12px 0' }} data-i18n="dash.noData">No data yet</td></tr></tbody>
                     </table>
-                  </div>
-                </div>
-                <div className="chart-card">
-                  <div className="chart-card-header"><h3 data-i18n="dash.activityFeed">Activity Feed</h3><span className="chart-badge" style={{ color: 'var(--success)' }} data-i18n="dash.live">live</span></div>
-                  <div className="activity-feed" id="activity-feed">
-                    <div className="activity-item">
-                      <span className="activity-icon">&#128564;</span>
-                      <span className="activity-text" style={{ color: 'var(--text-muted)' }} data-i18n="dash.waitingActivity">Waiting for activity&#8230;</span>
-                    </div>
                   </div>
                 </div>
                 <div className="chart-card">

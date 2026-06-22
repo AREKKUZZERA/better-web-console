@@ -6,6 +6,7 @@ import dev.webconsole.config.PluginConfig;
 import dev.webconsole.console.ConsoleLogHandler;
 import dev.webconsole.stats.PlayerActivityStore;
 import dev.webconsole.stats.ServerStats;
+import dev.webconsole.stats.ServerStatsHistoryStore;
 import dev.webconsole.web.WebServer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -34,6 +35,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
     private AuditLog auditLog;
     private ServerStats serverStats;
     private PlayerActivityStore playerActivityStore;
+    private ServerStatsHistoryStore serverStatsHistoryStore;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Override
@@ -45,6 +47,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
         this.userManager = new UserManager(getDataFolder());
         this.auditLog = new AuditLog(getDataFolder());
         this.playerActivityStore = new PlayerActivityStore(getDataFolder(), getLogger());
+        this.serverStatsHistoryStore = new ServerStatsHistoryStore(getDataFolder(), getLogger(), pluginConfig);
 
         this.consoleLogHandler = new ConsoleLogHandler(pluginConfig.getLogBufferSize());
         consoleLogHandler.loadBacklog(serverLogPath(), getLogger());
@@ -277,12 +280,14 @@ public class BetterWebConsolePlugin extends JavaPlugin {
     public void reloadPluginConfig() {
         reloadConfig();
         pluginConfig = new PluginConfig(getConfig());
+        if (serverStatsHistoryStore != null) serverStatsHistoryStore.updateConfig(pluginConfig);
     }
     public UserManager getUserManager() { return userManager; }
     public ConsoleLogHandler getConsoleLogHandler() { return consoleLogHandler; }
     public AuditLog getAuditLog() { return auditLog; }
     public ServerStats getServerStats() { return serverStats; }
     public PlayerActivityStore getPlayerActivityStore() { return playerActivityStore; }
+    public ServerStatsHistoryStore getServerStatsHistoryStore() { return serverStatsHistoryStore; }
 
     private final class PlayerActivityListener implements Listener {
         @EventHandler

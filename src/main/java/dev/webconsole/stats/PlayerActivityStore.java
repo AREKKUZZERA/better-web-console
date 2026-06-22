@@ -19,6 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -109,6 +110,27 @@ public class PlayerActivityStore {
         summary.addProperty("commands", cachedCommands);
         summary.add("topPlayers", topPlayersJson(cachedPlayers));
         return summary;
+    }
+
+    public synchronized JsonArray knownPlayersJson(Set<String> onlineUuids, Set<String> onlineNames) {
+        JsonArray arr = new JsonArray();
+        cachedPlayers.values().stream()
+                .sorted((a, b) -> Long.compare(b.lastSeen, a.lastSeen))
+                .forEach(player -> {
+                    boolean online = (!player.uuid.isBlank() && onlineUuids.contains(player.uuid.toLowerCase(Locale.ROOT)))
+                            || onlineNames.contains(player.name.toLowerCase(Locale.ROOT));
+                    JsonObject obj = new JsonObject();
+                    obj.addProperty("name", player.name);
+                    obj.addProperty("uuid", player.uuid);
+                    obj.addProperty("online", online);
+                    obj.addProperty("lastSeen", player.lastSeen);
+                    obj.addProperty("joins", player.joins);
+                    obj.addProperty("leaves", player.leaves);
+                    obj.addProperty("commands", player.commands);
+                    obj.addProperty("score", player.score());
+                    arr.add(obj);
+                });
+        return arr;
     }
 
     public synchronized JsonArray playerHistoryJson(String uuid, String playerName, int limit) {
@@ -253,7 +275,12 @@ public class PlayerActivityStore {
 
     private void addToSummaryCache(Entry entry) {
         String name = entry.playerName().isBlank() ? "unknown" : entry.playerName();
-        PlayerSummary player = cachedPlayers.computeIfAbsent(name, PlayerSummary::new);
+        String uuid = entry.uuid().isBlank() ? "" : entry.uuid();
+        String key = uuid.isBlank() ? "name:" + name.toLowerCase(Locale.ROOT) : "uuid:" + uuid.toLowerCase(Locale.ROOT);
+        PlayerSummary player = cachedPlayers.computeIfAbsent(key, ignored -> new PlayerSummary(name, uuid));
+        player.name = name;
+        if (!uuid.isBlank()) player.uuid = uuid;
+        player.lastSeen = Math.max(player.lastSeen, entry.timestamp());
         if (TYPE_JOIN.equals(entry.type())) {
             cachedJoins++;
             player.joins++;
@@ -308,13 +335,16 @@ public class PlayerActivityStore {
     }
 
     private static final class PlayerSummary {
-        private final String name;
+        private String name;
+        private String uuid;
+        private long lastSeen;
         private int joins;
         private int leaves;
         private int commands;
 
-        private PlayerSummary(String name) {
+        private PlayerSummary(String name, String uuid) {
             this.name = name;
+            this.uuid = uuid == null ? "" : uuid;
         }
 
         private int score() {

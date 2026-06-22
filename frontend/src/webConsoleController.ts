@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { getCsrf, getStatus, login, logout } from './webconsole/api';
+import { getCsrf, getStatsHistory, getStatus, login, logout } from './webconsole/api';
 import { Chart } from './webconsole/chart';
-import { getHealthReasons, getHealthStatus, renderActivityHtml as renderDashboardActivityHtml, renderTopPlayersHtml, renderWorldRows, updateLevelBarElements } from './webconsole/dashboard';
+import { getHealthReasons, getHealthStatus, renderTopPlayersHtml, renderWorldRows, updateLevelBarElements } from './webconsole/dashboard';
 import { setKpiState, setText, setWidth } from './webconsole/dom';
 import { esc, escRe, fmtBytes, fmtDateTime, fmtDuration, fmtPct, fmtShortDuration } from './webconsole/formatters';
 import { I18N, LANG_KEY, LANGS } from './webconsole/i18n';
@@ -38,6 +38,10 @@ let lastWorldFilterSignature='__init__';
 let lastAnimatedPlayersSignature='';
 let currentPlayerList=[];
 let lastStatsData=null;
+let lastStatsHistory=null;
+let statsHistoryRange='1h';
+let lastStatsHistoryFetchAt=0;
+let statsHistoryLoading=false;
 let lastSummarySignature='__init__';
 let lastTopPlayersSignature='__init__';
 const panelOrder=['console','dash','players','aliases','sessions','audit','config'];
@@ -91,7 +95,7 @@ function applyTranslations(){
   lastTopPlayersSignature='__lang__';
   playerActivity.invalidateLanguage();
   if(lastStatsData){
-    emitPlayersChange(currentPlayerList,lastStatsData.playerActivitySummary||{});
+    emitPlayersChange(currentPlayerList,lastStatsData.playerActivitySummary||{},lastStatsData.offlinePlayerList||[]);
     playerActivity.renderDays(lastStatsData.playerActivityDays||[]);
     renderTopActivePlayers(lastStatsData.playerActivitySummary||{});
   }
@@ -115,8 +119,8 @@ function emitLanguageChange(){
   window.dispatchEvent(new CustomEvent('webconsole:language',{detail:{lang:currentLang}}));
 }
 
-function emitPlayersChange(players,summary){
-  window.dispatchEvent(new CustomEvent('webconsole:players',{detail:{players,summary}}));
+function emitPlayersChange(players,summary,offlinePlayers=[]){
+  window.dispatchEvent(new CustomEvent('webconsole:players',{detail:{players,summary,offlinePlayers}}));
 }
 
 // ── Toast ──────────────────────────────────────────────────────────────────
@@ -153,7 +157,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
 function switchToPanel(name){
   if(!name) return;
   if(activePanelName===name){
-    if(name==='dash') ensureChartsReady();
+    if(name==='dash'){ ensureChartsReady(); loadStatsHistory(); }
     emitPanelChange(name);
     return;
   }
@@ -168,7 +172,7 @@ function switchToPanel(name){
   activePanelName=name;
   emitPanelChange(name);
   requestAnimationFrame(()=>{
-    if(name==='dash') ensureChartsReady();
+    if(name==='dash'){ ensureChartsReady(); loadStatsHistory(); }
     animatePanelContent(name);
   });
 }
@@ -424,6 +428,7 @@ function renderHealthHistory(){
 
 function handleStats(data){
   lastStatsData=data;
+  lastStatsHistory=mergeLiveStatsHistory(lastStatsHistory,data.statsHistory||statsHistoryFromPayload(data));
   const tps=data.tps||0, ramUsed=data.ramUsed||0, ramMax=data.ramMax||0;
   const players=data.players||0, maxPlayers=data.maxPlayers||0;
   const hasMaxPlayers=Number(maxPlayers)>0;
@@ -467,17 +472,18 @@ function handleStats(data){
   const bp=$('badge-players'); if(bp) bp.textContent=t('players.online',{count:players});
 
   syncChartsFromStats();
+  if(activePanelName==='dash') loadStatsHistory();
   if(data.system)         handleSystemStats(data.system);
-  if(data.playerList!==undefined) updatePlayersState(data.playerList,data.playerActivitySummary||{});
+  if(data.playerList!==undefined) updatePlayersState(data.playerList,data.playerActivitySummary||{},data.offlinePlayerList||[]);
   playerActivity.renderDays(data.playerActivityDays||[]);
-  if(data.playerList===undefined) emitPlayersChange(currentPlayerList,data.playerActivitySummary||{});
+  if(data.playerList===undefined) emitPlayersChange(currentPlayerList,data.playerActivitySummary||{},data.offlinePlayerList||[]);
   renderTopActivePlayers(data.playerActivitySummary||{});
 }
 
 function handleSystemStats(system){
   if(!system||!system.enabled) return;
   const cpu=system.cpu||{}, mem=system.memory||{}, disk=system.disk||{}, jvm=system.jvm||{}, os=system.os||{};
-  const cpuLoad=Number(cpu.systemLoadPercent||0), procLoad=Number(cpu.processLoadPercent||0);
+  const procLoad=Number(cpu.processLoadPercent||0), cpuLoad=effectiveCpuLoad(cpu);
   const ramPct=Number(mem.usedPercent||0), diskPct=Number(disk.usedPercent||0);
 
   setText('kpi-cpu', fmtPct(cpuLoad));
@@ -529,16 +535,23 @@ function renderTopActivePlayers(summary){
   box.innerHTML=renderTopPlayersHtml(summary,t);
 }
 
-function updateChart(chart,data){
+function formatChartTime(value){
+  const n=Number(value);
+  if(!Number.isFinite(n)) return '';
+  return new Date(n).toLocaleString(undefined,{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function updateChart(chart,data,timestamps){
   if(!chart||!Array.isArray(data)) return;
   const points=data.map(v=>{
     const n=Number(v);
     return Number.isFinite(n)?n:null;
   });
-  const signature=points.join('|');
+  const labels=Array.isArray(timestamps)&&timestamps.length===points.length?timestamps:points.map((_,i)=>i);
+  const signature=points.join('|')+'@'+labels.join('|');
   if(chartSignatures.get(chart)===signature) return;
   chartSignatures.set(chart,signature);
-  chart.data.labels=points.map((_,i)=>i);
+  chart.data.labels=labels;
   chart.data.datasets[0].data=points;
   chart.update('none');
 }
@@ -557,8 +570,6 @@ function pushActivity(type,icon,text,html=false){
 }
 
 function renderActivity(){
-  const feed=$('activity-feed'); if(!feed) return;
-  feed.innerHTML=renderDashboardActivityHtml(activityLog,t);
 }
 
 // ── Charts ─────────────────────────────────────────────────────────────────
@@ -567,7 +578,7 @@ function chartSizeMode(){
   return {tickFont:width<520?9:10,maxTicks:width<520?3:4,tooltipFont:width<520?10:11,tooltipPadding:width<520?6:8};
 }
 
-function makeChart(id,label,color,max){
+function makeChart(id,label,color,max,formatValue=(value)=>value){
   const canvas=document.getElementById(id);
   if(!canvas) return null;
   const ctx=canvas.getContext('2d');
@@ -578,7 +589,7 @@ function makeChart(id,label,color,max){
     data:{labels:[],datasets:[{label,data:[],borderColor:color,backgroundColor:color+'18',borderWidth:1.8,pointRadius:0,fill:true,tension:.35}]},
     options:{responsive:true,maintainAspectRatio:false,animation:false,
       interaction:{mode:'nearest',axis:'x',intersect:false},
-      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,displayColors:true,backgroundColor:'#1e1e1e',borderColor:'rgba(255,255,255,.10)',borderWidth:1,titleColor:'#eee',bodyColor:'#eee',caretSize:5,padding:size.tooltipPadding,titleFont:{size:size.tooltipFont,weight:'700'},bodyFont:{size:size.tooltipFont},callbacks:{label:c=>label+': '+c.parsed.y}}},
+      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,displayColors:true,backgroundColor:'#1e1e1e',borderColor:'rgba(255,255,255,.10)',borderWidth:1,titleColor:'#eee',bodyColor:'#eee',caretSize:5,padding:size.tooltipPadding,titleFont:{size:size.tooltipFont,weight:'700'},bodyFont:{size:size.tooltipFont},callbacks:{title:items=>items.length?formatChartTime(items[0].label):'',label:c=>label+': '+formatValue(c.parsed.y)}}},
       scales:{x:{display:false},y:{min:0,max:max||undefined,bounds:'ticks',grid:{color:'rgba(255,255,255,.042)'},ticks:{color:'#aaa',font:{size:size.tickFont},maxTicksLimit:size.maxTicks,precision:0}}}}
   });
 }
@@ -604,21 +615,141 @@ function scheduleChartResize(){
   });
 }
 
+const CHART_HISTORY_FIELDS=['tps','ram','players','cpu'];
+const MAX_CHART_HISTORY_POINTS=720;
+const STATS_RANGE_MS={ '1h':60*60*1000, '6h':6*60*60*1000, '24h':24*60*60*1000 };
+
+function lastHistoryTimestamp(history){
+  const timestamps=Array.isArray(history?.timestamps)?history.timestamps:[];
+  for(let i=timestamps.length-1;i>=0;i--){
+    const value=Number(timestamps[i]);
+    if(Number.isFinite(value)) return value;
+  }
+  return 0;
+}
+
+function mergeLiveStatsHistory(cachedHistory,liveHistory){
+  if(!cachedHistory) return normalizeStatsHistory(liveHistory);
+  if(!liveHistory) return normalizeStatsHistory(cachedHistory);
+
+  const cachedTimestamps=Array.isArray(cachedHistory.timestamps)?cachedHistory.timestamps:[];
+  const liveTimestamps=Array.isArray(liveHistory.timestamps)?liveHistory.timestamps:[];
+
+  if(!cachedTimestamps.length||!liveTimestamps.length){
+    return lastHistoryTimestamp(liveHistory)>lastHistoryTimestamp(cachedHistory)?liveHistory:cachedHistory;
+  }
+
+  const merged={...cachedHistory,timestamps:cachedTimestamps.slice()};
+  CHART_HISTORY_FIELDS.forEach(field=>{
+    merged[field]=Array.isArray(cachedHistory[field])?cachedHistory[field].slice():[];
+  });
+
+  const indexByTimestamp=new Map();
+  merged.timestamps.forEach((timestamp,index)=>indexByTimestamp.set(String(timestamp),index));
+
+  liveTimestamps.forEach((timestamp,liveIndex)=>{
+    let targetIndex=indexByTimestamp.get(String(timestamp));
+    if(targetIndex===undefined){
+      targetIndex=merged.timestamps.length;
+      indexByTimestamp.set(String(timestamp),targetIndex);
+      merged.timestamps.push(timestamp);
+    }
+
+    CHART_HISTORY_FIELDS.forEach(field=>{
+      const values=liveHistory[field];
+      if(Array.isArray(values)&&liveIndex<values.length){
+        merged[field][targetIndex]=values[liveIndex];
+      }
+    });
+  });
+
+  const order=merged.timestamps
+    .map((timestamp,index)=>({timestamp:Number(timestamp),index}))
+    .sort((a,b)=>a.timestamp-b.timestamp)
+    .map(item=>item.index);
+
+  const sorted={...merged,timestamps:order.map(index=>merged.timestamps[index])};
+  CHART_HISTORY_FIELDS.forEach(field=>{
+    sorted[field]=order.map(index=>merged[field][index]);
+  });
+  return normalizeStatsHistory(sorted);
+}
+
+function normalizeStatsHistory(history){
+  const timestamps=Array.isArray(history?.timestamps)?history.timestamps:[];
+  if(!timestamps.length) return history;
+  const cutoff=statsHistoryRange==='all'?0:Date.now()-(STATS_RANGE_MS[statsHistoryRange]||STATS_RANGE_MS['1h']);
+  const selected=[];
+  timestamps.forEach((timestamp,index)=>{
+    const value=Number(timestamp);
+    if(Number.isFinite(value)&&(cutoff<=0||value>=cutoff)) selected.push(index);
+  });
+
+  const filtered={...history,timestamps:selected.map(index=>timestamps[index])};
+  CHART_HISTORY_FIELDS.forEach(field=>{
+    const values=Array.isArray(history[field])?history[field]:[];
+    filtered[field]=selected.map(index=>values[index]);
+  });
+  return downsampleStatsHistory(filtered);
+}
+
+function downsampleStatsHistory(history){
+  const timestamps=Array.isArray(history?.timestamps)?history.timestamps:[];
+  if(timestamps.length<=MAX_CHART_HISTORY_POINTS) return history;
+  const selected=new Set([0,timestamps.length-1]);
+  const step=(timestamps.length-1)/(MAX_CHART_HISTORY_POINTS-1);
+  for(let i=1;i<MAX_CHART_HISTORY_POINTS-1;i++) selected.add(Math.round(i*step));
+  const indexes=[...selected].sort((a,b)=>a-b);
+  const sampled={...history,timestamps:indexes.map(index=>timestamps[index])};
+  CHART_HISTORY_FIELDS.forEach(field=>{
+    const values=Array.isArray(history[field])?history[field]:[];
+    sampled[field]=indexes.map(index=>values[index]);
+  });
+  return sampled;
+}
+
+function effectiveCpuLoad(cpu={}){
+  const effective=Number(cpu.effectiveLoadPercent);
+  if(Number.isFinite(effective)&&effective>0) return effective;
+  const system=Number(cpu.systemLoadPercent);
+  if(Number.isFinite(system)&&system>0) return system;
+  const process=Number(cpu.processLoadPercent);
+  return Number.isFinite(process)?process:0;
+}
+
+function statsHistoryFromPayload(data){
+  if(!data) return null;
+  return {
+    timestamps:[Date.now()],
+    tps:[Number(data.tps||0)],
+    ram:[Number(data.ramUsed||0)],
+    players:[Number(data.players||0)],
+    cpu:[effectiveCpuLoad(data.system?.cpu)]
+  };
+}
+
+function currentStatsHistory(){
+  return mergeLiveStatsHistory(lastStatsHistory,lastStatsData?.statsHistory);
+}
+
 function syncChartsFromStats(){
-  if(!chartsInitialized||!lastStatsData) return;
-  updateChart(tpsChart,     lastStatsData.tpsHistory);
-  updateChart(ramChart,     lastStatsData.ramHistory);
-  updateChart(playersChart, lastStatsData.playersHistory);
-  updateChart(cpuChart,     lastStatsData.cpuHistory);
+  if(!chartsInitialized) return;
+  const history=currentStatsHistory();
+  if(!history) return;
+  const timestamps=history.timestamps||[];
+  updateChart(tpsChart,     history.tps, timestamps);
+  updateChart(ramChart,     history.ram, timestamps);
+  updateChart(playersChart, history.players, timestamps);
+  updateChart(cpuChart,     history.cpu, timestamps);
   resizeCharts();
 }
 
 function initCharts(){
   if(chartsInitialized){ resizeCharts(); return; }
-  tpsChart     = makeChart('chart-tps',    'TPS',     '#f23987', 20);
-  ramChart     = makeChart('chart-ram',    'RAM MB',  '#4fc3f7');
-  playersChart = makeChart('chart-players','Players', '#d05ce3');
-  cpuChart     = makeChart('chart-cpu',    'CPU %',   '#00e676', 100);
+  tpsChart     = makeChart('chart-tps',    'TPS',     '#f23987', 20, value=>Number(value).toFixed(1)+' TPS');
+  ramChart     = makeChart('chart-ram',    'RAM',     '#4fc3f7', undefined, value=>Math.round(Number(value))+' MB');
+  playersChart = makeChart('chart-players','Players', '#d05ce3', undefined, value=>Math.round(Number(value))+' online');
+  cpuChart     = makeChart('chart-cpu',    'CPU',     '#00e676', 100, value=>Number(value).toFixed(1)+'%');
   chartsInitialized=true;
   syncChartsFromStats();
 }
@@ -628,14 +759,56 @@ function ensureChartsReady(){
   resizeCharts();
 }
 
+async function loadStatsHistory(force=false){
+  if(statsHistoryLoading) return;
+  if(!force&&Date.now()-lastStatsHistoryFetchAt<30000) return;
+  statsHistoryLoading=true;
+  lastStatsHistoryFetchAt=Date.now();
+  try{
+    const history=await getStatsHistory(statsHistoryRange);
+    lastStatsHistory=mergeLiveStatsHistory(history,lastStatsData?.statsHistory||statsHistoryFromPayload(lastStatsData));
+    syncChartsFromStats();
+  }catch(_){
+  }finally{
+    statsHistoryLoading=false;
+  }
+}
+
+function setStatsHistoryRange(range){
+  if(!['1h','6h','24h','all'].includes(range)) range='1h';
+  statsHistoryRange=range;
+  document.querySelectorAll('#stats-range-toggle button').forEach(btn=>btn.classList.toggle('active',btn.dataset.range===range));
+  lastStatsHistoryFetchAt=0;
+  loadStatsHistory(true);
+}
+
+const statsRangeToggle=$('stats-range-toggle');
+if(statsRangeToggle){
+  statsRangeToggle.addEventListener('click',event=>{
+    const button=event.target.closest('button[data-range]');
+    if(!button) return;
+    setStatsHistoryRange(button.dataset.range);
+  });
+}
+
 // ── Player list ─────────────────────────────────────────────────────────────
-function updatePlayersState(list,summary={}){
+function updatePlayersState(list,summary={},offlinePlayers=[]){
   currentPlayerList=Array.isArray(list)?list:[];
   const newNames=new Set(currentPlayerList.map(p=>p.name));
   newNames.forEach(n=>{ if(!prevPlayerNames.has(n)) pushActivity('join','&#128994;',`<strong class="notranslate" translate="no">${esc(n)}</strong> ${t('players.joined').toLowerCase()}`,true); });
   prevPlayerNames.forEach(n=>{ if(!newNames.has(n)) pushActivity('leave','&#9899;',`<strong class="notranslate" translate="no">${esc(n)}</strong> ${t('players.left').toLowerCase()}`,true); });
   prevPlayerNames=newNames;
-  emitPlayersChange(currentPlayerList,summary);
+  emitPlayersChange(currentPlayerList,summary,offlinePlayers);
+}
+
+function buildOfflinePlayerCommand(action,player,value){
+  const target=String(player||'').trim();
+  const extra=String(value||'').trim();
+  if(!target) return '';
+  if(action==='pardon') return `pardon ${target}`;
+  if(action==='tempban') return `tempban ${target}${extra?' '+extra:''}`;
+  if(action==='notes') return `notes ${target}${extra?' '+extra:''}`;
+  return '';
 }
 // ── Modal ──────────────────────────────────────────────────────────────────
 window.openModal=function(action,player){
@@ -645,7 +818,10 @@ window.openModal=function(action,player){
     ban:[t('players.banPlayer'),t('modal.reasonPlaceholder'),t('players.ban')],
     msg:[t('players.messagePlayer'),t('players.messagePlaceholder'),t('players.message')],
     gamemode:[t('players.changeGamemode'),'survival | creative | adventure | spectator',t('players.gamemode')],
-    tp:[t('players.teleportPlayer'),t('players.targetPlaceholder'),t('players.teleport')]
+    tp:[t('players.teleportPlayer'),t('players.targetPlaceholder'),t('players.teleport')],
+    pardon:[t('players.pardonPlayer'),t('players.noInputRequired'),t('players.pardon')],
+    tempban:[t('players.tempbanPlayer'),t('players.tempbanPlaceholder'),t('players.tempban')],
+    notes:[t('players.notesPlayer'),t('players.notesPlaceholder'),t('players.notes')]
   };
   const selected=labels[action]||labels.kick;
   modalTitle.textContent=selected[0];
@@ -659,14 +835,16 @@ modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.remove(
 modalConfirm.addEventListener('click',()=>{
   if(!ws||ws.readyState!==WebSocket.OPEN) return;
   const value=modalReason.value.trim();
+  const rawCommand=buildOfflinePlayerCommand(modalAction,modalPlayer.value,value);
   if(modalAction==='msg') ws.send(JSON.stringify({type:'msg',player:modalPlayer.value,message:value}));
   else if(modalAction==='gamemode') ws.send(JSON.stringify({type:'gamemode',player:modalPlayer.value,mode:value}));
   else if(modalAction==='tp') ws.send(JSON.stringify({type:'tp',player:modalPlayer.value,target:value}));
+  else if(rawCommand) sendCommand(rawCommand);
   else ws.send(JSON.stringify({type:modalAction,player:modalPlayer.value,reason:value||t('players.noReason')}));
   modal.classList.remove('show');
   const act=modalConfirm.textContent;
   showToast(`${act} ${modalPlayer.value}`,'warn');
-  pushActivity('cmd','&#9889;',`<strong>${esc(act)}</strong> <span class="notranslate" translate="no">${esc(modalPlayer.value)}</span>${value?': '+esc(value):''}`,true);
+  if(!rawCommand) pushActivity('cmd','&#9889;',`<strong>${esc(act)}</strong> <span class="notranslate" translate="no">${esc(modalPlayer.value)}</span>${value?': '+esc(value):''}`,true);
 });
 modalReason.addEventListener('keydown',e=>{ if(e.key==='Enter') modalConfirm.click(); });
 

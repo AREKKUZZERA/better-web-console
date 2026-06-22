@@ -52,21 +52,34 @@ export interface AliasInfo {
 export interface PlayerInfo {
   name: string;
   uuid: string;
-  world: string;
-  ping: number;
-  op: boolean;
+  world?: string;
+  ping?: number;
+  op?: boolean;
+  online?: boolean;
+  lastSeen?: number;
+  primaryGroup?: string;
+  prefix?: string;
+  status?: {
+    source?: string;
+    primaryGroup?: string;
+    prefix?: string;
+  };
+  joins?: number;
+  leaves?: number;
+  commands?: number;
 }
 
 export interface PlayerProfile extends PlayerInfo {
   online: boolean;
-  gamemode: string;
-  health: number;
-  maxHealth: number;
-  food: number;
-  level: number;
-  x: number;
-  y: number;
-  z: number;
+  gamemode?: string;
+  health?: number;
+  maxHealth?: number;
+  food?: number;
+  level?: number;
+  x?: number;
+  y?: number;
+  z?: number;
+  lastSeen?: number;
   history: Array<{ type: string; timestamp: number; player: string; uuid: string; command?: string }>;
 }
 
@@ -101,6 +114,29 @@ export interface StatsPayload {
   maxPlayers?: number;
   worlds?: Array<{ name: string; chunks: number; entities: number; environment: string }>;
   playerList?: PlayerInfo[];
+  offlinePlayerList?: PlayerInfo[];
+  knownPlayerList?: PlayerInfo[];
+  historyTimestamps?: number[];
+  statsHistory?: {
+    timestamps?: number[];
+    tps?: number[];
+    ram?: number[];
+    players?: number[];
+    cpu?: number[];
+    storedPoints?: number;
+  };
   playerActivityDays?: Array<{ date: string; label: string; items: Array<Record<string, unknown>> }>;
   playerActivitySummary?: PlayerActivitySummary;
+}
+
+export interface StatsHistoryPayload {
+  timestamps?: number[];
+  tps?: number[];
+  ram?: number[];
+  players?: number[];
+  cpu?: number[];
+  storedPoints?: number;
+  returnedPoints?: number;
+  range?: '1h' | '6h' | '24h' | 'all';
+  downsampleStride?: number;
 }

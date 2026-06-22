@@ -49,6 +49,16 @@ system-stats:
   # Reports disk usage for the Minecraft server folder.
   show-disk: true
 
+  history:
+    # Maximum stored stat points. At the default 1 second write interval this is 24 hours.
+    retention-points: 86400
+
+    # Maximum points returned by /api/stats/history after server-side downsampling.
+    api-max-points: 720
+
+    # How often TPS/RAM/CPU/player stats are appended to disk.
+    write-interval-seconds: 1
+
 commands:
   # Exact command labels blocked from the web console and aliases.
   # Leave empty for full console access. Examples: ["stop", "restart", "op", "deop"]

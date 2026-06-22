@@ -7,6 +7,7 @@ import dev.webconsole.config.PluginConfig;
 import dev.webconsole.web.WebSocketHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -22,7 +23,14 @@ import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Collects TPS, RAM and player data every second.
@@ -60,8 +68,12 @@ public class ServerStats {
     private long lastBroadcastAt = 0L;
     private long lastSystemStatsAt = 0L;
     private long lastWorldStatsAt = 0L;
+    private long lastHistoryRecordAt = 0L;
     private long lastProcessCpuTimeNs = -1L;
     private long lastProcessCpuWallNs = -1L;
+    private double lastCpuLoad = 0.0;
+    private final Map<UUID, JsonObject> luckPermsCache = new ConcurrentHashMap<>();
+    private final Set<UUID> luckPermsLoading = ConcurrentHashMap.newKeySet();
 
     public ServerStats(BetterWebConsolePlugin plugin) {
         this.plugin = plugin;
@@ -84,7 +96,23 @@ public class ServerStats {
         Player player = findPlayer(nameOrUuid);
         JsonObject obj = new JsonObject();
         obj.addProperty("online", player != null);
-        if (player == null) return obj;
+        if (player == null) {
+            OfflinePlayer offline = findOfflinePlayer(nameOrUuid);
+            if (offline == null) return obj;
+            String uuid = offline.getUniqueId().toString();
+            String name = offline.getName() == null ? nameOrUuid : offline.getName();
+            obj.addProperty("name", name);
+            obj.addProperty("uuid", uuid);
+            obj.addProperty("lastSeen", offline.getLastSeen());
+            obj.addProperty("op", offline.isOp());
+            addLuckPermsStatus(obj, offline.getUniqueId(), name);
+            if (plugin.getPlayerActivityStore() != null) {
+                obj.add("history", plugin.getPlayerActivityStore().playerHistoryJson(uuid, name, 80));
+            } else {
+                obj.add("history", new JsonArray());
+            }
+            return obj;
+        }
 
         Location loc = player.getLocation();
         obj.addProperty("name", player.getName());
@@ -101,6 +129,7 @@ public class ServerStats {
         obj.addProperty("x", Math.round(loc.getX() * 10.0) / 10.0);
         obj.addProperty("y", Math.round(loc.getY() * 10.0) / 10.0);
         obj.addProperty("z", Math.round(loc.getZ() * 10.0) / 10.0);
+        addLuckPermsStatus(obj, player.getUniqueId(), player.getName());
         if (plugin.getPlayerActivityStore() != null) {
             obj.add("history", plugin.getPlayerActivityStore().playerHistoryJson(player.getUniqueId().toString(), player.getName(), 80));
         } else {
@@ -120,6 +149,19 @@ public class ServerStats {
         return null;
     }
 
+    private OfflinePlayer findOfflinePlayer(String nameOrUuid) {
+        if (nameOrUuid == null || nameOrUuid.isBlank()) return null;
+        String needle = nameOrUuid.trim();
+        for (OfflinePlayer player : Bukkit.getOfflinePlayers()) {
+            String name = player.getName();
+            if ((name != null && name.equalsIgnoreCase(needle)) || player.getUniqueId().toString().equalsIgnoreCase(needle)) {
+                return player;
+            }
+        }
+        UUID uuid = parseUuid(needle);
+        return uuid == null ? null : Bukkit.getOfflinePlayer(uuid);
+    }
+
     private void collect() {
         double[] tpsArr = Bukkit.getTPS();
         lastTps = tpsArr.length > 0 ? Math.min(20.0, tpsArr[0]) : 20.0;
@@ -136,6 +178,13 @@ public class ServerStats {
         addToHistory(ramHistory, lastRamUsed);
         addToHistory(playersHistory, lastPlayers);
         collectSystemStatsIfDue();
+        long now = System.currentTimeMillis();
+        if (plugin.getServerStatsHistoryStore() != null
+                && now - lastHistoryRecordAt >= plugin.getPluginConfig().getStatsHistoryWriteIntervalSeconds() * 1000L) {
+            lastHistoryRecordAt = now;
+            plugin.getServerStatsHistoryStore().record(System.currentTimeMillis(), lastTps, lastRamUsed, lastPlayers,
+                    lastCpuLoad, lastWorlds, lastTotalChunks, lastTotalEntities);
+        }
 
         JsonObject snapshot = buildSnapshotJson();
         lastSnapshot = snapshot;
@@ -187,7 +236,12 @@ public class ServerStats {
             lastSystemStats = buildSystemStats(config);
             if (lastSystemStats.has("cpu")) {
                 JsonObject cpu = lastSystemStats.getAsJsonObject("cpu");
-                if (cpu.has("systemLoadPercent")) addToHistory(cpuHistory, cpu.get("systemLoadPercent").getAsDouble());
+                if (cpu.has("systemLoadPercent")) {
+                    double systemLoad = cpu.get("systemLoadPercent").getAsDouble();
+                    double processLoad = cpu.has("processLoadPercent") ? cpu.get("processLoadPercent").getAsDouble() : 0.0;
+                    lastCpuLoad = systemLoad > 0.0 ? systemLoad : processLoad;
+                    addToHistory(cpuHistory, lastCpuLoad);
+                }
             }
         } catch (Throwable e) {
             JsonObject error = new JsonObject();
@@ -212,6 +266,7 @@ public class ServerStats {
         cpu.addProperty("logicalCores", processors);
         cpu.addProperty("systemLoadPercent", systemCpuLoad);
         cpu.addProperty("processLoadPercent", processCpuLoad);
+        cpu.addProperty("effectiveLoadPercent", systemCpuLoad > 0.0 ? systemCpuLoad : processCpuLoad);
         system.add("cpu", cpu);
 
         long totalMemory = totalPhysicalMemory(osBean);
@@ -306,21 +361,22 @@ public class ServerStats {
 
         obj.add("worlds", lastWorldStats.deepCopy());
 
-        obj.add("tpsHistory", toJsonArray(tpsHistory));
-        obj.add("ramHistory", toJsonArray(ramHistory));
-        obj.add("playersHistory", toJsonArray(playersHistory));
-        obj.add("cpuHistory", toJsonArray(cpuHistory));
         obj.add("system", lastSystemStats.deepCopy());
 
         JsonArray players = new JsonArray();
         Collection<? extends Player> online = Bukkit.getOnlinePlayers();
+        Set<String> onlineUuids = new HashSet<>();
+        Set<String> onlineNames = new HashSet<>();
         for (Player p : online) {
+            onlineUuids.add(p.getUniqueId().toString().toLowerCase(Locale.ROOT));
+            onlineNames.add(p.getName().toLowerCase(Locale.ROOT));
             JsonObject pobj = new JsonObject();
             pobj.addProperty("name", p.getName());
             pobj.addProperty("uuid", p.getUniqueId().toString());
             pobj.addProperty("world", p.getWorld().getName());
             pobj.addProperty("ping", p.getPing());
             pobj.addProperty("op", p.isOp());
+            addLuckPermsStatus(pobj, p.getUniqueId(), p.getName());
             players.add(pobj);
         }
         obj.add("playerList", players);
@@ -330,13 +386,149 @@ public class ServerStats {
             obj.add("playerCommands", plugin.getPlayerActivityStore().recentCommandsJson());
             obj.add("playerActivityDays", plugin.getPlayerActivityStore().groupedActivityJson());
             obj.add("playerActivitySummary", plugin.getPlayerActivityStore().summaryJson());
+            JsonArray knownPlayers = plugin.getPlayerActivityStore().knownPlayersJson(onlineUuids, onlineNames);
+            JsonArray offlinePlayers = new JsonArray();
+            Set<String> knownKeys = new HashSet<>();
+            for (int i = 0; i < knownPlayers.size(); i++) {
+                JsonObject known = knownPlayers.get(i).getAsJsonObject();
+                addKnownKeys(knownKeys, known);
+                addLuckPermsStatus(known, parseUuid(known.has("uuid") ? known.get("uuid").getAsString() : ""), known.has("name") ? known.get("name").getAsString() : "");
+                if (!known.has("online") || !known.get("online").getAsBoolean()) offlinePlayers.add(known);
+            }
+            for (OfflinePlayer offline : Bukkit.getOfflinePlayers()) {
+                String name = offline.getName();
+                String uuid = offline.getUniqueId().toString();
+                if (onlineUuids.contains(uuid.toLowerCase(Locale.ROOT))
+                        || (name != null && onlineNames.contains(name.toLowerCase(Locale.ROOT)))) continue;
+                String key = !uuid.isBlank() ? "uuid:" + uuid.toLowerCase(Locale.ROOT)
+                        : "name:" + (name == null ? "" : name.toLowerCase(Locale.ROOT));
+                if (!knownKeys.add(key)) continue;
+                JsonObject objPlayer = new JsonObject();
+                objPlayer.addProperty("name", name == null || name.isBlank() ? uuid : name);
+                objPlayer.addProperty("uuid", uuid);
+                objPlayer.addProperty("online", false);
+                objPlayer.addProperty("lastSeen", offline.getLastSeen());
+                objPlayer.addProperty("op", offline.isOp());
+                addLuckPermsStatus(objPlayer, offline.getUniqueId(), name);
+                knownPlayers.add(objPlayer);
+                offlinePlayers.add(objPlayer);
+            }
+            obj.add("knownPlayerList", knownPlayers);
+            obj.add("offlinePlayerList", offlinePlayers);
         } else {
             obj.add("playerEvents", new JsonArray());
             obj.add("playerCommands", new JsonArray());
             obj.add("playerActivityDays", new JsonArray());
             obj.add("playerActivitySummary", new JsonObject());
+            obj.add("knownPlayerList", new JsonArray());
+            obj.add("offlinePlayerList", new JsonArray());
         }
 
+        return obj;
+    }
+
+    private UUID parseUuid(String value) {
+        try {
+            return value == null || value.isBlank() ? null : UUID.fromString(value);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private void addKnownKeys(Set<String> knownKeys, JsonObject player) {
+        if (player.has("uuid") && !player.get("uuid").getAsString().isBlank()) {
+            knownKeys.add("uuid:" + player.get("uuid").getAsString().toLowerCase(Locale.ROOT));
+        }
+        if (player.has("name") && !player.get("name").getAsString().isBlank()) {
+            knownKeys.add("name:" + player.get("name").getAsString().toLowerCase(Locale.ROOT));
+        }
+    }
+
+    private void addLuckPermsStatus(JsonObject obj, UUID uuid, String playerName) {
+        JsonObject status = luckPermsStatus(uuid, playerName);
+        obj.add("status", status);
+        if (status.has("primaryGroup")) obj.addProperty("primaryGroup", status.get("primaryGroup").getAsString());
+        if (status.has("prefix")) obj.addProperty("prefix", status.get("prefix").getAsString());
+    }
+
+    private JsonObject luckPermsStatus(UUID uuid, String playerName) {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("source", "none");
+        obj.addProperty("primaryGroup", "");
+        obj.addProperty("prefix", "");
+        if (uuid != null) {
+            JsonObject cached = luckPermsCache.get(uuid);
+            if (cached != null) return cached.deepCopy();
+        }
+        try {
+            if (Bukkit.getPluginManager().getPlugin("LuckPerms") == null) return obj;
+            Class<?> luckPermsClass = Class.forName("net.luckperms.api.LuckPerms");
+            Object provider = Bukkit.getServicesManager().load(luckPermsClass);
+            if (provider == null) return obj;
+            Object userManager = provider.getClass().getMethod("getUserManager").invoke(provider);
+            Object user = null;
+            if (uuid != null) {
+                try {
+                    user = userManager.getClass().getMethod("getUser", UUID.class).invoke(userManager, uuid);
+                } catch (ReflectiveOperationException ignored) {
+                }
+            }
+            if (user == null && playerName != null && !playerName.isBlank()) {
+                Player player = Bukkit.getPlayerExact(playerName);
+                if (player != null) {
+                    Object adapter = provider.getClass().getMethod("getPlayerAdapter", Class.class).invoke(provider, Player.class);
+                    user = adapter.getClass().getMethod("getUser", Player.class).invoke(adapter, player);
+                }
+            }
+            if (user == null) {
+                loadLuckPermsUserAsync(userManager, uuid);
+                obj.addProperty("source", uuid == null ? "none" : "luckperms_loading");
+                return obj;
+            }
+            JsonObject status = statusFromLuckPermsUser(user);
+            if (uuid != null) luckPermsCache.put(uuid, status.deepCopy());
+            return status;
+        } catch (Throwable ignored) {
+            obj.addProperty("source", "error");
+        }
+        return obj;
+    }
+
+    private void loadLuckPermsUserAsync(Object userManager, UUID uuid) {
+        if (uuid == null || !luckPermsLoading.add(uuid)) return;
+        try {
+            Object future = userManager.getClass().getMethod("loadUser", UUID.class).invoke(userManager, uuid);
+            if (future instanceof CompletableFuture<?> completable) {
+                completable.whenComplete((user, error) -> {
+                    try {
+                        if (error == null && user != null) luckPermsCache.put(uuid, statusFromLuckPermsUser(user));
+                    } finally {
+                        luckPermsLoading.remove(uuid);
+                    }
+                });
+            } else {
+                luckPermsLoading.remove(uuid);
+            }
+        } catch (Throwable ignored) {
+            luckPermsLoading.remove(uuid);
+        }
+    }
+
+    private JsonObject statusFromLuckPermsUser(Object user) {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("source", "luckperms");
+        obj.addProperty("primaryGroup", "");
+        obj.addProperty("prefix", "");
+        try {
+            Object primaryGroup = user.getClass().getMethod("getPrimaryGroup").invoke(user);
+            if (primaryGroup != null) obj.addProperty("primaryGroup", String.valueOf(primaryGroup));
+            Object cachedData = user.getClass().getMethod("getCachedData").invoke(user);
+            Object metaData = cachedData.getClass().getMethod("getMetaData").invoke(cachedData);
+            Object prefix = metaData.getClass().getMethod("getPrefix").invoke(metaData);
+            if (prefix != null) obj.addProperty("prefix", String.valueOf(prefix));
+        } catch (Throwable ignored) {
+            obj.addProperty("source", "error");
+        }
         return obj;
     }
 

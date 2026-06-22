@@ -30,9 +30,73 @@ function copyPlayerUuid(uuid: string, t: (key: string, params?: Record<string, s
   if (toast) toast(t('players.uuidCopied'), 'success');
 }
 
+function playerPrivilege(player: PlayerInfo) {
+  return player.primaryGroup || player.status?.primaryGroup || '';
+}
+
+function playerPrefix(player: PlayerInfo) {
+  return player.prefix || player.status?.prefix || '';
+}
+
+const MC_COLORS: Record<string, string> = {
+  '0': '#000000', '1': '#0000aa', '2': '#00aa00', '3': '#00aaaa',
+  '4': '#aa0000', '5': '#aa00aa', '6': '#ffaa00', '7': '#aaaaaa',
+  '8': '#555555', '9': '#5555ff', a: '#55ff55', b: '#55ffff',
+  c: '#ff5555', d: '#ff55ff', e: '#ffff55', f: '#ffffff'
+};
+
+function stripMinecraftCodes(value: string) {
+  return value.replace(/[§&][0-9a-fk-or]/gi, '');
+}
+
+function MinecraftText({ text }: { text: string }) {
+  const parts: Array<{ text: string; color?: string; bold?: boolean; italic?: boolean }> = [];
+  let color: string | undefined;
+  let bold = false;
+  let italic = false;
+  let buffer = '';
+  const flush = () => {
+    if (!buffer) return;
+    parts.push({ text: buffer, color, bold, italic });
+    buffer = '';
+  };
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1]?.toLowerCase();
+    if ((ch === '§' || ch === '&') && next && /[0-9a-fk-or]/.test(next)) {
+      flush();
+      if (next === 'r') {
+        color = undefined; bold = false; italic = false;
+      } else if (next === 'l') bold = true;
+      else if (next === 'o') italic = true;
+      else if (MC_COLORS[next]) color = MC_COLORS[next];
+      i++;
+    } else {
+      buffer += ch;
+    }
+  }
+  flush();
+  return <>{parts.map((part, index) => <span key={index} style={{ color: part.color, fontWeight: part.bold ? 700 : undefined, fontStyle: part.italic ? 'italic' : undefined }}>{part.text}</span>)}</>;
+}
+
+function PlayerNameBadges({ player, t }: { player: PlayerInfo; t: (key: string, params?: Record<string, string | number>) => string }) {
+  const group = playerPrivilege(player);
+  const prefix = playerPrefix(player);
+  const visibleRank = prefix || group;
+  return (
+    <span className="player-name-cell">
+      <span className="player-name-text notranslate" translate="no">{player.name}</span>
+      {player.uuid ? <button className="uuid-copy-btn" type="button" aria-label={t('players.copyUuid')} onClick={event => { event.stopPropagation(); copyPlayerUuid(player.uuid, t); }}>UUID</button> : null}
+      {visibleRank ? <span className="player-rank" title={stripMinecraftCodes(prefix || group)}>{prefix ? <MinecraftText text={prefix} /> : group}</span> : null}
+      {player.op ? <span className="player-op">OP</span> : null}
+    </span>
+  );
+}
+
 export function PlayersPanel() {
   const { t } = useWebConsoleLanguage();
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
+  const [offlinePlayers, setOfflinePlayers] = useState<PlayerInfo[]>([]);
   const [summary, setSummary] = useState<PlayerActivitySummary>({});
   const [search, setSearch] = useState('');
   const [world, setWorld] = useState('');
@@ -41,6 +105,7 @@ export function PlayersPanel() {
 
   useWebConsoleEvent('webconsole:players', detail => {
     setPlayers(Array.isArray(detail.players) ? detail.players : []);
+    setOfflinePlayers(Array.isArray(detail.offlinePlayers) ? detail.offlinePlayers : []);
     setSummary((detail.summary || {}) as PlayerActivitySummary);
   });
 
@@ -74,6 +139,7 @@ export function PlayersPanel() {
   return (
     <div className="panel" id="panel-players">
         <div className="players-layout">
+          <div className="players-roster">
           <section className="players-card players-list-card">
             <div className="players-card-header">
               <div className="players-card-title" data-i18n="players.onlinePlayers">{t('players.onlinePlayers')}</div>
@@ -102,11 +168,7 @@ export function PlayersPanel() {
                     return (
                       <tr key={playerKey(player)} data-player-key={playerKey(player)} onClick={() => void openProfile(player)}>
                         <td data-label={t('players.name')}>
-                          <span className="player-name-cell">
-                            <span className="player-name-text notranslate" translate="no">{player.name}</span>
-                            {player.uuid ? <button className="uuid-copy-btn" type="button" aria-label={t('players.copyUuid')} onClick={() => copyPlayerUuid(player.uuid, t)}>UUID</button> : null}
-                            {player.op ? <span className="player-op">OP</span> : null}
-                          </span>
+                          <PlayerNameBadges player={player} t={t} />
                         </td>
                         <td data-label={t('players.world')}>{player.world || '—'}</td>
                         <td data-label={t('players.ping')} className={pingClass}>{ping}ms</td>
@@ -126,6 +188,36 @@ export function PlayersPanel() {
               </table>
             </div>
           </section>
+          <section className="players-card players-list-card">
+            <div className="players-card-header">
+              <div className="players-card-title">{t('players.offlinePlayers')}</div>
+              <span className="players-card-badge">{t('players.offline', { count: offlinePlayers.length })}</span>
+            </div>
+            <p className="no-players" style={{ display: offlinePlayers.length ? 'none' : '' }}>{t('players.noneOffline')}</p>
+            <div className="player-table-wrap">
+              <table className="player-table" style={{ display: offlinePlayers.length ? '' : 'none' }}>
+                <thead><tr><th>{t('players.name')}</th><th>{t('players.lastSeen')}</th><th>{t('players.activity')}</th><th>{t('players.actions')}</th></tr></thead>
+                <tbody>
+                  {offlinePlayers.slice(0, 120).map(player => (
+                    <tr key={`offline-${playerKey(player)}`} onClick={() => void openProfile(player)}>
+                      <td data-label={t('players.name')}><PlayerNameBadges player={player} t={t} /></td>
+                      <td data-label={t('players.lastSeen')}>{player.lastSeen ? new Date(player.lastSeen).toLocaleString() : '—'}</td>
+                      <td data-label={t('players.activity')}>J {player.joins || 0} / L {player.leaves || 0} / CMD {player.commands || 0}</td>
+                      <td data-label={t('players.actions')}>
+                        <div className="player-actions" onClick={event => event.stopPropagation()}>
+                          <button className="action-btn ban" type="button" onClick={() => openPlayerAction('ban', player.name)}>{t('players.ban')}</button>
+                          <button className="action-btn neutral" type="button" onClick={() => openPlayerAction('pardon', player.name)}>{t('players.pardon')}</button>
+                          <button className="action-btn neutral" type="button" onClick={() => openPlayerAction('tempban', player.name)}>{t('players.tempban')}</button>
+                          <button className="action-btn neutral" type="button" onClick={() => openPlayerAction('notes', player.name)}>{t('players.notes')}</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+          </div>
           <aside className="players-history">
             <section className="players-card">
               <div className="players-card-header">
@@ -155,13 +247,21 @@ export function PlayersPanel() {
                 <>
                   <div className="profile-grid">
                     <div><span>UUID</span><strong>{profile.uuid}</strong></div>
-                    <div><span>{t('players.world')}</span><strong>{profile.world}</strong></div>
-                    <div><span>{t('players.gamemode')}</span><strong>{profile.gamemode}</strong></div>
-                    <div><span>{t('players.ping')}</span><strong>{profile.ping}ms</strong></div>
-                    <div><span>HP</span><strong>{profile.health}/{profile.maxHealth}</strong></div>
-                    <div><span>XYZ</span><strong>{profile.x} / {profile.y} / {profile.z}</strong></div>
-                    <div><span>{t('players.food')}</span><strong>{profile.food}</strong></div>
-                    <div><span>{t('players.level')}</span><strong>{profile.level}</strong></div>
+                    <div><span>{t('players.status')}</span><strong>{profile.online ? t('players.onlineState') : t('players.offlineState')}</strong></div>
+                    <div><span>LuckPerms</span><strong>{playerPrivilege(profile) || '—'}</strong></div>
+                    {profile.online ? (
+                      <>
+                        <div><span>{t('players.world')}</span><strong>{profile.world}</strong></div>
+                        <div><span>{t('players.gamemode')}</span><strong>{profile.gamemode}</strong></div>
+                        <div><span>{t('players.ping')}</span><strong>{profile.ping}ms</strong></div>
+                        <div><span>HP</span><strong>{profile.health}/{profile.maxHealth}</strong></div>
+                        <div><span>XYZ</span><strong>{profile.x} / {profile.y} / {profile.z}</strong></div>
+                        <div><span>{t('players.food')}</span><strong>{profile.food}</strong></div>
+                        <div><span>{t('players.level')}</span><strong>{profile.level}</strong></div>
+                      </>
+                    ) : (
+                      <div><span>{t('players.lastSeen')}</span><strong>{profile.lastSeen ? new Date(profile.lastSeen).toLocaleString() : '—'}</strong></div>
+                    )}
                   </div>
                   <div className="players-card-title profile-history-title">{t('players.history')}</div>
                   <div className="history-list profile-history">

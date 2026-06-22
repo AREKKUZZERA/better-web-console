@@ -46,6 +46,14 @@ export function getErrorGroups() {
   return json('/api/errors');
 }
 
+export function getStatsHistory(range = '1h') {
+  const query = new URLSearchParams({
+    range,
+    _: String(Date.now())
+  });
+  return json('/api/stats/history?' + query.toString(), { cache: 'no-store' });
+}
+
 export function getPlayerProfile(id) {
   return json('/api/player?id=' + encodeURIComponent(id));
 }

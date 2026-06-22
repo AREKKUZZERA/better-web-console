@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.5.0 - 2026-05-28
+
+### Changed
+
+- Version bump 2.5.0
+- Added grouped Paper build artifacts for Minecraft/Paper `1.21` - `1.21.11` and `26.1` - `26.1.2`.
+- Shortened generated jar names to `bwc-<version>-paper-1.21.X.jar` and `bwc-<version>-paper-26.X.jar`.
+- Ignored module `target` directories.
+
 ## 2.4.7 - 2026-05-28
 
 ### Added
