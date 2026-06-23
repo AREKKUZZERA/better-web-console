@@ -68,6 +68,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
         try {
             webServer.start();
             getLogger().info("Better-WebConsole started on " + pluginConfig.getBindAddress() + ":" + pluginConfig.getPort());
+            warnIfPublicHttpConfig();
         } catch (Exception e) {
             getLogger().severe("Failed to start web server: " + e.getMessage());
             getServer().getPluginManager().disablePlugin(this);
@@ -141,7 +142,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
     private boolean handleReload(CommandSender s) {
         reloadConfig();
         pluginConfig = new PluginConfig(getConfig());
-        s.sendMessage(color("a", "Config reloaded. Restart the server to apply web port, bind, IP whitelist, session timeout and rate-limit changes."));
+        s.sendMessage(color("a", "Config reloaded. Restart the server to apply web port, bind, IP whitelist, session timeout, session max lifetime and rate-limit changes."));
         return true;
     }
 
@@ -257,6 +258,25 @@ public class BetterWebConsolePlugin extends JavaPlugin {
 
     private boolean isValidPassword(String password) {
         return password != null && password.length() >= 8;
+    }
+
+    private void warnIfPublicHttpConfig() {
+        if (!isPublicBind(pluginConfig.getBindAddress())) return;
+        if (pluginConfig.isSecureCookies()) return;
+        if (!pluginConfig.getIpWhitelist().isEmpty()) return;
+
+        getLogger().warning("[SECURITY] Better-WebConsole is listening on all interfaces without secure cookies or an IP whitelist.");
+        getLogger().warning("[SECURITY] For production, bind to 127.0.0.1 behind HTTPS/VPN/firewall or configure security.ip-whitelist.");
+    }
+
+    private boolean isPublicBind(String bindAddress) {
+        if (bindAddress == null || bindAddress.isBlank()) return true;
+        String value = bindAddress.trim();
+        return "0.0.0.0".equals(value)
+                || "::".equals(value)
+                || "[::]".equals(value)
+                || "*".equals(value)
+                || "0:0:0:0:0:0:0:0".equals(value);
     }
 
     private String color(String code, String text) {

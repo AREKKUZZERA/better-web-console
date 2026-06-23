@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { getCsrf, getStatsHistory, getStatus, login, logout } from './webconsole/api';
+import { getCsrf, getStats, getStatsHistory, getStatus, login, logout } from './webconsole/api';
 import { getHealthReasons, getHealthStatus, renderTopPlayersHtml, renderWorldRows, updateLevelBarElements } from './webconsole/dashboard';
 import { setKpiState, setText, setWidth } from './webconsole/dom';
 import { esc, escRe, fmtBytes, fmtDateTime, fmtDuration, fmtPct, fmtShortDuration } from './webconsole/formatters';
@@ -17,6 +17,7 @@ export function mountWebConsole() {
 // ── State ──────────────────────────────────────────────────────────────────
 let ws=null, autoScroll=true, lineCount=0;
 let reconnectTimer=null, reconnectDelay=1000, reconnectAttempt=0, manualDisconnect=false;
+let statsPollTimer=null, statsPollInFlight=false, lastStatsAt=0;
 let chartsInitialized=false;
 let ChartCtor=null;
 let chartModulePromise=null;
@@ -338,6 +339,33 @@ function connectWs(force=false){
   ws.onerror=()=>ws.close();
 }
 
+async function pollStats(){
+  if(!sessionUser||manualDisconnect||statsPollInFlight) return;
+  if(ws&&ws.readyState===WebSocket.OPEN&&Date.now()-lastStatsAt<4000) return;
+  statsPollInFlight=true;
+  try{
+    const data=await getStats({cache:'no-store'});
+    handleStats(data);
+  }catch(e){
+    if(String(e&&e.message||e).startsWith('401')) handleControl('SESSION_EXPIRED');
+  }finally{
+    statsPollInFlight=false;
+  }
+}
+
+function startStatsPolling(){
+  stopStatsPolling();
+  pollStats();
+  statsPollTimer=setInterval(pollStats,5000);
+}
+
+function stopStatsPolling(){
+  clearInterval(statsPollTimer);
+  statsPollTimer=null;
+  statsPollInFlight=false;
+  lastStatsAt=0;
+}
+
 function scheduleReconnect(){
   clearTimeout(reconnectTimer);
   const delay=Math.min(reconnectDelay,10000)+Math.floor(Math.random()*250);
@@ -386,7 +414,7 @@ function renderHealthState(){
 
 function updateHealthHistory(status,snapshot){
   const now=Date.now();
-  const reasonKey=getHealthReasons(snapshot).map(r=>r.code).join('|');
+  const reasonKey=getHealthReasons(snapshot,t).map(r=>r.code).join('|');
   if(status==='good'){
     if(currentHealthEvent){
       currentHealthEvent.end=now;
@@ -412,7 +440,7 @@ function renderHealthHistory(){
   setText('health-history-count', events.length);
   if(!events.length){ box.innerHTML=`<div class="health-event-empty">${t('dash.noHealthEvents')}</div>`; return; }
   box.innerHTML=events.map(ev=>{
-    const reasons=getHealthReasons(ev.snapshot).map(r=>r.title).join('; ')||t('health.noReason');
+    const reasons=getHealthReasons(ev.snapshot,t).map(r=>r.title).join('; ')||t('health.noReason');
     const start=new Date(ev.start).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     const duration=fmtShortDuration((ev.end||Date.now())-ev.start);
     const state=ev.status==='critical'?t('health.critical'):t('health.watch');
@@ -422,6 +450,7 @@ function renderHealthHistory(){
 }
 
 function handleStats(data){
+  lastStatsAt=Date.now();
   lastStatsData=data;
   lastStatsHistory=mergeLiveStatsHistory(lastStatsHistory,data.statsHistory||statsHistoryFromPayload(data));
   const tps=data.tps||0, ramUsed=data.ramUsed||0, ramMax=data.ramMax||0;
@@ -926,6 +955,7 @@ $('btn-clear').addEventListener('click',()=>{
 $('btn-logout').addEventListener('click',doLogout);
 async function doLogout(){
   manualDisconnect=true; clearTimeout(reconnectTimer);
+  stopStatsPolling();
   try{ await logout(); }catch(_){}
   if(ws) ws.close();
   app.classList.remove('show'); loginScreen.classList.remove('hide');
@@ -947,11 +977,12 @@ async function doLogin(){
     const {token:csrf}=await getCsrf();
     const {ok,data}=await login(username,password,csrf);
     if(ok&&data.success){
+      lp.value='';
       sessionUser=data.username; sessionStart=Date.now();
       ulabel.textContent=sessionUser;
       loginScreen.classList.add('hide'); app.classList.add('show');
       switchToPanel('console'); animatePanelContent('console');
-      manualDisconnect=false; connectWs(true);
+      manualDisconnect=false; connectWs(true); startStatsPolling();
     } else {
       loginErr.textContent=data.error||t('login.invalid');
       lp.value=''; lp.focus();
@@ -961,8 +992,11 @@ async function doLogin(){
 }
 
 // Bind login form — handles both button click and Enter key via form submit
-$('login-form').addEventListener('submit',e=>{ e.preventDefault(); doLogin(); });
-lu.addEventListener('keydown',e=>{ if(e.key==='Enter') lp.focus(); });
+$('login-form').addEventListener('submit',e=>{
+  e.preventDefault();
+  doLogin();
+});
+lu.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!lp.value){ e.preventDefault(); lp.focus(); } });
 
 // ── Init ────────────────────────────────────────────────────────────────────
 (async()=>{
@@ -973,7 +1007,7 @@ lu.addEventListener('keydown',e=>{ if(e.key==='Enter') lp.focus(); });
       ulabel.textContent=sessionUser;
       loginScreen.classList.add('hide'); app.classList.add('show');
       switchToPanel('console'); animatePanelContent('console');
-      manualDisconnect=false; connectWs(true); return;
+      manualDisconnect=false; connectWs(true); startStatsPolling(); return;
     }
   }catch(_){}
   lu.focus();

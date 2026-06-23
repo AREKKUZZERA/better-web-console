@@ -9,6 +9,10 @@ export async function getStatus(init) {
   return json('/api/status', init);
 }
 
+export function getStats(init) {
+  return json('/api/stats', init);
+}
+
 export async function getAliases() {
   const response = await fetch('/api/aliases');
   if (!response.ok) return null;

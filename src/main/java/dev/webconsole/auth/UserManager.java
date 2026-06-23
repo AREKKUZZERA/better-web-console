@@ -18,7 +18,7 @@ public class UserManager {
 
     private static final Logger log = Logger.getLogger("Better-WebConsole");
     private static final int BCRYPT_COST = 12;
-    private static final byte[] DUMMY_HASH = BCrypt.withDefaults().hash(4, "dummy".toCharArray());
+    private static final byte[] DUMMY_HASH = BCrypt.withDefaults().hash(BCRYPT_COST, "dummy".toCharArray());
 
     private final File usersFile;
     private final Map<String, String> users = new ConcurrentHashMap<>(); // username -> bcrypt hash

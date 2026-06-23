@@ -31,12 +31,18 @@ public class SessionManager {
 
     private final Map<String, Session> sessions = new ConcurrentHashMap<>();
     private final int sessionTimeoutMinutes;
+    private final int sessionMaxLifetimeMinutes;
     private final ScheduledExecutorService cleaner;
     private final Path storageFile;
     private boolean loadedLegacyTokens;
 
     public SessionManager(int sessionTimeoutMinutes, Path storageFile) {
+        this(sessionTimeoutMinutes, Math.max(sessionTimeoutMinutes, 12 * 60), storageFile);
+    }
+
+    public SessionManager(int sessionTimeoutMinutes, int sessionMaxLifetimeMinutes, Path storageFile) {
         this.sessionTimeoutMinutes = sessionTimeoutMinutes;
+        this.sessionMaxLifetimeMinutes = Math.max(sessionTimeoutMinutes, sessionMaxLifetimeMinutes);
         this.storageFile = storageFile;
         loadFromDisk();
         if (loadedLegacyTokens) persistQuietly();
@@ -64,8 +70,7 @@ public class SessionManager {
         if (session == null) return null;
 
         long now = System.currentTimeMillis();
-        long expiryMs = (long) sessionTimeoutMinutes * 60 * 1000;
-        if (now - session.getLastActivity() > expiryMs) {
+        if (isExpired(session, now)) {
             sessions.remove(tokenHash);
             persistQuietly();
             return null;
@@ -98,14 +103,13 @@ public class SessionManager {
         purgeExpired();
         JsonArray arr = new JsonArray();
         long now = System.currentTimeMillis();
-        long expiryMs = (long) sessionTimeoutMinutes * 60 * 1000;
         for (Session session : sessions.values()) {
             JsonObject obj = new JsonObject();
             obj.addProperty("username", session.getUsername());
             obj.addProperty("remoteIp", session.getRemoteIp());
             obj.addProperty("createdAt", session.getCreatedAt());
             obj.addProperty("lastSeenAt", session.getLastActivity());
-            long expiresAt = session.getLastActivity() + expiryMs;
+            long expiresAt = expiresAt(session);
             obj.addProperty("expiresAt", expiresAt);
             obj.addProperty("expiresInSeconds", Math.max(0L, (expiresAt - now) / 1000L));
             arr.add(obj);
@@ -115,8 +119,7 @@ public class SessionManager {
 
     private void purgeExpired() {
         long now = System.currentTimeMillis();
-        long expiryMs = (long) sessionTimeoutMinutes * 60 * 1000;
-        boolean changed = sessions.entrySet().removeIf(e -> now - e.getValue().getLastActivity() > expiryMs);
+        boolean changed = sessions.entrySet().removeIf(e -> isExpired(e.getValue(), now));
         if (changed) persistQuietly();
     }
 
@@ -130,7 +133,6 @@ public class SessionManager {
         if (storageFile == null || !Files.exists(storageFile)) return;
         try {
             long now = System.currentTimeMillis();
-            long expiryMs = (long) sessionTimeoutMinutes * 60 * 1000;
             for (String line : Files.readAllLines(storageFile, StandardCharsets.UTF_8)) {
                 if (line.isBlank()) continue;
                 String[] parts = line.split("\\t", 5);
@@ -142,8 +144,9 @@ public class SessionManager {
                 long createdAt = parseLong(parts[3], 0L);
                 long lastActivity = parseLong(parts[4], createdAt);
                 if (tokenHash.isBlank() || username.isBlank()) continue;
-                if (now - lastActivity > expiryMs) continue;
-                sessions.put(tokenHash, new Session(username, remoteIp, createdAt, lastActivity));
+                Session session = new Session(username, remoteIp, createdAt, lastActivity);
+                if (isExpired(session, now)) continue;
+                sessions.put(tokenHash, session);
             }
         } catch (Exception ignored) {
         }
@@ -203,6 +206,21 @@ public class SessionManager {
         } catch (Exception ignored) {
             return fallback;
         }
+    }
+
+    private boolean isExpired(Session session, long now) {
+        return now - session.getLastActivity() > minutesToMillis(sessionTimeoutMinutes)
+                || now - session.getCreatedAt() > minutesToMillis(sessionMaxLifetimeMinutes);
+    }
+
+    private long expiresAt(Session session) {
+        return Math.min(
+                session.getLastActivity() + minutesToMillis(sessionTimeoutMinutes),
+                session.getCreatedAt() + minutesToMillis(sessionMaxLifetimeMinutes));
+    }
+
+    private static long minutesToMillis(int minutes) {
+        return (long) Math.max(1, minutes) * 60_000L;
     }
 
     private static String normalizeStoredToken(String stored) {

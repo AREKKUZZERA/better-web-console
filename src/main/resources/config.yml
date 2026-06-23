@@ -16,6 +16,9 @@ security:
   # Web session lifetime after the last request/activity.
   session-timeout-minutes: 60
 
+  # Maximum lifetime for a web session even if it remains active.
+  session-max-lifetime-minutes: 720
+
   # Login brute-force protection per IP address.
   max-login-attempts: 5
   lockout-duration-minutes: 15

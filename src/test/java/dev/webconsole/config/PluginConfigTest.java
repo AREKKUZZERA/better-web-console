@@ -24,12 +24,14 @@ class PluginConfigTest {
         YamlConfiguration config = new YamlConfiguration();
         config.set("web.port", 70000);
         config.set("security.session-timeout-minutes", -1);
+        config.set("security.session-max-lifetime-minutes", 30);
         config.set("security.command-rate-limit-per-minute", 0);
 
         PluginConfig pluginConfig = new PluginConfig(config);
 
         assertEquals(4242, pluginConfig.getPort());
         assertEquals(60, pluginConfig.getSessionTimeout());
+        assertEquals(60, pluginConfig.getSessionMaxLifetime());
         assertEquals(30, pluginConfig.getCommandRateLimit());
     }
 
