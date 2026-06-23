@@ -9,8 +9,14 @@ function auditEntryText(entry: AuditEntry) {
 
 const INITIAL_AUDIT_LIMIT = 5;
 
-export function AuditPanel() {
-  const active = useActivePanel('audit');
+type AuditSectionProps = {
+  activeOverride?: boolean;
+  embedded?: boolean;
+};
+
+export function AuditSection({ activeOverride, embedded = false }: AuditSectionProps) {
+  const panelActive = useActivePanel('audit');
+  const active = activeOverride ?? panelActive;
   const { t } = useWebConsoleLanguage();
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [search, setSearch] = useState('');
@@ -94,7 +100,7 @@ export function AuditPanel() {
   }, [visibleEntryCount, showTable]);
 
   return (
-    <div className="panel" id="panel-audit">
+    <div className={embedded ? 'audit-embedded' : 'panel'} id={embedded ? undefined : 'panel-audit'}>
       <div className="audit-layout">
         <section className="players-card">
           <div className="players-card-header">
@@ -136,4 +142,8 @@ export function AuditPanel() {
       </div>
     </div>
   );
+}
+
+export function AuditPanel() {
+  return <AuditSection />;
 }

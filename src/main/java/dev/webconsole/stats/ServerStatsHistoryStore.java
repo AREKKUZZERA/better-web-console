@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -21,7 +22,9 @@ public class ServerStatsHistoryStore {
     private final File file;
     private PluginConfig config;
     private final List<Point> points = new ArrayList<>();
+    private BufferedWriter appendWriter;
     private int writesSinceCompact;
+    private int writesSinceFlush;
 
     public ServerStatsHistoryStore(File dataFolder, Logger logger, PluginConfig config) {
         this.logger = logger;
@@ -52,6 +55,10 @@ public class ServerStatsHistoryStore {
     public synchronized void updateConfig(PluginConfig config) {
         this.config = config;
         if (trimOldPoints()) compact();
+    }
+
+    public synchronized void shutdown() {
+        closeAppendWriter();
     }
 
     public synchronized JsonObject historyJson(String range) {
@@ -139,24 +146,53 @@ public class ServerStatsHistoryStore {
     }
 
     private void append(Point point) {
-        try (BufferedWriter writer = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8,
-                java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND)) {
+        try {
+            BufferedWriter writer = appendWriter();
             writer.write(point.toLine());
             writer.newLine();
+            writesSinceFlush++;
+            if (writesSinceFlush >= config.getStatsHistoryFlushBatchSize()) {
+                writer.flush();
+                writesSinceFlush = 0;
+            }
         } catch (IOException e) {
             logger.warning("[BWC] Failed to append server stats history: " + e.getMessage());
+            closeAppendWriter();
         }
     }
 
     private void compact() {
+        closeAppendWriter();
         try (BufferedWriter writer = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8,
-                java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.TRUNCATE_EXISTING)) {
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
             for (Point point : points) {
                 writer.write(point.toLine());
                 writer.newLine();
             }
         } catch (IOException e) {
             logger.warning("[BWC] Failed to compact server stats history: " + e.getMessage());
+        }
+    }
+
+    private BufferedWriter appendWriter() throws IOException {
+        if (appendWriter == null) {
+            appendWriter = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            writesSinceFlush = 0;
+        }
+        return appendWriter;
+    }
+
+    private void closeAppendWriter() {
+        if (appendWriter == null) return;
+        try {
+            appendWriter.flush();
+            appendWriter.close();
+        } catch (IOException e) {
+            logger.warning("[BWC] Failed to close server stats history writer: " + e.getMessage());
+        } finally {
+            appendWriter = null;
+            writesSinceFlush = 0;
         }
     }
 

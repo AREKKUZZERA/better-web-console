@@ -25,12 +25,14 @@ Supported server lines:
 - Server health: TPS, JVM heap, online players, worlds, loaded chunks, entities and session errors.
 - Machine health: host CPU load, Java process CPU load, physical RAM, server disk usage and JVM thread counts.
 - Performance history charts for TPS, JVM RAM, online players and host CPU.
+- Live chart samples update from the stats stream every second; longer ranges load from persisted history.
 - Machine details: CPU model, cores/threads, memory, disk mount, OS, Java runtime, PID and JVM uptime.
 - Analytics blocks for log levels, per-world chunks/entities and recent activity.
 - Compatibility diagnostics for BWC, Java and supported Paper/Purpur server lines.
 - Error grouping for recent console ERROR/SEVERE/exception lines.
 - Centered dashboard panels with responsive mobile layouts.
 - Player list with quick kick, ban, message, gamemode and teleport actions using vanilla/Paper commands.
+- Offline player list loads through a paged API so large player histories do not bloat every stats update.
 - Player profile drawer with UUID, location, gamemode, health and recent activity for online players.
 - Player join/leave and command history grouped by day, retained across the plugin data file lifetime.
 - Player activity summaries and top active players in the dashboard.
@@ -64,12 +66,12 @@ mvn clean package
 Output:
 
 ```text
-target/bwc-2.4.7-paper-1.21.X.jar
-target/bwc-2.4.7-paper-26.X.jar
+target/bwc-2.4.9-paper-1.21.X.jar
+target/bwc-2.4.9-paper-26.X.jar
 ```
 
-Use `bwc-2.4.7-paper-1.21.X.jar` on Paper/Purpur `1.21` through `1.21.11`.
-Use `bwc-2.4.7-paper-26.X.jar` on Paper `26.1` through `26.1.2`.
+Use `bwc-2.4.9-paper-1.21.X.jar` on Paper/Purpur `1.21` through `1.21.11`.
+Use `bwc-2.4.9-paper-26.X.jar` on Paper `26.1` through `26.1.2`.
 
 ## First Setup
 
@@ -199,11 +201,38 @@ system-stats:
   # Adds host CPU, machine RAM, disk, OS and JVM details to the dashboard.
   enabled: true
 
-  # OS-level polling interval. Keep this above 2 seconds for production servers.
-  update-interval-seconds: 5
+  # OS-level polling interval for dashboard machine details.
+  # CPU chart samples still update every second.
+  update-interval-seconds: 1
 
   # Reports disk usage for the Minecraft server folder.
   show-disk: true
+
+  history:
+    # Maximum stored stat points. At the default 1 second write interval this is 24 hours.
+    retention-points: 86400
+
+    # Maximum points returned by /api/stats/history after server-side downsampling.
+    api-max-points: 720
+
+    # How often TPS/RAM/CPU/player stats are appended to disk.
+    write-interval-seconds: 1
+
+    # Flushes stat history after this many appended points.
+    flush-batch-size: 30
+
+player-activity:
+  # Flushes player activity history after this many join/leave/command events.
+  flush-batch-size: 30
+
+  # Rebuilds grouped activity and known-player summaries for the dashboard.
+  cache-seconds: 5
+
+  # Rebuilds offline player search data less often because it can be large.
+  offline-cache-seconds: 60
+
+  # Maximum offline players returned by /api/players/offline in one page.
+  offline-max-api-limit: 120
 
 commands:
   blocked: []

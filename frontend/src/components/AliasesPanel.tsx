@@ -7,8 +7,14 @@ function dispatchAliasCommand(command: string, run: boolean) {
   window.dispatchEvent(new CustomEvent('webconsole:alias-command', { detail: { command, run } }));
 }
 
-export function AliasesPanel() {
-  const active = useActivePanel('aliases');
+type AliasesPanelProps = {
+  activeOverride?: boolean;
+  embedded?: boolean;
+};
+
+export function AliasesPanel({ activeOverride, embedded = false }: AliasesPanelProps) {
+  const panelActive = useActivePanel('aliases');
+  const active = activeOverride ?? panelActive;
   const { t } = useWebConsoleLanguage();
   const [aliases, setAliases] = useState<AliasInfo[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -31,7 +37,7 @@ export function AliasesPanel() {
   }, [active, loadAliases]);
 
   return (
-    <div className="panel" id="panel-aliases">
+    <div className={embedded ? 'aliases-embedded' : 'panel'} id={embedded ? undefined : 'panel-aliases'}>
       <p className="alias-hint" data-i18n="aliases.hint">{t('aliases.hint')}</p>
       <div className="alias-list" id="alias-list">
         {loaded && aliases.length === 0 ? (

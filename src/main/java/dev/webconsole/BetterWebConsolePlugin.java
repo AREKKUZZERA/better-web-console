@@ -46,7 +46,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
         this.pluginConfig = new PluginConfig(getConfig());
         this.userManager = new UserManager(getDataFolder());
         this.auditLog = new AuditLog(getDataFolder());
-        this.playerActivityStore = new PlayerActivityStore(getDataFolder(), getLogger());
+        this.playerActivityStore = new PlayerActivityStore(getDataFolder(), getLogger(), pluginConfig);
         this.serverStatsHistoryStore = new ServerStatsHistoryStore(getDataFolder(), getLogger(), pluginConfig);
 
         this.consoleLogHandler = new ConsoleLogHandler(pluginConfig.getLogBufferSize());
@@ -77,6 +77,8 @@ public class BetterWebConsolePlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         if (serverStats != null) serverStats.stop();
+        if (playerActivityStore != null) playerActivityStore.shutdown();
+        if (serverStatsHistoryStore != null) serverStatsHistoryStore.shutdown();
         if (webServer != null) try { webServer.stop(); } catch (Exception ignored) {}
         if (auditLog != null) auditLog.shutdown();
 
@@ -281,6 +283,7 @@ public class BetterWebConsolePlugin extends JavaPlugin {
         reloadConfig();
         pluginConfig = new PluginConfig(getConfig());
         if (serverStatsHistoryStore != null) serverStatsHistoryStore.updateConfig(pluginConfig);
+        if (playerActivityStore != null) playerActivityStore.updateConfig(pluginConfig);
     }
     public UserManager getUserManager() { return userManager; }
     public ConsoleLogHandler getConsoleLogHandler() { return consoleLogHandler; }

@@ -1,6 +1,5 @@
 // @ts-nocheck
 import { getCsrf, getStatsHistory, getStatus, login, logout } from './webconsole/api';
-import { Chart } from './webconsole/chart';
 import { getHealthReasons, getHealthStatus, renderTopPlayersHtml, renderWorldRows, updateLevelBarElements } from './webconsole/dashboard';
 import { setKpiState, setText, setWidth } from './webconsole/dom';
 import { esc, escRe, fmtBytes, fmtDateTime, fmtDuration, fmtPct, fmtShortDuration } from './webconsole/formatters';
@@ -19,13 +18,14 @@ export function mountWebConsole() {
 let ws=null, autoScroll=true, lineCount=0;
 let reconnectTimer=null, reconnectDelay=1000, reconnectAttempt=0, manualDisconnect=false;
 let chartsInitialized=false;
+let ChartCtor=null;
+let chartModulePromise=null;
 let cmdHistory=[], histIdx=-1, draft='';
 try{ cmdHistory=JSON.parse(localStorage.getItem('bwc_hist')||'[]'); }catch(_){}
 let sessionUser='', sessionStart=Date.now();
 let activeFilters=new Set(['INFO','WARN','WARNING','SEVERE','ERROR']);
 let filterText='';
 let searchQuery='', searchMatches=[], searchIdx=0;
-let notifEnabled=false, notifCount=0;
 let modalAction=null;
 let acItems=[], acIdx=-1, acReqId=0;
 let tpsChart=null, ramChart=null, playersChart=null, cpuChart=null;
@@ -44,7 +44,7 @@ let lastStatsHistoryFetchAt=0;
 let statsHistoryLoading=false;
 let lastSummarySignature='__init__';
 let lastTopPlayersSignature='__init__';
-const panelOrder=['console','dash','players','aliases','sessions','audit','config'];
+const panelOrder=['console','dash','players','sessions','config'];
 const MAX_LINES=3000;
 
 // Dashboard counters
@@ -70,7 +70,7 @@ const ulabel=$('ulabel'), svLines=$('sv-lines'), svSession=$('sv-session');
 const svTps=$('sv-tps'), svRam=$('sv-ram'), svPlayers=$('sv-players'), statTpsEl=$('stat-tps');
 const modal=$('modal'), modalTitle=$('modal-title'), modalPlayer=$('modal-player');
 const modalReason=$('modal-reason'), modalCancel=$('modal-cancel'), modalConfirm=$('modal-confirm');
-const toast=$('toast'), nbadge=$('nbadge'), loginLang=$('login-lang'), appLang=$('app-lang');
+const toast=$('toast'), loginLang=$('login-lang'), appLang=$('app-lang');
 
 let savedLang='en';
 try{ const rawLang=localStorage.getItem(LANG_KEY); if(LANGS.includes(rawLang)) savedLang=rawLang; }catch(_){}
@@ -95,7 +95,7 @@ function applyTranslations(){
   lastTopPlayersSignature='__lang__';
   playerActivity.invalidateLanguage();
   if(lastStatsData){
-    emitPlayersChange(currentPlayerList,lastStatsData.playerActivitySummary||{},lastStatsData.offlinePlayerList||[]);
+    emitPlayersChange(currentPlayerList,lastStatsData.playerActivitySummary||{},lastStatsData.offlinePlayerList);
     playerActivity.renderDays(lastStatsData.playerActivityDays||[]);
     renderTopActivePlayers(lastStatsData.playerActivitySummary||{});
   }
@@ -119,8 +119,10 @@ function emitLanguageChange(){
   window.dispatchEvent(new CustomEvent('webconsole:language',{detail:{lang:currentLang}}));
 }
 
-function emitPlayersChange(players,summary,offlinePlayers=[]){
-  window.dispatchEvent(new CustomEvent('webconsole:players',{detail:{players,summary,offlinePlayers}}));
+function emitPlayersChange(players,summary,offlinePlayers){
+  const detail={players,summary};
+  if(Array.isArray(offlinePlayers)) detail.offlinePlayers=offlinePlayers;
+  window.dispatchEvent(new CustomEvent('webconsole:players',{detail}));
 }
 
 // ── Toast ──────────────────────────────────────────────────────────────────
@@ -190,9 +192,8 @@ function staggerAnimate(nodes,step=40){
 function animatePanelContent(name){
   if(name==='console'){ staggerAnimate([$('stats-bar'),$('console-wrap'),$('search-bar'),$('input-bar')],50); return; }
   if(name==='players'){ animatePlayersPanel(); return; }
-  if(name==='aliases'){ staggerAnimate([$('panel-aliases').querySelector('.alias-hint'),...document.querySelectorAll('#alias-list > *')],26); return; }
-  if(name==='sessions'){ staggerAnimate([...document.querySelectorAll('#sessions-tbody tr')],26); return; }
-  if(name==='audit'){ staggerAnimate([...document.querySelectorAll('#audit-tbody tr')],18); return; }
+  if(name==='sessions'){ staggerAnimate([...document.querySelectorAll('#sessions-tbody tr'),...document.querySelectorAll('#audit-tbody tr')],26); return; }
+  if(name==='config'){ staggerAnimate([...document.querySelectorAll('#alias-list > *'),...document.querySelectorAll('.config-layout .players-card')],24); return; }
   if(name==='dash'){ staggerAnimate([...document.querySelectorAll('.dash-grid .kpi'),...document.querySelectorAll('.chart-card'),...document.querySelectorAll('.machine-card')],18); }
 }
 
@@ -242,12 +243,6 @@ function appendLine(raw){
   else if(fg==='INFO') levelCounts.INFO++;
   else levelCounts.DEBUG++;
   updateLevelBars();
-
-  if(fg==='SEVERE'&&notifEnabled){
-    notifCount++; nbadge.classList.add('show');
-    if(document.hidden) new Notification('BWC Error',{body:raw.substring(0,80)}).catch(()=>{});
-    playSound();
-  }
 
   const div=document.createElement('div');
   div.className='log-line '+lv+' log-enter';
@@ -474,9 +469,9 @@ function handleStats(data){
   syncChartsFromStats();
   if(activePanelName==='dash') loadStatsHistory();
   if(data.system)         handleSystemStats(data.system);
-  if(data.playerList!==undefined) updatePlayersState(data.playerList,data.playerActivitySummary||{},data.offlinePlayerList||[]);
+  if(data.playerList!==undefined) updatePlayersState(data.playerList,data.playerActivitySummary||{},data.offlinePlayerList);
   playerActivity.renderDays(data.playerActivityDays||[]);
-  if(data.playerList===undefined) emitPlayersChange(currentPlayerList,data.playerActivitySummary||{},data.offlinePlayerList||[]);
+  if(data.playerList===undefined) emitPlayersChange(currentPlayerList,data.playerActivitySummary||{},data.offlinePlayerList);
   renderTopActivePlayers(data.playerActivitySummary||{});
 }
 
@@ -584,7 +579,8 @@ function makeChart(id,label,color,max,formatValue=(value)=>value){
   const ctx=canvas.getContext('2d');
   if(!ctx) return null;
   const size=chartSizeMode();
-  return new Chart(ctx,{
+  if(!ChartCtor) return null;
+  return new ChartCtor(ctx,{
     type:'line',
     data:{labels:[],datasets:[{label,data:[],borderColor:color,backgroundColor:color+'18',borderWidth:1.8,pointRadius:0,fill:true,tension:.35}]},
     options:{responsive:true,maintainAspectRatio:false,animation:false,
@@ -744,8 +740,23 @@ function syncChartsFromStats(){
   resizeCharts();
 }
 
+function loadChartsModule(){
+  if(ChartCtor) return Promise.resolve(ChartCtor);
+  if(!chartModulePromise){
+    chartModulePromise=import('./webconsole/chart').then(module=>{
+      ChartCtor=module.Chart;
+      return ChartCtor;
+    });
+  }
+  return chartModulePromise;
+}
+
 function initCharts(){
   if(chartsInitialized){ resizeCharts(); return; }
+  if(!ChartCtor){
+    loadChartsModule().then(()=>initCharts()).catch(()=>{});
+    return;
+  }
   tpsChart     = makeChart('chart-tps',    'TPS',     '#f23987', 20, value=>Number(value).toFixed(1)+' TPS');
   ramChart     = makeChart('chart-ram',    'RAM',     '#4fc3f7', undefined, value=>Math.round(Number(value))+' MB');
   playersChart = makeChart('chart-players','Players', '#d05ce3', undefined, value=>Math.round(Number(value))+' online');
@@ -755,6 +766,7 @@ function initCharts(){
 }
 
 function ensureChartsReady(){
+  loadChartsModule().then(()=>initCharts()).catch(()=>{});
   initCharts();
   resizeCharts();
 }
@@ -792,7 +804,7 @@ if(statsRangeToggle){
 }
 
 // ── Player list ─────────────────────────────────────────────────────────────
-function updatePlayersState(list,summary={},offlinePlayers=[]){
+function updatePlayersState(list,summary={},offlinePlayers){
   currentPlayerList=Array.isArray(list)?list:[];
   const newNames=new Set(currentPlayerList.map(p=>p.name));
   newNames.forEach(n=>{ if(!prevPlayerNames.has(n)) pushActivity('join','&#128994;',`<strong class="notranslate" translate="no">${esc(n)}</strong> ${t('players.joined').toLowerCase()}`,true); });
@@ -903,24 +915,6 @@ window.addEventListener('webconsole:alias-command',event=>{
   switchToPanel('console');
   cmdInput.focus();
 });
-
-// ── Notifications ───────────────────────────────────────────────────────────
-$('notif-btn').addEventListener('click',()=>{
-  if(!notifEnabled){ Notification.requestPermission().then(p=>{ notifEnabled=p==='granted'; showToast(notifEnabled?t('toast.notificationsEnabled'):t('toast.notificationsDenied'),notifEnabled?'success':'error'); }); }
-  else{ notifEnabled=false; showToast(t('toast.notificationsDisabled')); }
-  notifCount=0; nbadge.classList.remove('show');
-});
-
-function playSound(){
-  try{
-    const ctx=new AudioContext(), o=ctx.createOscillator(), g=ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.frequency.value=440; o.type='sine';
-    g.gain.setValueAtTime(.15,ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.3);
-    o.start(); o.stop(ctx.currentTime+.3);
-  }catch(_){}
-}
 
 // ── Export / Clear / Logout ─────────────────────────────────────────────────
 $('btn-export').addEventListener('click',()=>window.open('/api/logs/export','_blank'));

@@ -1,6 +1,4 @@
 import { ActionModal } from './ActionModal';
-import { AliasesPanel } from './AliasesPanel';
-import { AuditPanel } from './AuditPanel';
 import { ConsolePanel } from './ConsolePanel';
 import { ConfigPanel } from './ConfigPanel';
 import { DashboardPanel } from './DashboardPanel';
@@ -21,9 +19,7 @@ export function WebConsoleShell() {
         <ConsolePanel />
         <DashboardPanel />
         <PlayersPanel />
-        <AliasesPanel />
         <SessionsPanel />
-        <AuditPanel />
         <ConfigPanel />
       </div>
       <ActionModal />

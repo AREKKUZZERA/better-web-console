@@ -21,7 +21,6 @@ export function Header() {
           <option value="fr">Français</option>
           <option value="es">Español</option>
         </select>
-        <button className="hbtn" id="notif-btn" title="Toggle error notifications" data-i18n-title="header.notifications">&#128276; <span className="notif-badge" id="nbadge"></span></button>
         <button className="hbtn" id="btn-export" data-i18n="header.export">Export Log</button>
         <button className="hbtn" id="btn-clear" data-i18n="header.clear">Clear</button>
         <button className="hbtn danger" id="btn-logout" data-i18n="header.logout">Logout</button>

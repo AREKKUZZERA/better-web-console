@@ -79,17 +79,23 @@ Object.assign(I18N.ru,{
 Object.assign(I18N.en,{
   'dash.recentCommands':'Loaded Commands',
   'dash.playerCommands24h':'Loaded history',
-  'dash.performanceHistory':'Performance History'
+  'dash.performanceHistory':'Performance History',
+  'aliases.available':'Available Aliases',
+  'aliases.runHint':'insert or run'
 });
 Object.assign(I18N.ru,{
   'dash.recentCommands':'Загруженные команды',
   'dash.playerCommands24h':'Загруженная история',
-  'dash.performanceHistory':'История производительности'
+  'dash.performanceHistory':'История производительности',
+  'aliases.available':'Доступные алиасы',
+  'aliases.runHint':'вставить или выполнить'
 });
 ['zh','pl','de','fr','es'].forEach(lang=>Object.assign(I18N[lang],{
   'dash.recentCommands':I18N.en['dash.recentCommands'],
   'dash.playerCommands24h':I18N.en['dash.playerCommands24h'],
-  'dash.performanceHistory':I18N.en['dash.performanceHistory']
+  'dash.performanceHistory':I18N.en['dash.performanceHistory'],
+  'aliases.available':I18N.en['aliases.available'],
+  'aliases.runHint':I18N.en['aliases.runHint']
 }));
 export const LANGS=['en','ru','zh','pl','de','fr','es'];
 export const LANG_KEY='bwc_lang';

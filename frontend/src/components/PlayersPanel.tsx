@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { PlayerActivitySummary, PlayerInfo, PlayerProfile } from '../types';
-import { getPlayerProfile } from '../webconsole/api';
-import { useWebConsoleEvent, useWebConsoleLanguage } from './useWebConsoleRuntime';
+import { getOfflinePlayers, getPlayerProfile } from '../webconsole/api';
+import { useActivePanel, useWebConsoleEvent, useWebConsoleLanguage } from './useWebConsoleRuntime';
 
 function playerKey(player: PlayerInfo) {
   return String(player.uuid || player.name || '');
@@ -45,8 +45,34 @@ const MC_COLORS: Record<string, string> = {
   c: '#ff5555', d: '#ff55ff', e: '#ffff55', f: '#ffffff'
 };
 
+const MINI_MESSAGE_COLORS: Record<string, string> = {
+  black: '#000000',
+  dark_blue: '#0000aa',
+  dark_green: '#00aa00',
+  dark_aqua: '#00aaaa',
+  dark_red: '#aa0000',
+  dark_purple: '#aa00aa',
+  gold: '#ffaa00',
+  gray: '#aaaaaa',
+  dark_gray: '#555555',
+  blue: '#5555ff',
+  green: '#55ff55',
+  aqua: '#55ffff',
+  red: '#ff5555',
+  light_purple: '#ff55ff',
+  yellow: '#ffff55',
+  white: '#ffffff'
+};
+
+const HEX_COLOR_RE = /^[0-9a-f]{6}$/i;
+
 function stripMinecraftCodes(value: string) {
-  return value.replace(/[§&][0-9a-fk-or]/gi, '');
+  return value
+    .replace(/[§&]x(?:[§&][0-9a-f]){6}/gi, '')
+    .replace(/[§&]#[0-9a-f]{6}/gi, '')
+    .replace(/#[0-9a-f]{6}/gi, '')
+    .replace(/[§&][0-9a-fk-or]/gi, '')
+    .replace(/<\/?(?:#[0-9a-f]{6}|[a-z_]+|color:#[0-9a-f]{6}|gradient:[^>]+|rainbow:[^>]+)>/gi, '');
 }
 
 function MinecraftText({ text }: { text: string }) {
@@ -60,16 +86,70 @@ function MinecraftText({ text }: { text: string }) {
     parts.push({ text: buffer, color, bold, italic });
     buffer = '';
   };
+  const applyColor = (nextColor: string) => {
+    color = nextColor;
+    bold = false;
+    italic = false;
+  };
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     const next = text[i + 1]?.toLowerCase();
+    if ((ch === '§' || ch === '&') && next === 'x') {
+      let hex = '';
+      let valid = true;
+      for (let j = i + 2; j < i + 14; j += 2) {
+        if ((text[j] !== '§' && text[j] !== '&') || !/[0-9a-f]/i.test(text[j + 1] || '')) {
+          valid = false;
+          break;
+        }
+        hex += text[j + 1];
+      }
+      if (valid && HEX_COLOR_RE.test(hex)) {
+        flush();
+        applyColor(`#${hex}`);
+        i += 13;
+        continue;
+      }
+    }
+    if ((ch === '§' || ch === '&') && text[i + 1] === '#' && HEX_COLOR_RE.test(text.slice(i + 2, i + 8))) {
+      flush();
+      applyColor(text.slice(i + 1, i + 8));
+      i += 7;
+      continue;
+    }
+    if (ch === '#' && HEX_COLOR_RE.test(text.slice(i + 1, i + 7))) {
+      flush();
+      applyColor(text.slice(i, i + 7));
+      i += 6;
+      continue;
+    }
+    if (ch === '<') {
+      const end = text.indexOf('>', i + 1);
+      if (end !== -1) {
+        const rawTag = text.slice(i + 1, end).trim().toLowerCase();
+        const tag = rawTag.startsWith('/') ? rawTag.slice(1) : rawTag;
+        const gradientColor = tag.startsWith('gradient:') ? tag.split(':').find(part => part.startsWith('#') && HEX_COLOR_RE.test(part.slice(1))) : '';
+        const colorTag = tag.startsWith('color:#') && HEX_COLOR_RE.test(tag.slice(7)) ? tag.slice(6) : '';
+        const nextColor = tag.startsWith('#') && HEX_COLOR_RE.test(tag.slice(1)) ? tag : colorTag || gradientColor || MINI_MESSAGE_COLORS[tag];
+        if (nextColor || ['reset', 'r', 'bold', 'b', 'italic', 'i', 'gradient', 'rainbow'].includes(tag) || tag.startsWith('rainbow:')) {
+          flush();
+          if (rawTag.startsWith('/') || tag === 'reset' || tag === 'r') {
+            color = undefined; bold = false; italic = false;
+          } else if (tag === 'bold' || tag === 'b') bold = true;
+          else if (tag === 'italic' || tag === 'i') italic = true;
+          else if (nextColor) applyColor(nextColor);
+          i = end;
+          continue;
+        }
+      }
+    }
     if ((ch === '§' || ch === '&') && next && /[0-9a-fk-or]/.test(next)) {
       flush();
       if (next === 'r') {
         color = undefined; bold = false; italic = false;
       } else if (next === 'l') bold = true;
       else if (next === 'o') italic = true;
-      else if (MC_COLORS[next]) color = MC_COLORS[next];
+      else if (MC_COLORS[next]) applyColor(MC_COLORS[next]);
       i++;
     } else {
       buffer += ch;
@@ -85,7 +165,9 @@ function PlayerNameBadges({ player, t }: { player: PlayerInfo; t: (key: string, 
   const visibleRank = prefix || group;
   return (
     <span className="player-name-cell">
-      <span className="player-name-text notranslate" translate="no">{player.name}</span>
+      <span className="player-name-text notranslate" translate="no" title={stripMinecraftCodes(player.name || '')}>
+        <MinecraftText text={player.name || ''} />
+      </span>
       {player.uuid ? <button className="uuid-copy-btn" type="button" aria-label={t('players.copyUuid')} onClick={event => { event.stopPropagation(); copyPlayerUuid(player.uuid, t); }}>UUID</button> : null}
       {visibleRank ? <span className="player-rank" title={stripMinecraftCodes(prefix || group)}>{prefix ? <MinecraftText text={prefix} /> : group}</span> : null}
       {player.op ? <span className="player-op">OP</span> : null}
@@ -95,8 +177,12 @@ function PlayerNameBadges({ player, t }: { player: PlayerInfo; t: (key: string, 
 
 export function PlayersPanel() {
   const { t } = useWebConsoleLanguage();
+  const active = useActivePanel('players');
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
   const [offlinePlayers, setOfflinePlayers] = useState<PlayerInfo[]>([]);
+  const [offlineTotal, setOfflineTotal] = useState(0);
+  const [offlineHasMore, setOfflineHasMore] = useState(false);
+  const [offlineLoading, setOfflineLoading] = useState(false);
   const [summary, setSummary] = useState<PlayerActivitySummary>({});
   const [search, setSearch] = useState('');
   const [world, setWorld] = useState('');
@@ -105,9 +191,41 @@ export function PlayersPanel() {
 
   useWebConsoleEvent('webconsole:players', detail => {
     setPlayers(Array.isArray(detail.players) ? detail.players : []);
-    setOfflinePlayers(Array.isArray(detail.offlinePlayers) ? detail.offlinePlayers : []);
+    if (Array.isArray(detail.offlinePlayers)) {
+      setOfflinePlayers(detail.offlinePlayers);
+      setOfflineTotal(detail.offlinePlayers.length);
+      setOfflineHasMore(false);
+    }
     setSummary((detail.summary || {}) as PlayerActivitySummary);
   });
+
+  const loadOfflinePlayers = async (append = false) => {
+    setOfflineLoading(true);
+    try {
+      const offset = append ? offlinePlayers.length : 0;
+      const data = await getOfflinePlayers({ limit: 120, offset, q: search.trim() });
+      const nextPlayers = Array.isArray(data.players) ? data.players : [];
+      setOfflinePlayers(append ? [...offlinePlayers, ...nextPlayers] : nextPlayers);
+      setOfflineTotal(Number(data.total) || nextPlayers.length);
+      setOfflineHasMore(Boolean(data.hasMore));
+    } catch {
+      if (!append) {
+        setOfflinePlayers([]);
+        setOfflineTotal(0);
+        setOfflineHasMore(false);
+      }
+    } finally {
+      setOfflineLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!active) return;
+    const timer = window.setTimeout(() => {
+      void loadOfflinePlayers(false);
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [active, search]);
 
   const worlds = useMemo(() => {
     return [...new Set(players.map(player => player.world).filter(Boolean))].sort();
@@ -191,14 +309,14 @@ export function PlayersPanel() {
           <section className="players-card players-list-card">
             <div className="players-card-header">
               <div className="players-card-title">{t('players.offlinePlayers')}</div>
-              <span className="players-card-badge">{t('players.offline', { count: offlinePlayers.length })}</span>
+              <span className="players-card-badge">{t('players.offline', { count: offlineTotal || offlinePlayers.length })}</span>
             </div>
-            <p className="no-players" style={{ display: offlinePlayers.length ? 'none' : '' }}>{t('players.noneOffline')}</p>
+            <p className="no-players" style={{ display: offlinePlayers.length || offlineLoading ? 'none' : '' }}>{t('players.noneOffline')}</p>
             <div className="player-table-wrap">
               <table className="player-table" style={{ display: offlinePlayers.length ? '' : 'none' }}>
                 <thead><tr><th>{t('players.name')}</th><th>{t('players.lastSeen')}</th><th>{t('players.activity')}</th><th>{t('players.actions')}</th></tr></thead>
                 <tbody>
-                  {offlinePlayers.slice(0, 120).map(player => (
+                  {offlinePlayers.map(player => (
                     <tr key={`offline-${playerKey(player)}`} onClick={() => void openProfile(player)}>
                       <td data-label={t('players.name')}><PlayerNameBadges player={player} t={t} /></td>
                       <td data-label={t('players.lastSeen')}>{player.lastSeen ? new Date(player.lastSeen).toLocaleString() : '—'}</td>
@@ -216,6 +334,11 @@ export function PlayersPanel() {
                 </tbody>
               </table>
             </div>
+            {offlineHasMore ? (
+              <button className="history-more" type="button" disabled={offlineLoading} onClick={() => void loadOfflinePlayers(true)}>
+                {offlineLoading ? t('sessions.loading') : t('players.showMore', { count: Math.max(0, offlineTotal - offlinePlayers.length) })}
+              </button>
+            ) : null}
           </section>
           </div>
           <aside className="players-history">

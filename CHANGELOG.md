@@ -1,13 +1,60 @@
 # Changelog
 
-## 2.5.0 - 2026-05-28
+## 2.4.9 - 2026-06-23
 
 ### Changed
 
-- Version bump 2.5.0
+- Version bump 2.4.9.
 - Added grouped Paper build artifacts for Minecraft/Paper `1.21` - `1.21.11` and `26.1` - `26.1.2`.
 - Shortened generated jar names to `bwc-<version>-paper-1.21.X.jar` and `bwc-<version>-paper-26.X.jar`.
 - Ignored module `target` directories.
+- Updated README build output and `system-stats.history` / `player-activity` configuration docs.
+- Rendered Minecraft legacy, hex and MiniMessage-style player name colors in the Players tab.
+
+### Added
+
+- Added `/api/players/offline` with pagination, search and configurable page limits for offline player lists.
+- Added live one-point stats history samples to stats payloads so charts keep moving between persisted history loads.
+
+### Performance
+
+- Cached heavy player activity, known-player and offline-player payloads instead of rebuilding them every stats tick.
+- Reduced repeated LuckPerms/offline-player work during dashboard stats broadcasts.
+- Reused the server stats history append writer and flushed it in small batches instead of opening the file for every stat point.
+- Kept live TPS/RAM/player/CPU chart samples updating from the stats stream every second while longer chart ranges load from persisted history.
+- Buffered player activity history writes with configurable batch flushing.
+- Moved offline player lists to a paged `/api/players/offline` endpoint instead of including them in every stats payload.
+- Added configurable cache and flush intervals for stats history and player activity payloads.
+- Split Chart.js into a lazy-loaded frontend chunk so the initial web UI bundle is smaller.
+
+## 2.4.8 - 2026-06-21
+
+### Added
+- Added a fallback `/api/stats` polling path in the web UI so dashboard data can recover when WebSocket stats are delayed or unavailable.
+- Added tests for absolute session lifetime expiry behavior.
+- Persistent TPS/RAM/CPU/player history storage in `server-stats-history.tsv`.
+- New authenticated endpoint: `GET /api/stats/history`.
+- Dashboard range selector for `1h`, `6h`, `24h`, and `all`.
+- Offline player roster, offline profile lookup, and last-seen display.
+- LuckPerms rank/prefix display via soft dependency.
+- Config options for stats history retention, API max points, and write interval.
+
+### Changed
+- Added an absolute web session lifetime limit in addition to the idle timeout.
+- Added `security.session-max-lifetime-minutes` to `config.yml` and README examples.
+- Set the session cookie `Max-Age` from the absolute session lifetime so browser cookies and server-side sliding sessions stay consistent.
+- Matched unknown-user dummy bcrypt verification cost to real password hashes.
+- Updated `/bwc reload` messaging and docs to mention that session max lifetime changes require a server restart.
+- Dashboard charts now render persisted/downsampled history.
+- Player models support online/offline state, rank metadata, and activity counters.
+- Paper `26.1` grouped artifact renamed from `26.1.X` to `26.X`.
+- Project version bumped to `2.4.8`.
+
+### Fixed
+- Restored normal login form submit behavior for browser autofill, password managers and automation.
+- Cleared the password field after a successful web login.
+- Warned server owners when the web panel listens on all interfaces without secure cookies or an IP whitelist.
+- Ensured loaded persisted sessions are rejected when they exceed the absolute lifetime, even if their idle timeout has not expired.
 
 ## 2.4.7 - 2026-05-28
 

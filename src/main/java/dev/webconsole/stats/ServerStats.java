@@ -59,6 +59,10 @@ public class ServerStats {
     private volatile int lastTotalChunks = 0;
     private volatile int lastTotalEntities = 0;
     private volatile JsonArray lastWorldStats = new JsonArray();
+    private volatile JsonArray lastPlayerActivityDays = new JsonArray();
+    private volatile JsonObject lastPlayerActivitySummary = new JsonObject();
+    private volatile JsonArray lastKnownPlayerList = new JsonArray();
+    private volatile JsonArray lastOfflinePlayerList = new JsonArray();
     private volatile JsonObject lastSnapshot = new JsonObject();
     private volatile WebSocketHandler wsHandler;
     private final long startTimeMs = System.currentTimeMillis();
@@ -68,6 +72,8 @@ public class ServerStats {
     private long lastBroadcastAt = 0L;
     private long lastSystemStatsAt = 0L;
     private long lastWorldStatsAt = 0L;
+    private long lastPlayerActivityPayloadAt = 0L;
+    private long lastOfflinePlayerPayloadAt = 0L;
     private long lastHistoryRecordAt = 0L;
     private long lastProcessCpuTimeNs = -1L;
     private long lastProcessCpuWallNs = -1L;
@@ -138,6 +144,42 @@ public class ServerStats {
         return obj;
     }
 
+    public JsonObject offlinePlayersJson(String query, int limit, int offset) {
+        Set<String> onlineUuids = new HashSet<>();
+        Set<String> onlineNames = new HashSet<>();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            onlineUuids.add(player.getUniqueId().toString().toLowerCase(Locale.ROOT));
+            onlineNames.add(player.getName().toLowerCase(Locale.ROOT));
+        }
+
+        if (plugin.getPlayerActivityStore() != null) {
+            refreshPlayerActivityPayloadIfDue(onlineUuids, onlineNames);
+            refreshOfflinePlayerPayloadIfDue(onlineUuids, onlineNames);
+        }
+
+        String normalizedQuery = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+        int safeLimit = Math.max(1, Math.min(plugin.getPluginConfig().getOfflinePlayersMaxApiLimit(), limit));
+        int safeOffset = Math.max(0, offset);
+        JsonArray allOffline = currentOfflinePlayerList(onlineUuids, onlineNames);
+        JsonArray players = new JsonArray();
+        int matched = 0;
+
+        for (int i = 0; i < allOffline.size(); i++) {
+            JsonObject player = allOffline.get(i).getAsJsonObject();
+            if (!matchesPlayerQuery(player, normalizedQuery)) continue;
+            if (matched >= safeOffset && players.size() < safeLimit) players.add(player);
+            matched++;
+        }
+
+        JsonObject obj = new JsonObject();
+        obj.add("players", players);
+        obj.addProperty("total", matched);
+        obj.addProperty("limit", safeLimit);
+        obj.addProperty("offset", safeOffset);
+        obj.addProperty("hasMore", safeOffset + players.size() < matched);
+        return obj;
+    }
+
     private Player findPlayer(String nameOrUuid) {
         if (nameOrUuid == null || nameOrUuid.isBlank()) return null;
         String needle = nameOrUuid.trim();
@@ -177,6 +219,7 @@ public class ServerStats {
         addToHistory(tpsHistory, lastTps);
         addToHistory(ramHistory, lastRamUsed);
         addToHistory(playersHistory, lastPlayers);
+        collectCpuSample();
         collectSystemStatsIfDue();
         long now = System.currentTimeMillis();
         if (plugin.getServerStatsHistoryStore() != null
@@ -234,15 +277,6 @@ public class ServerStats {
 
         try {
             lastSystemStats = buildSystemStats(config);
-            if (lastSystemStats.has("cpu")) {
-                JsonObject cpu = lastSystemStats.getAsJsonObject("cpu");
-                if (cpu.has("systemLoadPercent")) {
-                    double systemLoad = cpu.get("systemLoadPercent").getAsDouble();
-                    double processLoad = cpu.has("processLoadPercent") ? cpu.get("processLoadPercent").getAsDouble() : 0.0;
-                    lastCpuLoad = systemLoad > 0.0 ? systemLoad : processLoad;
-                    addToHistory(cpuHistory, lastCpuLoad);
-                }
-            }
         } catch (Throwable e) {
             JsonObject error = new JsonObject();
             error.addProperty("enabled", false);
@@ -307,6 +341,25 @@ public class ServerStats {
         return system;
     }
 
+    private void collectCpuSample() {
+        PluginConfig config = plugin.getPluginConfig();
+        if (!config.isSystemStatsEnabled()) {
+            lastCpuLoad = 0.0;
+            addToHistory(cpuHistory, lastCpuLoad);
+            return;
+        }
+        try {
+            java.lang.management.OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+            int processors = Math.max(1, osBean.getAvailableProcessors());
+            double systemLoad = systemCpuLoad(osBean);
+            double processLoad = processCpuLoad(osBean, processors);
+            lastCpuLoad = systemLoad > 0.0 ? systemLoad : processLoad;
+        } catch (Throwable ignored) {
+            lastCpuLoad = 0.0;
+        }
+        addToHistory(cpuHistory, lastCpuLoad);
+    }
+
     private JsonObject buildDiskStats() {
         Path serverPath = plugin.getServer().getWorldContainer().toPath().toAbsolutePath().normalize();
         File root = serverPath.toFile();
@@ -362,6 +415,7 @@ public class ServerStats {
         obj.add("worlds", lastWorldStats.deepCopy());
 
         obj.add("system", lastSystemStats.deepCopy());
+        obj.add("statsHistory", liveStatsHistoryJson());
 
         JsonArray players = new JsonArray();
         Collection<? extends Player> online = Bukkit.getOnlinePlayers();
@@ -384,47 +438,112 @@ public class ServerStats {
         if (plugin.getPlayerActivityStore() != null) {
             obj.add("playerEvents", plugin.getPlayerActivityStore().recentEventsJson());
             obj.add("playerCommands", plugin.getPlayerActivityStore().recentCommandsJson());
-            obj.add("playerActivityDays", plugin.getPlayerActivityStore().groupedActivityJson());
-            obj.add("playerActivitySummary", plugin.getPlayerActivityStore().summaryJson());
-            JsonArray knownPlayers = plugin.getPlayerActivityStore().knownPlayersJson(onlineUuids, onlineNames);
-            JsonArray offlinePlayers = new JsonArray();
-            Set<String> knownKeys = new HashSet<>();
-            for (int i = 0; i < knownPlayers.size(); i++) {
-                JsonObject known = knownPlayers.get(i).getAsJsonObject();
-                addKnownKeys(knownKeys, known);
-                addLuckPermsStatus(known, parseUuid(known.has("uuid") ? known.get("uuid").getAsString() : ""), known.has("name") ? known.get("name").getAsString() : "");
-                if (!known.has("online") || !known.get("online").getAsBoolean()) offlinePlayers.add(known);
-            }
-            for (OfflinePlayer offline : Bukkit.getOfflinePlayers()) {
-                String name = offline.getName();
-                String uuid = offline.getUniqueId().toString();
-                if (onlineUuids.contains(uuid.toLowerCase(Locale.ROOT))
-                        || (name != null && onlineNames.contains(name.toLowerCase(Locale.ROOT)))) continue;
-                String key = !uuid.isBlank() ? "uuid:" + uuid.toLowerCase(Locale.ROOT)
-                        : "name:" + (name == null ? "" : name.toLowerCase(Locale.ROOT));
-                if (!knownKeys.add(key)) continue;
-                JsonObject objPlayer = new JsonObject();
-                objPlayer.addProperty("name", name == null || name.isBlank() ? uuid : name);
-                objPlayer.addProperty("uuid", uuid);
-                objPlayer.addProperty("online", false);
-                objPlayer.addProperty("lastSeen", offline.getLastSeen());
-                objPlayer.addProperty("op", offline.isOp());
-                addLuckPermsStatus(objPlayer, offline.getUniqueId(), name);
-                knownPlayers.add(objPlayer);
-                offlinePlayers.add(objPlayer);
-            }
-            obj.add("knownPlayerList", knownPlayers);
-            obj.add("offlinePlayerList", offlinePlayers);
+            refreshPlayerActivityPayloadIfDue(onlineUuids, onlineNames);
+            obj.add("playerActivityDays", lastPlayerActivityDays.deepCopy());
+            obj.add("playerActivitySummary", lastPlayerActivitySummary.deepCopy());
         } else {
             obj.add("playerEvents", new JsonArray());
             obj.add("playerCommands", new JsonArray());
             obj.add("playerActivityDays", new JsonArray());
             obj.add("playerActivitySummary", new JsonObject());
-            obj.add("knownPlayerList", new JsonArray());
-            obj.add("offlinePlayerList", new JsonArray());
         }
 
         return obj;
+    }
+
+    private JsonObject liveStatsHistoryJson() {
+        JsonObject history = new JsonObject();
+        JsonArray timestamps = new JsonArray();
+        JsonArray tps = new JsonArray();
+        JsonArray ram = new JsonArray();
+        JsonArray players = new JsonArray();
+        JsonArray cpu = new JsonArray();
+        timestamps.add(System.currentTimeMillis());
+        tps.add(Math.round(lastTps * 10.0) / 10.0);
+        ram.add(lastRamUsed);
+        players.add(lastPlayers);
+        cpu.add(Math.round(lastCpuLoad * 10.0) / 10.0);
+        history.add("timestamps", timestamps);
+        history.add("tps", tps);
+        history.add("ram", ram);
+        history.add("players", players);
+        history.add("cpu", cpu);
+        return history;
+    }
+
+    private void refreshPlayerActivityPayloadIfDue(Set<String> onlineUuids, Set<String> onlineNames) {
+        long now = System.currentTimeMillis();
+        if (now - lastPlayerActivityPayloadAt < plugin.getPluginConfig().getPlayerActivityCacheSeconds() * 1000L) return;
+        lastPlayerActivityPayloadAt = now;
+
+        JsonArray knownPlayers = plugin.getPlayerActivityStore().knownPlayersJson(onlineUuids, onlineNames);
+        for (int i = 0; i < knownPlayers.size(); i++) {
+            JsonObject known = knownPlayers.get(i).getAsJsonObject();
+            addLuckPermsStatus(known, parseUuid(known.has("uuid") ? known.get("uuid").getAsString() : ""), known.has("name") ? known.get("name").getAsString() : "");
+        }
+
+        lastPlayerActivityDays = plugin.getPlayerActivityStore().groupedActivityJson();
+        lastPlayerActivitySummary = plugin.getPlayerActivityStore().summaryJson();
+        lastKnownPlayerList = knownPlayers;
+    }
+
+    private void refreshOfflinePlayerPayloadIfDue(Set<String> onlineUuids, Set<String> onlineNames) {
+        long now = System.currentTimeMillis();
+        if (now - lastOfflinePlayerPayloadAt < plugin.getPluginConfig().getOfflinePlayersCacheSeconds() * 1000L) return;
+        lastOfflinePlayerPayloadAt = now;
+
+        JsonArray offlinePlayers = new JsonArray();
+        JsonArray knownPlayers = lastKnownPlayerList.deepCopy();
+        Set<String> knownKeys = new HashSet<>();
+        for (int i = 0; i < knownPlayers.size(); i++) {
+            JsonObject known = knownPlayers.get(i).getAsJsonObject();
+            addKnownKeys(knownKeys, known);
+            if (!known.has("online") || !known.get("online").getAsBoolean()) offlinePlayers.add(known);
+        }
+
+        for (OfflinePlayer offline : Bukkit.getOfflinePlayers()) {
+            String name = offline.getName();
+            String uuid = offline.getUniqueId().toString();
+            if (onlineUuids.contains(uuid.toLowerCase(Locale.ROOT))
+                    || (name != null && onlineNames.contains(name.toLowerCase(Locale.ROOT)))) continue;
+            String key = !uuid.isBlank() ? "uuid:" + uuid.toLowerCase(Locale.ROOT)
+                    : "name:" + (name == null ? "" : name.toLowerCase(Locale.ROOT));
+            if (!knownKeys.add(key)) continue;
+            JsonObject objPlayer = new JsonObject();
+            objPlayer.addProperty("name", name == null || name.isBlank() ? uuid : name);
+            objPlayer.addProperty("uuid", uuid);
+            objPlayer.addProperty("online", false);
+            objPlayer.addProperty("lastSeen", offline.getLastSeen());
+            objPlayer.addProperty("op", offline.isOp());
+            addLuckPermsStatus(objPlayer, offline.getUniqueId(), name);
+            knownPlayers.add(objPlayer);
+            offlinePlayers.add(objPlayer);
+        }
+
+        lastKnownPlayerList = knownPlayers;
+        lastOfflinePlayerList = offlinePlayers;
+    }
+
+    private boolean matchesPlayerQuery(JsonObject player, String query) {
+        if (query == null || query.isBlank()) return true;
+        String name = player.has("name") ? player.get("name").getAsString().toLowerCase(Locale.ROOT) : "";
+        String uuid = player.has("uuid") ? player.get("uuid").getAsString().toLowerCase(Locale.ROOT) : "";
+        String group = player.has("primaryGroup") ? player.get("primaryGroup").getAsString().toLowerCase(Locale.ROOT) : "";
+        return name.contains(query) || uuid.contains(query) || group.contains(query);
+    }
+
+    private JsonArray currentOfflinePlayerList(Set<String> onlineUuids, Set<String> onlineNames) {
+        JsonArray filtered = new JsonArray();
+        JsonArray cached = lastOfflinePlayerList;
+        for (int i = 0; i < cached.size(); i++) {
+            JsonObject player = cached.get(i).getAsJsonObject();
+            String uuid = player.has("uuid") ? player.get("uuid").getAsString() : "";
+            String name = player.has("name") ? player.get("name").getAsString() : "";
+            if (!uuid.isBlank() && onlineUuids.contains(uuid.toLowerCase(Locale.ROOT))) continue;
+            if (!name.isBlank() && onlineNames.contains(name.toLowerCase(Locale.ROOT))) continue;
+            filtered.add(player.deepCopy());
+        }
+        return filtered;
     }
 
     private UUID parseUuid(String value) {

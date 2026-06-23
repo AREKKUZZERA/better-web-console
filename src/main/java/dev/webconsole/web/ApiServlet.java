@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
  *   GET  /api/status      - session check
  *   GET  /api/stats       - server stats JSON (auth required)
  *   GET  /api/stats/history - server stats history JSON (auth required)
+ *   GET  /api/players/offline - paged offline player list (auth required)
  *   GET  /api/aliases     - command alias list (auth required)
  *   GET  /api/sessions    - active web sessions (auth required)
  *   GET  /api/audit       - recent audit log entries (auth required)
@@ -72,6 +73,7 @@ public class ApiServlet extends HttpServlet {
             case "/status"      -> handleStatus(req, res);
             case "/stats"       -> handleStats(req, res);
             case "/stats/history" -> handleStatsHistory(req, res);
+            case "/players/offline" -> handleOfflinePlayers(req, res);
             case "/aliases"     -> handleAliases(req, res);
             case "/sessions"    -> handleSessions(req, res);
             case "/audit"       -> handleAudit(req, res);
@@ -133,6 +135,15 @@ public class ApiServlet extends HttpServlet {
             return;
         }
         writeJson(res, 200, plugin.getServerStatsHistoryStore().historyJson(req.getParameter("range")));
+    }
+
+    private void handleOfflinePlayers(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.setContentType("application/json;charset=UTF-8");
+        if (!isAuthenticated(req)) { sendError(res, 401, "Unauthorized"); return; }
+        int limit = parseBoundedInt(req.getParameter("limit"), plugin.getPluginConfig().getOfflinePlayersMaxApiLimit(),
+                1, plugin.getPluginConfig().getOfflinePlayersMaxApiLimit());
+        int offset = parseBoundedInt(req.getParameter("offset"), 0, 0, 100_000);
+        writeJson(res, 200, plugin.getServerStats().offlinePlayersJson(req.getParameter("q"), limit, offset));
     }
 
     private void handleAliases(HttpServletRequest req, HttpServletResponse res) throws IOException {
@@ -303,7 +314,7 @@ public class ApiServlet extends HttpServlet {
         cfg.set("logging.log-auth", bool(logging, "logAuth", plugin.getPluginConfig().isLogAuth()));
         cfg.set("logging.audit-log", bool(logging, "auditLog", plugin.getPluginConfig().isAuditLog()));
         cfg.set("system-stats.enabled", bool(systemStats, "enabled", plugin.getPluginConfig().isSystemStatsEnabled()));
-        cfg.set("system-stats.update-interval-seconds", Math.max(2, Math.min(60,
+        cfg.set("system-stats.update-interval-seconds", Math.max(1, Math.min(60,
                 integer(systemStats, "updateIntervalSeconds", plugin.getPluginConfig().getSystemStatsUpdateIntervalSeconds()))));
         cfg.set("system-stats.show-disk", bool(systemStats, "showDisk", plugin.getPluginConfig().isShowDiskStats()));
         plugin.saveConfig();
@@ -464,8 +475,12 @@ public class ApiServlet extends HttpServlet {
     }
 
     private int parseLimit(String raw, int fallback) {
+        return parseBoundedInt(raw, fallback, 1, 500);
+    }
+
+    private int parseBoundedInt(String raw, int fallback, int min, int max) {
         try {
-            return Math.max(1, Math.min(500, Integer.parseInt(raw)));
+            return Math.max(min, Math.min(max, Integer.parseInt(raw)));
         } catch (Exception ignored) {
             return fallback;
         }

@@ -58,6 +58,15 @@ export function getPlayerProfile(id) {
   return json('/api/player?id=' + encodeURIComponent(id));
 }
 
+export function getOfflinePlayers(params = {}) {
+  const query = new URLSearchParams();
+  query.set('limit', String(params.limit || 120));
+  query.set('offset', String(params.offset || 0));
+  if (params.q) query.set('q', params.q);
+  query.set('_', String(Date.now()));
+  return json('/api/players/offline?' + query.toString(), { cache: 'no-store' });
+}
+
 export function getEditableConfig() {
   return json('/api/config');
 }

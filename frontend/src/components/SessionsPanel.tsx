@@ -3,10 +3,12 @@ import type { SessionInfo } from '../types';
 import { getSessions } from '../webconsole/api';
 import { fmtDateTime, fmtDuration } from '../webconsole/formatters';
 import { useActivePanel, useWebConsoleLanguage } from './useWebConsoleRuntime';
+import { AuditSection } from './AuditPanel';
 
 export function SessionsPanel() {
   const active = useActivePanel('sessions');
   const { language, t } = useWebConsoleLanguage();
+  const [view, setView] = useState<'sessions' | 'audit'>('sessions');
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -41,6 +43,11 @@ export function SessionsPanel() {
   return (
     <div className="panel" id="panel-sessions">
       <div className="sessions-layout">
+        <div className="subtabs" role="tablist" aria-label={t('tab.sessions')}>
+          <button className={view === 'sessions' ? 'active' : ''} type="button" role="tab" aria-selected={view === 'sessions'} onClick={() => setView('sessions')}>{t('sessions.active')}</button>
+          <button className={view === 'audit' ? 'active' : ''} type="button" role="tab" aria-selected={view === 'audit'} onClick={() => setView('audit')}>{t('audit.title')}</button>
+        </div>
+        {view === 'sessions' ? (
         <section className="players-card">
           <div className="players-card-header">
             <div className="players-card-title" data-i18n="sessions.active">{t('sessions.active')}</div>
@@ -63,6 +70,9 @@ export function SessionsPanel() {
           </div>
           <div className={`session-empty${error ? ' session-error' : ''}`} id="sessions-empty" data-i18n={error ? undefined : 'sessions.empty'} style={{ display: showTable ? 'none' : '' }}>{emptyText}</div>
         </section>
+        ) : (
+          <AuditSection activeOverride={active && view === 'audit'} embedded />
+        )}
       </div>
     </div>
   );

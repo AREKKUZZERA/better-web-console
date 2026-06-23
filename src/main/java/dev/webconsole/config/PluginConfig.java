@@ -35,6 +35,11 @@ public class PluginConfig {
     private final int statsHistoryRetentionPoints;
     private final int statsHistoryApiMaxPoints;
     private final int statsHistoryWriteIntervalSeconds;
+    private final int statsHistoryFlushBatchSize;
+    private final int playerActivityFlushBatchSize;
+    private final int playerActivityCacheSeconds;
+    private final int offlinePlayersCacheSeconds;
+    private final int offlinePlayersMaxApiLimit;
 
     public PluginConfig(FileConfiguration config) {
         this.port          = validPort(config.getInt("web.port", 4242));
@@ -52,11 +57,16 @@ public class PluginConfig {
         this.logAuth     = config.getBoolean("logging.log-auth", true);
         this.auditLog    = config.getBoolean("logging.audit-log", true);
         this.systemStatsEnabled = config.getBoolean("system-stats.enabled", true);
-        this.systemStatsUpdateIntervalSeconds = Math.max(2, Math.min(60, config.getInt("system-stats.update-interval-seconds", 5)));
+        this.systemStatsUpdateIntervalSeconds = Math.max(1, Math.min(60, config.getInt("system-stats.update-interval-seconds", 1)));
         this.showDiskStats = config.getBoolean("system-stats.show-disk", true);
         this.statsHistoryRetentionPoints = Math.max(300, Math.min(604_800, config.getInt("system-stats.history.retention-points", 86_400)));
         this.statsHistoryApiMaxPoints = Math.max(120, Math.min(10_000, config.getInt("system-stats.history.api-max-points", 720)));
         this.statsHistoryWriteIntervalSeconds = Math.max(1, Math.min(60, config.getInt("system-stats.history.write-interval-seconds", 1)));
+        this.statsHistoryFlushBatchSize = Math.max(1, Math.min(300, config.getInt("system-stats.history.flush-batch-size", 30)));
+        this.playerActivityFlushBatchSize = Math.max(1, Math.min(300, config.getInt("player-activity.flush-batch-size", 30)));
+        this.playerActivityCacheSeconds = Math.max(1, Math.min(60, config.getInt("player-activity.cache-seconds", 5)));
+        this.offlinePlayersCacheSeconds = Math.max(5, Math.min(600, config.getInt("player-activity.offline-cache-seconds", 60)));
+        this.offlinePlayersMaxApiLimit = Math.max(20, Math.min(500, config.getInt("player-activity.offline-max-api-limit", 120)));
 
         this.aliases = new LinkedHashMap<>();
         loadAliases(config, "commands.aliases");
@@ -126,4 +136,9 @@ public class PluginConfig {
     public int getStatsHistoryRetentionPoints() { return statsHistoryRetentionPoints; }
     public int getStatsHistoryApiMaxPoints() { return statsHistoryApiMaxPoints; }
     public int getStatsHistoryWriteIntervalSeconds() { return statsHistoryWriteIntervalSeconds; }
+    public int getStatsHistoryFlushBatchSize() { return statsHistoryFlushBatchSize; }
+    public int getPlayerActivityFlushBatchSize() { return playerActivityFlushBatchSize; }
+    public int getPlayerActivityCacheSeconds() { return playerActivityCacheSeconds; }
+    public int getOfflinePlayersCacheSeconds() { return offlinePlayersCacheSeconds; }
+    public int getOfflinePlayersMaxApiLimit() { return offlinePlayersMaxApiLimit; }
 }

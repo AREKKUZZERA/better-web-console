@@ -2,6 +2,7 @@ package dev.webconsole.stats;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import dev.webconsole.config.PluginConfig;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -9,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -38,22 +40,34 @@ public class PlayerActivityStore {
 
     private final Logger logger;
     private final File file;
+    private PluginConfig config;
     private final List<Entry> entries = new ArrayList<>();
     private final Map<String, PlayerSummary> cachedPlayers = new HashMap<>();
+    private BufferedWriter appendWriter;
     private int cachedJoins;
     private int cachedLeaves;
     private int cachedCommands;
     private int writesSinceCompact;
+    private int writesSinceFlush;
 
-    public PlayerActivityStore(File dataFolder, Logger logger) {
+    public PlayerActivityStore(File dataFolder, Logger logger, PluginConfig config) {
         this.logger = logger;
         this.file = new File(dataFolder, "player-command-history.tsv");
+        this.config = config;
         if (!dataFolder.exists() && !dataFolder.mkdirs()) {
             logger.warning("[BWC] Failed to create data folder for player activity history");
         }
         load();
         if (trimOldEntries()) compact();
         rebuildSummaryCache();
+    }
+
+    public synchronized void updateConfig(PluginConfig config) {
+        this.config = config;
+    }
+
+    public synchronized void shutdown() {
+        closeAppendWriter();
     }
 
     public synchronized void recordJoin(UUID uuid, String playerName) {
@@ -218,24 +232,53 @@ public class PlayerActivityStore {
     }
 
     private void append(Entry entry) {
-        try (BufferedWriter writer = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8,
-                java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND)) {
+        try {
+            BufferedWriter writer = appendWriter();
             writer.write(entry.toLine());
             writer.newLine();
+            writesSinceFlush++;
+            if (writesSinceFlush >= config.getPlayerActivityFlushBatchSize()) {
+                writer.flush();
+                writesSinceFlush = 0;
+            }
         } catch (IOException e) {
             logger.warning("[BWC] Failed to append player activity history: " + e.getMessage());
+            closeAppendWriter();
         }
     }
 
     private void compact() {
+        closeAppendWriter();
         try (BufferedWriter writer = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8,
-                java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.TRUNCATE_EXISTING)) {
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
             for (Entry entry : entries) {
                 writer.write(entry.toLine());
                 writer.newLine();
             }
         } catch (IOException e) {
             logger.warning("[BWC] Failed to compact player activity history: " + e.getMessage());
+        }
+    }
+
+    private BufferedWriter appendWriter() throws IOException {
+        if (appendWriter == null) {
+            appendWriter = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            writesSinceFlush = 0;
+        }
+        return appendWriter;
+    }
+
+    private void closeAppendWriter() {
+        if (appendWriter == null) return;
+        try {
+            appendWriter.flush();
+            appendWriter.close();
+        } catch (IOException e) {
+            logger.warning("[BWC] Failed to close player activity history writer: " + e.getMessage());
+        } finally {
+            appendWriter = null;
+            writesSinceFlush = 0;
         }
     }
 

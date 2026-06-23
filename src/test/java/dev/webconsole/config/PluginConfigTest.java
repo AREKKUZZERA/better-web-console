@@ -55,7 +55,7 @@ class PluginConfigTest {
         PluginConfig pluginConfig = new PluginConfig(config);
 
         assertFalse(pluginConfig.isSystemStatsEnabled());
-        assertEquals(2, pluginConfig.getSystemStatsUpdateIntervalSeconds());
+        assertEquals(1, pluginConfig.getSystemStatsUpdateIntervalSeconds());
         assertFalse(pluginConfig.isShowDiskStats());
     }
 }

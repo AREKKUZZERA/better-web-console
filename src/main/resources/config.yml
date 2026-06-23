@@ -43,8 +43,9 @@ system-stats:
   # Adds host CPU, machine RAM, disk, OS and JVM details to the dashboard.
   enabled: true
 
-  # OS-level polling interval. Keep this above 2 seconds for production servers.
-  update-interval-seconds: 5
+  # OS-level polling interval for dashboard machine details.
+  # CPU chart samples still update every second.
+  update-interval-seconds: 1
 
   # Reports disk usage for the Minecraft server folder.
   show-disk: true
@@ -58,6 +59,22 @@ system-stats:
 
     # How often TPS/RAM/CPU/player stats are appended to disk.
     write-interval-seconds: 1
+
+    # Flushes stat history after this many appended points.
+    flush-batch-size: 30
+
+player-activity:
+  # Flushes player activity history after this many join/leave/command events.
+  flush-batch-size: 30
+
+  # Rebuilds grouped activity and known-player summaries for the dashboard.
+  cache-seconds: 5
+
+  # Rebuilds offline player search data less often because it can be large.
+  offline-cache-seconds: 60
+
+  # Maximum offline players returned by /api/players/offline in one page.
+  offline-max-api-limit: 120
 
 commands:
   # Exact command labels blocked from the web console and aliases.

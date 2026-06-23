@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { EditableConfig } from '../types';
 import { getEditableConfig, saveEditableConfig } from '../webconsole/api';
 import { useActivePanel, useWebConsoleLanguage } from './useWebConsoleRuntime';
+import { AliasesPanel } from './AliasesPanel';
 
 const EMPTY_CONFIG: EditableConfig = {
   logging: { logCommands: true, logAuth: true, auditLog: true },
@@ -22,6 +23,7 @@ function normalizeConfig(config: EditableConfig): EditableConfig {
 export function ConfigPanel() {
   const active = useActivePanel('config');
   const { t } = useWebConsoleLanguage();
+  const [view, setView] = useState<'settings' | 'aliases'>('settings');
   const [config, setConfig] = useState<EditableConfig>(EMPTY_CONFIG);
   const [blockedText, setBlockedText] = useState('');
   const [status, setStatus] = useState('');
@@ -71,6 +73,12 @@ export function ConfigPanel() {
   return (
     <div className="panel" id="panel-config">
       <div className="config-layout">
+        <div className="subtabs" role="tablist" aria-label={t('tab.config')}>
+          <button className={view === 'settings' ? 'active' : ''} type="button" role="tab" aria-selected={view === 'settings'} onClick={() => setView('settings')}>{t('config.title')}</button>
+          <button className={view === 'aliases' ? 'active' : ''} type="button" role="tab" aria-selected={view === 'aliases'} onClick={() => setView('aliases')}>{t('config.aliases')}</button>
+        </div>
+        {view === 'settings' ? (
+        <>
         <section className="players-card">
           <div className="players-card-header">
             <div className="players-card-title">{t('config.title')}</div>
@@ -82,7 +90,7 @@ export function ConfigPanel() {
             <label className="config-toggle"><input id="config-audit-log" name="auditLog" type="checkbox" checked={config.logging.auditLog} onChange={event => setConfig({ ...config, logging: { ...config.logging, auditLog: event.target.checked } })} />{t('config.auditLog')}</label>
             <label className="config-toggle"><input id="config-system-stats" name="systemStatsEnabled" type="checkbox" checked={config.systemStats.enabled} onChange={event => setConfig({ ...config, systemStats: { ...config.systemStats, enabled: event.target.checked } })} />{t('config.systemStats')}</label>
             <label className="config-toggle"><input id="config-show-disk" name="showDisk" type="checkbox" checked={config.systemStats.showDisk} onChange={event => setConfig({ ...config, systemStats: { ...config.systemStats, showDisk: event.target.checked } })} />{t('config.showDisk')}</label>
-            <label className="config-number">{t('config.interval')}<input id="config-stats-interval" name="statsIntervalSeconds" type="number" min={2} max={60} value={config.systemStats.updateIntervalSeconds} onChange={event => setConfig({ ...config, systemStats: { ...config.systemStats, updateIntervalSeconds: Number(event.target.value) } })} /></label>
+            <label className="config-number">{t('config.interval')}<input id="config-stats-interval" name="statsIntervalSeconds" type="number" min={1} max={60} value={config.systemStats.updateIntervalSeconds} onChange={event => setConfig({ ...config, systemStats: { ...config.systemStats, updateIntervalSeconds: Number(event.target.value) } })} /></label>
           </div>
         </section>
 
@@ -92,6 +100,22 @@ export function ConfigPanel() {
             <span className="players-card-badge">{t('config.onePerLine')}</span>
           </div>
           <textarea id="config-blocked-commands" name="blockedCommands" className="config-textarea" value={blockedText} onChange={event => setBlockedText(event.target.value)} />
+        </section>
+
+        <div className="config-actions">
+          <button className="alias-run" type="button" onClick={() => void loadConfig()}>{t('audit.refresh')}</button>
+          <button className="btn-send" type="button" disabled={saving} onClick={() => void save()}>{saving ? t('config.saving') : t('config.save')}</button>
+          <span className="config-status">{status}</span>
+        </div>
+        </>
+        ) : (
+        <>
+        <section className="players-card">
+          <div className="players-card-header">
+            <div className="players-card-title">{t('aliases.available')}</div>
+            <span className="players-card-badge">{t('aliases.runHint')}</span>
+          </div>
+          <AliasesPanel activeOverride={active && view === 'aliases'} embedded />
         </section>
 
         <section className="players-card">
@@ -115,6 +139,8 @@ export function ConfigPanel() {
           <button className="btn-send" type="button" disabled={saving} onClick={() => void save()}>{saving ? t('config.saving') : t('config.save')}</button>
           <span className="config-status">{status}</span>
         </div>
+        </>
+        )}
       </div>
     </div>
   );
