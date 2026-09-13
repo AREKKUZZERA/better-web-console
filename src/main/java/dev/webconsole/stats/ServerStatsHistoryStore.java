@@ -43,10 +43,8 @@ public class ServerStatsHistoryStore {
         append(point);
 
         writesSinceCompact++;
-        if (trimOldPoints()) {
-            compact();
-            writesSinceCompact = 0;
-        } else if (writesSinceCompact >= COMPACT_INTERVAL_WRITES) {
+        trimOldPoints();
+        if (writesSinceCompact >= COMPACT_INTERVAL_WRITES) {
             compact();
             writesSinceCompact = 0;
         }
