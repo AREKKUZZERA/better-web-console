@@ -532,6 +532,7 @@ public class ApiServlet extends HttpServlet {
     private String detectLine(String version) {
         if (version == null) return "unknown";
         String v = version.toLowerCase(Locale.ROOT);
+        if (v.startsWith("26.2") || v.contains("mc: 26.2") || v.contains("minecraft version 26.2")) return "26.2.X";
         if (v.startsWith("26.1") || v.contains("mc: 26.1") || v.contains("minecraft version 26.1")) return "26.1.X";
         if (v.startsWith("1.21") || v.contains("mc: 1.21") || v.contains("minecraft version 1.21")) return "1.21.X";
         return "unknown";
