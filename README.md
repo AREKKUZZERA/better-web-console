@@ -6,6 +6,7 @@ Supported server lines:
 
 - Paper/Purpur `1.21` - `1.21.11`: use the `1.21.X` jar.
 - Paper/Purpur `26.1` - `26.1.2`: use the `26.X` jar.
+- Paper/Purpur `26.2`: use the `26.2.X` jar.
 
 ## Features
 
@@ -56,7 +57,7 @@ Requirements:
 - Maven 3.9+.
 - Node.js 22+ and npm when rebuilding frontend assets from source.
 
-Both produced plugin jars use Java 21 bytecode. The 26.1 build still needs a JDK that can read the current Paper 26.1 API during compilation.
+All produced plugin jars use Java 21 bytecode. The 26.1 and 26.2 builds still need a JDK that can read their current Paper APIs during compilation.
 Published plugin jars contain prebuilt static frontend assets. Node.js is only needed for source builds.
 
 ```bash
@@ -66,12 +67,14 @@ mvn clean package
 Output:
 
 ```text
-target/bwc-2.4.9-paper-1.21.X.jar
-target/bwc-2.4.9-paper-26.X.jar
+target/bwc-2.4.10-paper-1.21.X.jar
+target/bwc-2.4.10-paper-26.X.jar
+target/bwc-2.4.10-paper-26.2.X.jar
 ```
 
-Use `bwc-2.4.9-paper-1.21.X.jar` on Paper/Purpur `1.21` through `1.21.11`.
-Use `bwc-2.4.9-paper-26.X.jar` on Paper `26.1` through `26.1.2`.
+Use `bwc-2.4.10-paper-1.21.X.jar` on Paper/Purpur `1.21` through `1.21.11`.
+Use `bwc-2.4.10-paper-26.X.jar` on Paper `26.1` through `26.1.2`.
+Use `bwc-2.4.10-paper-26.2.X.jar` on Paper/Purpur `26.2`.
 
 ## First Setup
 

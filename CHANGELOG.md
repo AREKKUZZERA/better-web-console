@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.4.10 - 2026-09-13
+
+### Added
+
+- Added a dedicated Paper `26.2` build artifact: `bwc-<version>-paper-26.2.X.jar`.
+- Added Paper `26.2` compatibility detection to the diagnostics API.
+
+### Fixed
+
+- Batched server-stats history compaction after retention pruning, preventing a full history-file rewrite for every new point at the retention limit.
+
+### Build
+
+- Added the `paper-26.2` Maven module, compiled against Paper `26.2` and generated with `api-version: 26.2`.
+
 ## 2.4.9 - 2026-06-23
 
 ### Changed
