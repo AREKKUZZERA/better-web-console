@@ -21,7 +21,7 @@
     </properties>
 
     <build>
-        <finalName>bwc-${project.version}-paper-26.2.X</finalName>
+        <finalName>bwc-${project.version}-paper-26.2</finalName>
         <sourceDirectory>${project.basedir}/../src/main/java</sourceDirectory>
         <testSourceDirectory>${project.basedir}/../src/test/java</testSourceDirectory>
 

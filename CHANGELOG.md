@@ -4,7 +4,7 @@
 
 ### Added
 
-- Added a dedicated Paper `26.2` build artifact: `bwc-<version>-paper-26.2.X.jar`.
+- Added dedicated Paper `26.1`, `26.1.1`, `26.1.2`, and `26.2` build artifacts.
 - Added Paper `26.2` compatibility detection to the diagnostics API.
 
 ### Fixed
@@ -14,6 +14,7 @@
 ### Build
 
 - Added the `paper-26.2` Maven module, compiled against Paper `26.2` and generated with `api-version: 26.2`.
+- Renamed the Paper `26.2` artifact from `paper-26.2.X` to `paper-26.2`.
 
 ## 2.4.9 - 2026-06-23
 

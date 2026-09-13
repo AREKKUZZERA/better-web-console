@@ -5,8 +5,8 @@ Secure browser console and admin dashboard for Paper-compatible servers.
 Supported server lines:
 
 - Paper/Purpur `1.21` - `1.21.11`: use the `1.21.X` jar.
-- Paper/Purpur `26.1` - `26.1.2`: use the `26.X` jar.
-- Paper/Purpur `26.2`: use the `26.2.X` jar.
+- Paper/Purpur `26.1`, `26.1.1`, and `26.1.2`: use the matching versioned jar.
+- Paper/Purpur `26.2`: use the `26.2` jar.
 
 ## Features
 
@@ -68,13 +68,17 @@ Output:
 
 ```text
 target/bwc-2.4.10-paper-1.21.X.jar
-target/bwc-2.4.10-paper-26.X.jar
-target/bwc-2.4.10-paper-26.2.X.jar
+target/bwc-2.4.10-paper-26.1.jar
+target/bwc-2.4.10-paper-26.1.1.jar
+target/bwc-2.4.10-paper-26.1.2.jar
+target/bwc-2.4.10-paper-26.2.jar
 ```
 
 Use `bwc-2.4.10-paper-1.21.X.jar` on Paper/Purpur `1.21` through `1.21.11`.
-Use `bwc-2.4.10-paper-26.X.jar` on Paper `26.1` through `26.1.2`.
-Use `bwc-2.4.10-paper-26.2.X.jar` on Paper/Purpur `26.2`.
+Use `bwc-2.4.10-paper-26.1.jar` on Paper/Purpur `26.1`.
+Use `bwc-2.4.10-paper-26.1.1.jar` on Paper/Purpur `26.1.1`.
+Use `bwc-2.4.10-paper-26.1.2.jar` on Paper/Purpur `26.1.2`.
+Use `bwc-2.4.10-paper-26.2.jar` on Paper/Purpur `26.2`.
 
 ## First Setup
 
