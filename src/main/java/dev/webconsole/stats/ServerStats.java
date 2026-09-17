@@ -19,6 +19,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 import java.lang.management.ThreadMXBean;
+import java.lang.management.GarbageCollectorMXBean;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -317,10 +318,20 @@ public class ServerStats {
         JsonObject jvm = new JsonObject();
         jvm.addProperty("heapUsedBytes", heap.getUsed());
         jvm.addProperty("heapMaxBytes", heap.getMax());
+        jvm.addProperty("heapCommittedBytes", heap.getCommitted());
+        jvm.addProperty("heapUsedPercent", percent(heap.getMax() <= 0 ? 0.0 : (double) heap.getUsed() / heap.getMax()));
         jvm.addProperty("nonHeapUsedBytes", nonHeap.getUsed());
         jvm.addProperty("uptimeSeconds", ManagementFactory.getRuntimeMXBean().getUptime() / 1000L);
         jvm.addProperty("threads", threadBean.getThreadCount());
         jvm.addProperty("daemonThreads", threadBean.getDaemonThreadCount());
+        long gcCollections = 0L;
+        long gcCollectionTimeMs = 0L;
+        for (GarbageCollectorMXBean collector : ManagementFactory.getGarbageCollectorMXBeans()) {
+            if (collector.getCollectionCount() >= 0) gcCollections += collector.getCollectionCount();
+            if (collector.getCollectionTime() >= 0) gcCollectionTimeMs += collector.getCollectionTime();
+        }
+        jvm.addProperty("gcCollections", gcCollections);
+        jvm.addProperty("gcCollectionTimeMs", gcCollectionTimeMs);
         jvm.addProperty("pid", ProcessHandle.current().pid());
         jvm.addProperty("javaVersion", System.getProperty("java.version", "unknown"));
         jvm.addProperty("javaVendor", System.getProperty("java.vendor", "unknown"));

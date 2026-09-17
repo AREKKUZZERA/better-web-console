@@ -83,6 +83,7 @@ export function DashboardPanel() {
                   <div className="kpi blue"><div className="kpi-label" data-i18n="dash.machineRam">Machine RAM</div><div className="kpi-value" id="kpi-host-ram">&#8212;</div><div className="kpi-sub" id="kpi-host-ram-sub" data-i18n="dash.physicalMemory">Physical memory</div></div>
                   <div className="kpi warn"><div className="kpi-label" data-i18n="dash.serverDisk">Server Disk</div><div className="kpi-value" id="kpi-disk">&#8212;</div><div className="kpi-sub" id="kpi-disk-sub" data-i18n="dash.worldContainer">World container</div></div>
                   <div className="kpi purple"><div className="kpi-label" data-i18n="dash.jvmThreads">JVM Threads</div><div className="kpi-value" id="kpi-threads">&#8212;</div><div className="kpi-sub" id="kpi-threads-sub" data-i18n="dash.javaProcess">Java process</div></div>
+                  <div className="kpi teal"><div className="kpi-label" data-i18n="dash.gcCollections">GC Collections</div><div className="kpi-value" id="kpi-gc">&#8212;</div><div className="kpi-sub" id="kpi-gc-sub" data-i18n="dash.gcTime">Total pause time</div></div>
                 </div>
               </div>
             </div>

@@ -8,9 +8,11 @@ import org.apache.logging.log4j.core.layout.PatternLayout;
 
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
 
 public class WebConsoleAppender extends AbstractAppender {
 
+    private static final Pattern ANSI_ESCAPE = Pattern.compile("\\u001B\\[[;\\d]*m");
     private final ConsoleLogHandler handler;
 
     protected WebConsoleAppender(String name,
@@ -41,7 +43,7 @@ public class WebConsoleAppender extends AbstractAppender {
     }
 
     private static String stripAnsi(String s) {
-        return s.replaceAll("\\u001B\\[[;\\d]*m", "");
+        return ANSI_ESCAPE.matcher(s).replaceAll("");
     }
 
     public static WebConsoleAppender create(ConsoleLogHandler handler) {

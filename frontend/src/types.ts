@@ -127,6 +127,18 @@ export interface StatsPayload {
   };
   playerActivityDays?: Array<{ date: string; label: string; items: Array<Record<string, unknown>> }>;
   playerActivitySummary?: PlayerActivitySummary;
+  system?: {
+    jvm?: {
+      heapUsedBytes?: number;
+      heapMaxBytes?: number;
+      heapCommittedBytes?: number;
+      heapUsedPercent?: number;
+      gcCollections?: number;
+      gcCollectionTimeMs?: number;
+      threads?: number;
+      daemonThreads?: number;
+    };
+  };
 }
 
 export interface StatsHistoryPayload {

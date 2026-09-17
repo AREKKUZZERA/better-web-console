@@ -16,6 +16,8 @@ export function mountWebConsole() {
 
 // ── State ──────────────────────────────────────────────────────────────────
 let ws=null, autoScroll=true, lineCount=0;
+let pendingLogLines=[];
+let logFlushScheduled=false;
 let reconnectTimer=null, reconnectDelay=1000, reconnectAttempt=0, manualDisconnect=false;
 let statsPollTimer=null, statsPollInFlight=false, lastStatsAt=0;
 let chartsInitialized=false;
@@ -243,8 +245,6 @@ function appendLine(raw){
   else if(fg==='WARN'){ levelCounts.WARN++; pushActivity('warn','&#128993;',raw.substring(0,90)); }
   else if(fg==='INFO') levelCounts.INFO++;
   else levelCounts.DEBUG++;
-  updateLevelBars();
-
   const div=document.createElement('div');
   div.className='log-line '+lv+' log-enter';
   div.dataset.raw=raw;
@@ -253,10 +253,35 @@ function appendLine(raw){
   if(searchQuery){ const re=new RegExp(escRe(searchQuery),'gi'); html=html.replace(re,m=>'<span class="hl">'+m+'</span>'); }
   div.innerHTML=html;
   applyVis(div);
-  output.appendChild(div);
-  div.addEventListener('animationend',()=>div.classList.remove('log-enter'),{once:true});
+  return div;
+}
+
+function flushLogLines(){
+  logFlushScheduled=false;
+  if(!pendingLogLines.length) return;
+
+  const fragment=document.createDocumentFragment();
+  const lines=pendingLogLines;
+  pendingLogLines=[];
+  lines.forEach(raw=>fragment.appendChild(appendLine(raw)));
+  output.appendChild(fragment);
+
   while(output.children.length>MAX_LINES) output.removeChild(output.firstChild);
+  updateLevelBars();
   if(autoScroll) output.scrollTop=output.scrollHeight;
+  if(pendingLogLines.length) scheduleLogFlush();
+}
+
+function scheduleLogFlush(){
+  if(logFlushScheduled) return;
+  logFlushScheduled=true;
+  requestAnimationFrame(flushLogLines);
+}
+
+function enqueueLogLine(raw){
+  if(typeof raw!=='string'||!raw) return;
+  pendingLogLines.push(raw);
+  scheduleLogFlush();
 }
 
 function applyVis(div){
@@ -322,7 +347,7 @@ function connectWs(force=false){
   ws.onmessage=e=>{
     try{
       const msg=JSON.parse(e.data);
-      if(msg.type==='log')          appendLine(msg.line);
+      if(msg.type==='log')          enqueueLogLine(msg.line);
       else if(msg.type==='stats')   handleStats(msg);
       else if(msg.type==='completions') handleCompletions(msg);
       else if(msg.type==='control') handleControl(msg.event);
@@ -533,6 +558,8 @@ function handleSystemStats(system){
 
   setText('kpi-threads', jvm.threads??'—');
   setText('kpi-threads-sub', t('fmt.daemon',{value:jvm.daemonThreads??'—'}));
+  setText('kpi-gc', jvm.gcCollections??'—');
+  setText('kpi-gc-sub', t('fmt.gcTime',{value:jvm.gcCollectionTimeMs??'—'}));
   setText('sys-cpu-model', cpu.model||'—');
   setText('sys-cpu-cores', `${cpu.physicalCores??'—'} / ${cpu.logicalCores??'—'}`);
   setText('sys-cpu-process', fmtPct(procLoad));
@@ -948,6 +975,7 @@ window.addEventListener('webconsole:alias-command',event=>{
 // ── Export / Clear / Logout ─────────────────────────────────────────────────
 $('btn-export').addEventListener('click',()=>window.open('/api/logs/export','_blank'));
 $('btn-clear').addEventListener('click',()=>{
+  pendingLogLines=[];
   output.innerHTML=''; lineCount=0; svLines.textContent='0';
   levelCounts.INFO=0; levelCounts.WARN=0; levelCounts.SEVERE=0; levelCounts.DEBUG=0;
   updateLevelBars(); showToast(t('toast.cleared'));
@@ -956,6 +984,7 @@ $('btn-logout').addEventListener('click',doLogout);
 async function doLogout(){
   manualDisconnect=true; clearTimeout(reconnectTimer);
   stopStatsPolling();
+  pendingLogLines=[];
   try{ await logout(); }catch(_){}
   if(ws) ws.close();
   app.classList.remove('show'); loginScreen.classList.remove('hide');

@@ -102,7 +102,7 @@ header{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;min-w
 #console-output{height:100%;overflow-y:scroll;padding:10px 14px 4px;scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) transparent;contain:content}
 #console-output::-webkit-scrollbar{width:5px}
 #console-output::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--scroll-thumb),rgba(255,255,255,.08));border:2px solid transparent;border-radius:999px;background-clip:padding-box}
-.log-line{line-height:1.65;white-space:pre-wrap;word-break:break-all;font-size:12.5px;color:var(--text);will-change:transform,opacity}
+.log-line{line-height:1.65;white-space:pre-wrap;word-break:break-all;font-size:12.5px;color:var(--text)}
 .log-line.log-enter{animation:lineReveal .3s var(--ease) both}
 .log-line.WARN,.log-line.WARNING{color:var(--warn)}
 .log-line.SEVERE,.log-line.ERROR{color:var(--danger)}
