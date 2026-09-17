@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.4.11 - 2026-09-17
+
+### Added
+
+- Added JVM garbage-collection metrics to server statistics:
+  collection count, cumulative collection time, committed heap and heap usage percentage.
+- Added a dashboard card showing total GC collections and cumulative pause time.
+
+### Performance
+
+- Batched incoming WebSocket console log rendering with `requestAnimationFrame` and
+  `DocumentFragment` to reduce DOM updates and layout work during log bursts.
+- Kept console auto-scroll, filtering, search highlighting, line limits and log ordering
+  unchanged while reducing per-line rendering overhead.
+- Removed persistent `will-change` allocation from every console log line.
+- Cached the ANSI escape pattern used by the Log4j console appender instead of compiling
+  the regular expression for every log message.
+
 ## 2.4.10 - 2026-09-13
 
 ### Added
