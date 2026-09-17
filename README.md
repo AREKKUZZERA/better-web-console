@@ -67,18 +67,18 @@ mvn clean package
 Output:
 
 ```text
-target/bwc-2.4.10-paper-1.21.X.jar
-target/bwc-2.4.10-paper-26.1.jar
-target/bwc-2.4.10-paper-26.1.1.jar
-target/bwc-2.4.10-paper-26.1.2.jar
-target/bwc-2.4.10-paper-26.2.jar
+target/bwc-2.4.11-paper-1.21.X.jar
+target/bwc-2.4.11-paper-26.1.jar
+target/bwc-2.4.11-paper-26.1.1.jar
+target/bwc-2.4.11-paper-26.1.2.jar
+target/bwc-2.4.11-paper-26.2.jar
 ```
 
-Use `bwc-2.4.10-paper-1.21.X.jar` on Paper/Purpur `1.21` through `1.21.11`.
-Use `bwc-2.4.10-paper-26.1.jar` on Paper/Purpur `26.1`.
-Use `bwc-2.4.10-paper-26.1.1.jar` on Paper/Purpur `26.1.1`.
-Use `bwc-2.4.10-paper-26.1.2.jar` on Paper/Purpur `26.1.2`.
-Use `bwc-2.4.10-paper-26.2.jar` on Paper/Purpur `26.2`.
+Use `bwc-2.4.11-paper-1.21.X.jar` on Paper/Purpur `1.21` through `1.21.11`.
+Use `bwc-2.4.11-paper-26.1.jar` on Paper/Purpur `26.1`.
+Use `bwc-2.4.11-paper-26.1.1.jar` on Paper/Purpur `26.1.1`.
+Use `bwc-2.4.11-paper-26.1.2.jar` on Paper/Purpur `26.1.2`.
+Use `bwc-2.4.11-paper-26.2.jar` on Paper/Purpur `26.2`.
 
 ## First Setup
 
